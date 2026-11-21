@@ -1,4 +1,4 @@
-"""TRON: історія викликів мультисига з Tronscan (без ключа), стан через TronGrid constant calls."""
+"""TRON: multisig call history from Tronscan (no key), state via TronGrid constant calls."""
 import logging
 import time
 
@@ -13,7 +13,7 @@ log = logging.getLogger("freezewatch.tron")
 CHAIN = "tron"
 TRONGRID = "https://api.trongrid.io"
 TRONSCAN = "https://apilist.tronscanapi.com/api/transaction"
-DEFAULT_SINCE_MS = 1640995200000  # 2022-01-01; Tronscan віддає історію мультисига з ~березня 2022
+DEFAULT_SINCE_MS = 1640995200000  # 2022-01-01; Tronscan serves multisig history from ~March 2022
 WINDOW_MS = 14 * 86400 * 1000
 METHODS = {"submitTransaction": "submit", "confirmTransaction": "confirm",
            "revokeConfirmation": "revoke", "executeTransaction": "execute"}
@@ -26,7 +26,7 @@ def _grid_headers():
 
 
 def constant_call(selector_hex_name: str, parameter: str = "", contract: str = TRON_MULTISIG) -> str:
-    """selector_hex_name - сигнатура, напр. 'transactions(uint256)'."""
+    """selector_hex_name - signature, e.g. 'transactions(uint256)'."""
     body = {"owner_address": TRON_DUMMY_CALLER, "contract_address": contract,
             "function_selector": selector_hex_name, "parameter": parameter, "visible": True}
     interval = 0.06 if env("TRONGRID_API_KEY") else 0.5
@@ -62,7 +62,7 @@ def balance_of(addr):
 
 # ---------- Tronscan ----------
 def parse_call(item):
-    """Елемент Tronscan -> dict або None (чужі/неуспішні/нерелевантні виклики відкидаються)."""
+    """Tronscan item -> dict or None (foreign/unsuccessful/irrelevant calls are discarded)."""
     if item.get("contractRet") != "SUCCESS" or item.get("revert"):
         return None
     if item.get("toAddress") != TRON_MULTISIG:
@@ -86,7 +86,7 @@ def parse_call(item):
 
 
 def fetch_window(start_ms, end_ms, depth=0):
-    """Усі виклики адреси мультисига у [start_ms,end_ms]; ділить вікно, якщо > ~9000 записів."""
+    """All calls of the multisig address in [start_ms,end_ms]; splits the window if > ~9000 records."""
     rows, start, total = [], 0, None
     while True:
         o = http_json("GET", TRONSCAN, interval=0.35, validate=lambda x: "data" in x,
@@ -104,7 +104,7 @@ def fetch_window(start_ms, end_ms, depth=0):
 
 
 def store_calls(conn, items):
-    """Зберігає успішні виклики; повертає множину tx_id, зачеплених НОВИМИ викликами."""
+    """Stores successful calls; returns the set of tx_ids touched by NEW calls."""
     touched = set()
     for it in items:
         c = parse_call(it)
@@ -120,7 +120,7 @@ def store_calls(conn, items):
 
 
 def scan_calls(conn, since_ms=None):
-    """Покриття [low, high] розширюється назад до since_ms і вперед до now. Повертає touched ids."""
+    """Coverage [low, high] expands backward to since_ms and forward to now. Returns touched ids."""
     now_ms = int(time.time() * 1000)
     since_ms = since_ms or DEFAULT_SINCE_MS
     touched = set()
@@ -131,13 +131,13 @@ def scan_calls(conn, since_ms=None):
         meta_set(conn, "tron_scan_low", now_ms)
     else:
         high, low = int(high), int(low)
-        start = high - 2 * 3600_000  # перекриття, вставки ідемпотентні
+        start = high - 2 * 3600_000  # overlap, inserts are idempotent
         while start < now_ms:
             end = min(start + WINDOW_MS, now_ms)
             touched |= store_calls(conn, fetch_window(start, end))
             conn.commit()
             start = end
-        if now_ms - high > 6 * 3600_000:  # high оновлюється рідко, щоб БД не мінялась щоразу
+        if now_ms - high > 6 * 3600_000:  # high is updated rarely so the DB does not change every time
             meta_set(conn, "tron_scan_high", now_ms)
         conn.commit()
     while low > since_ms:
@@ -147,13 +147,13 @@ def scan_calls(conn, since_ms=None):
         low = start
         meta_set(conn, "tron_scan_low", low)
         conn.commit()
-        log.info("TRON скан: покрито з %s (%s викликів у вікні)", iso(low // 1000), len(items))
+        log.info("TRON scan: covered from %s (%s calls in window)", iso(low // 1000), len(items))
     return touched
 
 
-# ---------- збірка пропозицій ----------
+# ---------- proposal assembly ----------
 def _calibrate(conn, subs, count, n, sample=25):
-    """Вибір зсуву k (затримка індексації Tronscan) за збігом data найновіших id."""
+    """Choose offset k (Tronscan indexing lag) by matching data of the newest ids."""
     ids = list(range(max(0, count - sample), count))
     onchain = {i: read_transaction(i) for i in ids}
     best, best_k = -1, 0
@@ -178,7 +178,7 @@ def _apply_onchain(conn, tid, d, required):
 
 
 def _apply_submit_data(conn, tid, sub, required):
-    """Швидкий шлях без читання з ланцюга: поля з параметрів submitTransaction (Tronscan)."""
+    """Fast path without reading from the chain: fields from submitTransaction parameters (Tronscan)."""
     dest = sub["destination"]
     dec = abi.decode_calldata(sub["data"], dest == TRON_USDT, tron_from_hex20)
     update_proposal(conn, CHAIN, tid, destination=dest, function=dec["function"], target=dec["target"],
@@ -191,9 +191,9 @@ def _set_submit(conn, tid, s):
 
 
 def assemble(conn, since_ms=None, stale_days=7, budget_sec=None, touched=None):
-    """1) швидко: усі пропозиції з даних Tronscan (submit/confirm/revoke), виконання - висновок з підтверджень;
-    2) у межах бюджету: верифікація з ланцюга (прапор executed, data), спершу відкриті, потім неоднозначні
-       (кілька submit в одному блоці), потім найновіші. Після верифікації chain_verified=1."""
+    """1) fast: all proposals from Tronscan data (submit/confirm/revoke), execution inferred from confirmations;
+    2) within budget: on-chain verification (executed flag, data), open ones first, then ambiguous
+       (several submits in one block), then the newest. After verification chain_verified=1."""
     t0 = time.time()
     count = read_count()
     required = read_required()
@@ -206,11 +206,11 @@ def assemble(conn, since_ms=None, stale_days=7, budget_sec=None, touched=None):
         return
     k, share, cache = _calibrate(conn, subs, count, n)
     off = max(0, count - n - k)
-    log.info("TRON: count=%s, submit=%s, зсув k=%s, збіг data=%.0f%%, перший id=%s", count, n, k, share * 100, off)
+    log.info("TRON: count=%s, submit=%s, offset k=%s, data match=%.0f%%, first id=%s", count, n, k, share * 100, off)
     if share < 0.8:
-        log.error("TRON: розбіжність зіставлення submit->id (збіг %.0f%%), збірку пропущено", share * 100)
+        log.error("TRON: submit->id mapping mismatch (match %.0f%%), assembly skipped", share * 100)
         return
-    # --- фаза A: події і пропозиції зі submit-даних ---
+    # --- phase A: events and proposals from submit data ---
     for r in conn.execute("SELECT * FROM tron_calls WHERE method!='submit' AND tx_id>=? AND tx_id<?",
                           (off, count)).fetchall():
         ensure_proposal(conn, CHAIN, r["tx_id"])
@@ -229,7 +229,7 @@ def assemble(conn, since_ms=None, stale_days=7, budget_sec=None, touched=None):
         if tid not in has_submit and have.get(tid, 0) == 0:
             _set_submit(conn, tid, s)
     conn.commit()
-    # прапор executed для ще не верифікованих - висновок із підтверджень
+    # executed flag for not-yet-verified ones - inferred from confirmations
     evs = events_grouped(conn, CHAIN)
     for r in conn.execute("SELECT tx_id, chain_verified FROM proposals WHERE chain='tron'").fetchall():
         if r["chain_verified"]:
@@ -239,7 +239,7 @@ def assemble(conn, since_ms=None, stale_days=7, budget_sec=None, touched=None):
     conn.commit()
     derive_all(conn, CHAIN, stale_days=stale_days)
     conn.commit()
-    # --- фаза B: верифікація з ланцюга ---
+    # --- phase B: on-chain verification ---
     block_cnt: dict = {}
     for s in subs:
         block_cnt[s["block"]] = block_cnt.get(s["block"], 0) + 1
@@ -252,17 +252,17 @@ def assemble(conn, since_ms=None, stale_days=7, budget_sec=None, touched=None):
         tid = r["tx_id"]
         opened = not r["executed"]
         if opened and (r["status"] == "pending" or full or tid in refresh_ids):
-            prio.append((0, -tid, tid))                 # відкриті - щоразу
+            prio.append((0, -tid, tid))                 # open - every time
         elif not r["chain_verified"]:
             amb = block_cnt.get(subs[tid - off]["block"], 1) > 1
-            prio.append((1 if amb else 2, -tid, tid))   # неоднозначні, потім найновіші
+            prio.append((1 if amb else 2, -tid, tid))   # ambiguous, then the newest
     prio.sort()
-    log.info("TRON: черга верифікації з ланцюга: %s id (відкритих/оновлюваних %s)", len(prio),
+    log.info("TRON: on-chain verification queue: %s ids (open/refreshed %s)", len(prio),
              sum(1 for p in prio if p[0] == 0))
     override, done = {}, 0
     for pr, _, tid in prio:
         if budget_sec and pr > 0 and time.time() - t0 > budget_sec:
-            log.warning("TRON: бюджет часу вичерпано, лишилось верифікувати %s id", len(prio) - done)
+            log.warning("TRON: time budget exhausted, %s ids left to verify", len(prio) - done)
             break
         d = cache.get(tid) or read_transaction(tid)
         _apply_onchain(conn, tid, d, required)
@@ -276,7 +276,7 @@ def assemble(conn, since_ms=None, stale_days=7, budget_sec=None, touched=None):
                     break
             if found is not None:
                 _set_submit(conn, tid, found)
-                log.info("TRON: id %s - submit перепризначено після звірки з ланцюгом", tid)
+                log.info("TRON: id %s - submit reassigned after on-chain reconciliation", tid)
         if not d["executed"]:
             override[tid] = read_conf_count(tid)
         done += 1
@@ -284,7 +284,7 @@ def assemble(conn, since_ms=None, stale_days=7, budget_sec=None, touched=None):
             derive_all(conn, CHAIN, stale_days=stale_days, conf_override=override)
             conn.commit()
             if done % 100 == 0:
-                log.info("TRON: верифіковано %s/%s", done, len(prio))
+                log.info("TRON: verified %s/%s", done, len(prio))
     if full:
         meta_set(conn, "tron_full_refresh_ts", time.time())
     derive_all(conn, CHAIN, stale_days=stale_days, conf_override=override)

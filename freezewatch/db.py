@@ -1,4 +1,4 @@
-"""SQLite-сховище."""
+"""SQLite storage."""
 import sqlite3
 from pathlib import Path
 
@@ -58,29 +58,29 @@ CREATE TABLE IF NOT EXISTS blacklist (
     PRIMARY KEY (chain, address)
 );
 
--- сирі успішні виклики мультисига TRON (Tronscan), з яких виводяться події
+-- raw successful TRON multisig calls (Tronscan), from which events are derived
 CREATE TABLE IF NOT EXISTS tron_calls (
     tx_hash TEXT PRIMARY KEY,
     ts_ms INTEGER NOT NULL,
     block INTEGER,
     signer TEXT NOT NULL,
     method TEXT NOT NULL,          -- submit|confirm|revoke|execute
-    tx_id INTEGER,                 -- для confirm/revoke/execute
-    destination TEXT,              -- для submit
-    data TEXT                      -- для submit (hex без 0x)
+    tx_id INTEGER,                 -- for confirm/revoke/execute
+    destination TEXT,              -- for submit
+    data TEXT                      -- for submit (hex without 0x)
 );
 CREATE INDEX IF NOT EXISTS ix_tc_method ON tron_calls(method, ts_ms);
 
--- виконані заморожування без on-chain черги (USDC на Ethereum, USDC/USDT на Solana)
+-- executed freezes without an on-chain queue (USDC on Ethereum, USDC/USDT on Solana)
 CREATE TABLE IF NOT EXISTS freezes (
     source TEXT NOT NULL,          -- usdc_eth | sol_usdc | sol_usdt
-    subject TEXT NOT NULL,         -- заблокована адреса (ETH) або токен-акаунт (Solana)
-    owner TEXT,                    -- гаманець-власник (Solana) / сама адреса (ETH)
+    subject TEXT NOT NULL,         -- blocked address (ETH) or token account (Solana)
+    owner TEXT,                    -- owner wallet (Solana) / the address itself (ETH)
     action TEXT NOT NULL,          -- freeze | unfreeze
     ts TEXT NOT NULL,
     tx_hash TEXT NOT NULL,
     block INTEGER,
-    amount REAL,                   -- баланс: Solana - у момент tx; ETH - поточний
+    amount REAL,                   -- balance: Solana - at tx time; ETH - current
     amount_kind TEXT,              -- at_tx | current
     signers TEXT,
     first_seen_at TEXT NOT NULL,
@@ -118,7 +118,7 @@ def connect(path: Path | str | None = None) -> sqlite3.Connection:
     conn.row_factory = sqlite3.Row
     conn.executescript(SCHEMA)
     cols = {r["name"] for r in conn.execute("PRAGMA table_info(proposals)")}
-    if "chain_verified" not in cols:  # міграція старих БД
+    if "chain_verified" not in cols:  # migration of old DBs
         conn.execute("ALTER TABLE proposals ADD COLUMN chain_verified INTEGER NOT NULL DEFAULT 0")
         conn.execute("UPDATE proposals SET chain_verified=1 WHERE chain='eth' AND destination IS NOT NULL")
         conn.commit()
@@ -132,7 +132,7 @@ def meta_get(conn, key, default=None):
 
 def meta_set(conn, key, value):
     if meta_get(conn, key) == (None if value is None else str(value)):
-        return  # без змін - не чіпаємо файл БД
+        return  # unchanged - leave the DB file alone
     conn.execute(
         "INSERT INTO meta(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
         (key, None if value is None else str(value)),
@@ -151,7 +151,7 @@ def update_proposal(conn, chain, tx_id, **vals):
         return
     cur = conn.execute(f"SELECT {','.join(vals)} FROM proposals WHERE chain=? AND tx_id=?", (chain, tx_id)).fetchone()
     if cur is not None and all(cur[k] == v for k, v in vals.items()):
-        return  # без змін: не чіпаємо updated_at, щоб файл БД не "брудніл" без потреби
+        return  # unchanged: leave updated_at alone so the DB file is not needlessly "dirtied"
     vals["updated_at"] = iso(now_ts())
     sets = ",".join(f"{k}=?" for k in vals)
     conn.execute(f"UPDATE proposals SET {sets} WHERE chain=? AND tx_id=?", (*vals.values(), chain, tx_id))
@@ -165,7 +165,7 @@ def add_event(conn, chain, tx_id, signer, kind, ts_iso, tx_hash):
 
 
 def events_grouped(conn, chain, ids=None):
-    """{tx_id: [event dict, ...]} впорядковано за часом."""
+    """{tx_id: [event dict, ...]} ordered by time."""
     out: dict[int, list[dict]] = {}
     q = "SELECT tx_id,signer,kind,ts,tx_hash FROM confirmations WHERE chain=? ORDER BY ts, rowid"
     for r in conn.execute(q, (chain,)):

@@ -14,7 +14,7 @@ SIG = "nXm2cEKwZSNqNbs3FLexj4ZYD9bnso7Gkt4o4qHqSK8cAA7CtCtRFW3nsbFhBYJKnRFkxAznF
 
 
 def fixture_tx(mint=USDC_MINT, typ="freezeAccount"):
-    """Скорочена копія реальної структури getTransaction(jsonParsed) для USDC-фризу 2026-11-07."""
+    """Shortened copy of a real getTransaction(jsonParsed) structure for the USDC freeze of 2026-11-07."""
     return {
         "blockTime": 1794015637, "slot": 466330911,
         "transaction": {"message": {

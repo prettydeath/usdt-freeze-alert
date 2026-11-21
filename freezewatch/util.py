@@ -1,4 +1,4 @@
-"""HTTP з ретраями, base58check, час."""
+"""HTTP with retries, base58check, time."""
 import hashlib
 import logging
 import os
@@ -23,7 +23,7 @@ _lock = threading.Lock()
 
 
 def throttle(key: str, interval: float) -> None:
-    """Потокобезпечний ліміт частоти: кожен виклик резервує свій слот."""
+    """Thread-safe rate limit: each call reserves its own slot."""
     if interval <= 0:
         return
     with _lock:
@@ -35,7 +35,7 @@ def throttle(key: str, interval: float) -> None:
 
 
 def http_json(method, url, *, interval=0.0, retries=6, timeout=40, validate=None, **kw):
-    """JSON-запит з експоненційним backoff. validate(obj)->bool; False => ретрай."""
+    """JSON request with exponential backoff. validate(obj)->bool; False => retry."""
     host = url.split("/")[2]
     last = None
     for attempt in range(retries):
@@ -50,13 +50,13 @@ def http_json(method, url, *, interval=0.0, retries=6, timeout=40, validate=None
                 obj = r.json()
                 if validate is None or validate(obj):
                     return obj
-                last = f"невалідна відповідь: {str(obj)[:150]}"
+                last = f"invalid response: {str(obj)[:150]}"
         except (requests.RequestException, ValueError) as e:
             last = repr(e)
         delay = min(2 ** attempt, 30)
-        log.debug("ретрай %s (%s) через %ss", host, last, delay)
+        log.debug("retry %s (%s) in %ss", host, last, delay)
         time.sleep(delay)
-    raise HttpError(f"{url}: вичерпано ретраї ({last})")
+    raise HttpError(f"{url}: retries exhausted ({last})")
 
 
 # ---------- base58check ----------
@@ -91,12 +91,12 @@ def b58check_decode(s: str) -> bytes:
     raw = b58decode(s)
     payload, chk = raw[:-4], raw[-4:]
     if hashlib.sha256(hashlib.sha256(payload).digest()).digest()[:4] != chk:
-        raise ValueError("невірна контрольна сума base58check")
+        raise ValueError("invalid base58check checksum")
     return payload
 
 
 def tron_from_hex20(h: str) -> str:
-    """20-байтний hex -> T-адреса (префікс 0x41)."""
+    """20-byte hex -> T-address (0x41 prefix)."""
     h = h.lower().removeprefix("0x")
     if len(h) == 42 and h.startswith("41"):
         h = h[2:]
@@ -106,11 +106,11 @@ def tron_from_hex20(h: str) -> str:
 def tron_to_hex20(addr: str) -> str:
     p = b58check_decode(addr)
     if len(p) != 21 or p[0] != 0x41:
-        raise ValueError("не TRON-адреса")
+        raise ValueError("not a TRON address")
     return p[1:].hex()
 
 
-# ---------- час ----------
+# ---------- time ----------
 def iso(ts) -> str | None:
     if ts is None:
         return None

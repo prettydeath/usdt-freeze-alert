@@ -1,6 +1,6 @@
-"""USDT0 (Tier B): Safe 3/5. Черга видима ЛИШЕ у Safe Transaction Service (поза ланцюгом): підписанти можуть
-її не використовувати. Для кожної мережі беремо submissionDate / confirmations / executionDate, рахуємо затримку;
-затримка 0 (<= 60 с) - ознака "не опубліковано заздалегідь"."""
+"""USDT0 (Tier B): Safe 3/5. The queue is visible ONLY in Safe Transaction Service (off-chain): signers may
+choose not to use it. For each network we take submissionDate / confirmations / executionDate and compute the delay;
+a delay of 0 (<= 60 s) indicates "not published in advance"."""
 import logging
 
 from . import abi
@@ -30,7 +30,7 @@ def _iso(s):
 
 
 def extract_calls(t, token):
-    """Виклики до токена всередині Safe-транзакції (включно з multiSend). -> [{idx,data,method}]"""
+    """Calls to the token inside a Safe transaction (including multiSend). -> [{idx,data,method}]"""
     dd = t.get("dataDecoded") or {}
     calls = []
     if dd.get("method") == "multiSend":
@@ -50,7 +50,7 @@ def extract_calls(t, token):
 
 
 def row_from_safe_tx(t, token, safe_nonce, stale_days=7, now=None):
-    """Чиста функція (тестується офлайн): Safe-транзакція -> список полів пропозицій для таблиці proposals."""
+    """Pure function (tested offline): Safe transaction -> list of proposal fields for the proposals table."""
     out = []
     confs = t.get("confirmations") or []
     sub = _iso(t.get("submissionDate"))
@@ -64,7 +64,7 @@ def row_from_safe_tx(t, token, safe_nonce, stale_days=7, now=None):
         if executed:
             status = "executed" if ok else "failed"
         elif safe_nonce is not None and t["nonce"] < safe_nonce:
-            status = "revoked"  # витіснено: nonce уже зайнятий іншою транзакцією
+            status = "revoked"  # superseded: nonce already taken by another transaction
         else:
             status = compute_status(False, False, len(confs), False, sub, stale_days, now)
         out.append({
@@ -92,7 +92,7 @@ def sync_chain(conn, chain, stale_days=7, full=False):
     url = f"{BASE}/{net}/api/v1/safes/{safe}/multisig-transactions/"
     have_any = conn.execute("SELECT 1 FROM proposals WHERE chain=? LIMIT 1", (chain,)).fetchone()
     pages = []
-    # відкриті - завжди; історія - повністю при першому запуску, далі лише свіжа сторінка
+    # open - always; history - in full on the first run, then only the fresh page
     pages.append(_get(url, {"executed": "false", "ordering": "-nonce", "limit": 100}))
     o = _get(url, {"ordering": "-nonce", "limit": 100})
     pages.append(o)
@@ -114,4 +114,4 @@ def sync_chain(conn, chain, stale_days=7, full=False):
                         add_event(conn, chain, r["tx_id"], signer, kind, ts, t.get("safeTxHash") or "")
                 n += 1
     conn.commit()
-    log.info("%s: Safe-транзакцій до токена оброблено %s (nonce safe=%s)", cfg["label"], n, safe_nonce)
+    log.info("%s: Safe transactions to the token processed: %s (nonce safe=%s)", cfg["label"], n, safe_nonce)

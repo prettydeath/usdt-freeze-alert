@@ -1,5 +1,5 @@
-"""Крос-чейн перегляд: одна й та сама цільова адреса, заморожена/запропонована в різних мережах.
-EVM-адреси нормалізуються в lowercase; TRON-адреса (base58) конвертується в той самий 20-байтний hex, тож збігається з EVM."""
+"""Cross-chain view: the same target address frozen/proposed on different networks.
+EVM addresses are normalized to lowercase; a TRON (base58) address is converted to the same 20-byte hex, so it matches EVM."""
 import logging
 from collections import defaultdict
 
@@ -33,11 +33,11 @@ def norm_addr(chain, addr):
     if chain in EVM_CHAINS or chain in ("usdc_eth", "near"):
         a = addr.lower()
         return a if a.startswith("0x") and len(a) == 42 else None
-    return None  # Solana/NEAR/Aptos/TON - окремі простори адрес
+    return None  # Solana/NEAR/Aptos/TON - separate address spaces
 
 
 def collect(conn):
-    """[{address, items:[{chain,class,status,ts,tx_id,function}]}] для цілей, що мають хоч одну дію."""
+    """[{address, items:[{chain,class,status,ts,tx_id,function}]}] for targets with at least one action."""
     by = defaultdict(list)
     for r in conn.execute("SELECT chain,tx_id,function,target,status,submitted_at,executed_at FROM proposals "
                           "WHERE target IS NOT NULL"):
@@ -53,12 +53,12 @@ def collect(conn):
 
 
 def pairs(conn):
-    """Множина (адреса, мережа) для виявлення нових появ."""
+    """Set of (address, network) for detecting new appearances."""
     return {(a, it["chain"]) for a, its in collect(conn).items() for it in its}
 
 
 def table(conn, limit=200):
-    """Крос-чейн таблиця: адреси, присутні у >= 2 мережах (за всю історію), новіші першими."""
+    """Cross-chain table: addresses present on >= 2 networks (all history), newest first."""
     out = []
     for a, its in collect(conn).items():
         chains = {it["chain"] for it in its}
@@ -71,7 +71,7 @@ def table(conn, limit=200):
     return out[:limit], len(out)
 
 
-# ---- баланси на інших мережах ----
+# ---- balances on other networks ----
 def rpc_and_token(chain):
     m = chain_meta().get(chain, {})
     if chain == "eth":
@@ -84,7 +84,7 @@ def rpc_and_token(chain):
 
 
 def balances_elsewhere(addr, exclude):
-    """Баланси USDT адреси (>0) у всіх EVM-мережах із RPC, окрім уже задіяних. Помилки мереж ігноруються."""
+    """USDT balances (>0) of the address on all EVM networks with an RPC, excluding those already involved. Network errors are ignored."""
     res = {}
     for ch in ["eth", *MSW_CHAINS, *SAFE_CHAINS]:
         if ch in exclude:
@@ -99,12 +99,12 @@ def balances_elsewhere(addr, exclude):
             if bal > 0:
                 res[ch] = bal
         except Exception as e:  # noqa: BLE001
-            log.debug("баланс %s: %s", ch, e)
+            log.debug("balance %s: %s", ch, e)
     return res
 
 
 def balance_on(chain, addr):
-    """Баланс USDT адреси в EVM-мережі з RPC (для відкритих пропозицій Safe-мереж)."""
+    """USDT balance of the address on an EVM network with an RPC (for open proposals on Safe networks)."""
     url, token = rpc_and_token(chain)
     v = eth.rpc_batch([("eth_call", [{"to": token, "data": "0x" + SEL_BALANCE_OF + "0" * 24 + addr[2:]}, "latest"])],
                       url=url)[0]

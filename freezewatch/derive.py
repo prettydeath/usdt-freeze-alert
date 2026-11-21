@@ -1,4 +1,4 @@
-"""Виведення стану пропозиції з подій + статуси + реплей чорного списку."""
+"""Derivation of proposal state from events + statuses + blacklist replay."""
 from .db import ensure_proposal, update_proposal, events_grouped
 from .util import iso, now_ts, parse_iso
 
@@ -10,7 +10,7 @@ def sort_events(events):
 
 
 def net_state(events):
-    """Повертає (signers:set, had_revoke, had_fail) після реплею за часом."""
+    """Returns (signers:set, had_revoke, had_fail) after replaying by time."""
     signers: set[str] = set()
     had_revoke = had_fail = False
     for e in sort_events(events):
@@ -26,17 +26,17 @@ def net_state(events):
 
 
 def infer_exec(events, required):
-    """Момент виконання.
-    1) якщо є явна подія execute (ETH: Execution; TRON: executeTransaction) - вона;
-    2) інакше (TRON): час першого підтвердження (submit/confirm), на якому кількість
-       активних підтверджень (з урахуванням відкликань) досягла `required`.
-    Наближення: використовується поточне required(); якщо воно змінювалося - можлива похибка.
-    Повертає dict(ts, tx_hash, signer) або None."""
+    """Execution moment.
+    1) if there is an explicit execute event (ETH: Execution; TRON: executeTransaction) - that one;
+    2) otherwise (TRON): the time of the first confirmation (submit/confirm) at which the number of
+       active confirmations (accounting for revocations) reached `required`.
+    Approximation: the current required() is used; if it changed, the result may be off.
+    Returns dict(ts, tx_hash, signer) or None."""
     evs = sort_events(events)
     for e in evs:
         if e["kind"] == "execute":
             signer = ""
-            for c in evs:  # підписант - хто підтвердив у тій самій транзакції
+            for c in evs:  # signer - who confirmed in the same transaction
                 if c["tx_hash"] == e["tx_hash"] and c["kind"] in ("confirm", "submit"):
                     signer = c["signer"]
             return {"ts": e["ts"], "tx_hash": e["tx_hash"], "signer": signer}
@@ -62,15 +62,15 @@ def compute_status(executed, had_failure, confirmations, had_revoke, submitted_a
         return "failed"
     sub = parse_iso(submitted_at)
     if sub is None:
-        return "stale"  # вік невідомий (напр. опитування без логів): не видаємо за свіжу пропозицію
+        return "stale"  # age unknown (e.g. polling without logs): do not pass it off as a fresh proposal
     if sub is not None and ((now or now_ts()) - sub) > stale_days * 86400:
         return "stale"
     return "pending"
 
 
 def derive_all(conn, chain, ids=None, stale_days=7, conf_override=None):
-    """Перераховує похідні поля для пропозицій (усіх або заданих ids).
-    conf_override: {tx_id: onchain_confirmation_count} для pending."""
+    """Recomputes derived fields for proposals (all or the given ids).
+    conf_override: {tx_id: onchain_confirmation_count} for pending."""
     evs = events_grouped(conn, chain, set(ids) if ids is not None else None)
     q = "SELECT tx_id, executed, required, confirmations FROM proposals WHERE chain=?"
     rows = conn.execute(q, (chain,)).fetchall()
@@ -107,7 +107,7 @@ def derive_all(conn, chain, ids=None, stale_days=7, conf_override=None):
 
 
 def rebuild_blacklist(conn):
-    """Повний реплей виконаних add/remove/destroy у таблицю blacklist."""
+    """Full replay of executed add/remove/destroy into the blacklist table."""
     q = """SELECT chain, tx_id, function, target, executed_at FROM proposals
            WHERE executed=1 AND target IS NOT NULL AND executed_at IS NOT NULL
              AND function IN ('addBlackList','removeBlackList','destroyBlackFunds')
@@ -131,7 +131,7 @@ def rebuild_blacklist(conn):
     old = sorted(tuple(r) for r in conn.execute(
         "SELECT chain,address,status,first_blocked_at,last_change_at,proposal_tx_id,funds_destroyed FROM blacklist"))
     if new == old:
-        return  # без змін - файл БД не чіпаємо
+        return  # unchanged - leave the DB file alone
     conn.execute("DELETE FROM blacklist")
     conn.executemany(
         "INSERT INTO blacklist(chain,address,status,first_blocked_at,last_change_at,proposal_tx_id,funds_destroyed)"

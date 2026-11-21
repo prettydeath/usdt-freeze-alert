@@ -1,7 +1,7 @@
-"""NEAR: токен usdt.tether-token.near, власник - multisafe-мультисиг tether.multisafe.near (2 із 3).
-Черга: view list_request_ids / get_request (RPC). Історія та час: nearblocks API (add_request_and_confirm / confirm /
-виклик multisafe -> токен). request_id = порядковий номер успішного add_request(_and_confirm) за часом
-(калібрується за відкритими запитами через get_request)."""
+"""NEAR: token usdt.tether-token.near, owner - multisafe multisig tether.multisafe.near (2 of 3).
+Queue: view list_request_ids / get_request (RPC). History and time: nearblocks API (add_request_and_confirm / confirm /
+multisafe call -> token). request_id = sequence number of a successful add_request(_and_confirm) by time
+(calibrated against open requests via get_request)."""
 import base64
 import json
 import logging
@@ -34,7 +34,7 @@ def view(method, args=None, account=MULTISIG):
 
 
 def decode_action(action):
-    """actions[0] запиту -> (function, target, amount). args - base64(JSON)."""
+    """request actions[0] -> (function, target, amount). args - base64(JSON)."""
     m = action.get("method_name")
     try:
         a = json.loads(base64.b64decode(action.get("args") or "").decode() or "{}")
@@ -46,7 +46,7 @@ def decode_action(action):
 
 
 def parse_history(txns):
-    """Транзакції nearblocks -> (creations, confirms, executions), усе впорядковано за часом.
+    """nearblocks transactions -> (creations, confirms, executions), all ordered by time.
     creations: {ts, tx, signer, receiver, function, target, amount}; confirms: {ts, tx, signer, request_id};
     executions: {ts, tx, function, target}."""
     creations, confirms, execs, seen = [], [], [], set()
@@ -97,7 +97,7 @@ def parse_history(txns):
 
 
 def match_executions(creations, execs):
-    """Виконання -> створення: найраніший ще не виконаний запит з тим самим (function, target) до моменту виконання."""
+    """Execution -> creation: the earliest not-yet-executed request with the same (function, target) before the execution time."""
     used, out = set(), {}
     for e in execs:
         for i, c in enumerate(creations):
@@ -130,9 +130,9 @@ def sync(conn, stale_days=7):
     ex_of = match_executions(creations, execs)
     open_ids = set(view("list_request_ids"))
     nonce = view("get_request_nonce")
-    log.info("NEAR: створень %s, підтверджень %s, виконань %s, відкриті %s, nonce %s", len(creations), len(confirms),
+    log.info("NEAR: creations %s, confirms %s, executions %s, open %s, nonce %s", len(creations), len(confirms),
              len(execs), sorted(open_ids), nonce)
-    # калібрування: відкриті запити мають збігатися з очікуваним рангом
+    # calibration: open requests must match the expected rank
     ok = True
     for rid in open_ids:
         if rid >= len(creations):
@@ -144,7 +144,7 @@ def sync(conn, stale_days=7):
             ok = False
     meta_set(conn, "near_mapping_ok", int(ok))
     if not ok:
-        log.warning("NEAR: зіставлення request_id->створення не збіглося з on-chain, дані не записано")
+        log.warning("NEAR: request_id->creation mapping does not match on-chain, data not written")
         return
     conf_by = {}
     for c in confirms:
@@ -161,7 +161,7 @@ def sync(conn, stale_days=7):
         elif rid in open_ids:
             status = compute_status(False, False, conf, False, sub, stale_days)
         else:
-            status = "revoked"  # немає у списку відкритих і не виконано: видалено
+            status = "revoked"  # not in the open list and not executed: deleted
         update_proposal(conn, CHAIN, rid, destination=c["receiver"], function=c["function"], target=c["target"],
                         amount=c["amount"], raw_data=None, submitted_at=sub, submit_tx=c["tx"], submitter=c["signer"],
                         executed=int(executed), executed_at=iso(e["ts"]) if e else None, exec_tx=e["tx"] if e else None,

@@ -1,4 +1,4 @@
-"""Статистика затримок і активності. Результат -> data/stats.json."""
+"""Delay and activity statistics. Output -> data/stats.json."""
 import json
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
@@ -7,12 +7,12 @@ from .constants import BALANCE_FUNCS, DATA_DIR, SOURCE_LABELS
 from .util import iso, now_ts, parse_iso
 
 WINDOWS = {"7d": 7, "30d": 30, "all": None}
-BUCKETS = [("0 с (без попередження)", 0, 1), ("до 5 хв", 1, 300), ("5-30 хв", 300, 1800), ("30-60 хв", 1800, 3600),
-           ("1-3 год", 3600, 10800), ("3-6 год", 10800, 21600), ("6-24 год", 21600, 86400), (">24 год", 86400, None)]
+BUCKETS = [("0 s (no advance notice)", 0, 1), ("under 5 min", 1, 300), ("5-30 min", 300, 1800), ("30-60 min", 1800, 3600),
+           ("1-3 h", 3600, 10800), ("3-6 h", 10800, 21600), ("6-24 h", 21600, 86400), (">24 h", 86400, None)]
 
 
 def percentile(vals, p):
-    """Лінійна інтерполяція (як numpy.percentile). vals - відсортований список."""
+    """Linear interpolation (like numpy.percentile). vals - sorted list."""
     if not vals:
         return None
     if len(vals) == 1:
@@ -100,7 +100,7 @@ def compute(conn, now=None):
                     "exec_per_week": round(len(ex) / span_days * 7, 2) if span_days else None,
                 }
             out["scopes"][scope][wname] = wout
-    # гістограми
+    # histograms
     for chain in CH + ["all"]:
         out["histogram"][chain] = {}
         for wname, days in WINDOWS.items():
@@ -108,7 +108,7 @@ def compute(conn, now=None):
             dl = [r["delay_seconds"] for r in rows if (chain == "all" or r["chain"] == chain) and r["executed"]
                   and r["delay_seconds"] is not None and r["exec_ts"] and r["exec_ts"] >= cutoff]
             out["histogram"][chain][wname] = histogram(dl)
-    # тижневі виконання
+    # weekly executions
     for chain in CH:
         by_week = defaultdict(lambda: defaultdict(int))
         for r in rows:
@@ -117,7 +117,7 @@ def compute(conn, now=None):
         weeks = sorted(by_week)[-60:]
         out["weekly"][chain] = [{"week": w, "total": sum(by_week[w].values()), "by_function": dict(by_week[w])}
                                 for w in weeks]
-    # підписанти
+    # signers
     sub_by = {(r["chain"], r["tx_id"]): r["sub_ts"] for r in rows}
     for chain in CH:
         out["signers"][chain] = {}
@@ -147,13 +147,13 @@ def compute(conn, now=None):
                             "median_confirm_latency": percentile(lat, 50)})
             lst.sort(key=lambda x: -(x["submits"] + x["confirms"]))
             out["signers"][chain][wname] = lst
-    # баланси відкритих
+    # balances of open ones
     for chain in CH:
         pend = [r for r in rows if r["chain"] == chain and r["status"] == "pending" and r["function"] in BALANCE_FUNCS]
         out["pending_usdt"][chain] = {
             "n": len(pend), "total_usdt": sum(r["balance_now"] or 0 for r in pend),
             "addblacklist_usdt": sum(r["balance_now"] or 0 for r in pend if r["function"] == "addBlackList")}
-    # покриття
+    # coverage
     for chain in CH:
         cr = [r for r in rows if r["chain"] == chain and r["destination"]]
         subs = [r["sub_ts"] for r in cr if r["sub_ts"]]
@@ -169,7 +169,7 @@ def compute(conn, now=None):
 
 
 def compute_others(conn, now):
-    """Лише виконані заморожування (USDC ETH, Solana USDC/USDT); затримка N/A."""
+    """Executed freezes only (USDC ETH, Solana USDC/USDT); delay N/A."""
     from .db import meta_get
     res = {}
     for src, label in SOURCE_LABELS.items():

@@ -70,7 +70,7 @@ EV_9391 = [
     {"signer": "TRLi4KskHxfACnxKzLrf2wNHauWUQpwziN", "kind": "confirm", "ts": "2026-05-27T14:12:06Z",
      "tx_hash": "9830c04b5c02cb5279b3c4f855a528b4c619f8ced34dbdbb8678b97645595d60"},
     {"signer": "TKHuVq1oKVruCGLvqVexFs6dawKv6fQgFs", "kind": "confirm", "ts": "2026-05-27T15:00:00Z",
-     "tx_hash": "ff" * 32},  # пізніше дублююче підтвердження - no-op
+     "tx_hash": "ff" * 32},  # later duplicate confirmation - no-op
 ]
 
 

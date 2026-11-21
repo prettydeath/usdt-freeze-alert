@@ -33,7 +33,7 @@ def uleb(b, i):
 
 
 def decode_payload(hexstr):
-    """BCS MultisigTransactionPayload::EntryFunction -> {module, function, args:[bytes]} (або None)."""
+    """BCS MultisigTransactionPayload::EntryFunction -> {module, function, args:[bytes]} (or None)."""
     b = bytes.fromhex(hexstr.removeprefix("0x"))
     v, i = uleb(b, 0)
     if v != 0:
