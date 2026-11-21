@@ -1,0 +1,15 @@
+.venv/
+venv/
+__pycache__/
+*.pyc
+.env
+.pytest_cache/
+*.egg-info/
+data/*.sqlite-journal
+data/*.sqlite-wal
+data/*.sqlite-shm
+
+# generated data lives on the orphan `data` branch, not on main
+/data/
+/site/
+.hypothesis/

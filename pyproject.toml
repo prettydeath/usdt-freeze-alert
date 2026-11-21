@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "usdt-freeze-alert"
+version = "0.1.0"
+description = "See USDT freezes before they happen: Tether multisig freeze proposals across chains"
+license = {text = "MIT"}
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["requests>=2.28"]
+
+[project.optional-dependencies]
+test = ["pytest"]
+
+[project.scripts]
+freezewatch = "freezewatch.cli:main"
+usdt-freeze-alert = "freezewatch.cli:main"
+
+[tool.setuptools]
+packages = ["freezewatch"]
+
+[tool.setuptools.package-data]
+freezewatch = ["template.html"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
