@@ -5,7 +5,7 @@ import sys
 import time
 from datetime import datetime, timezone
 
-from . import alerts, analytics, crosschain, eth, evmmsw, others, safe, tron
+from . import alerts, analytics, crosschain, eth, evmmsw, inflows, others, safe, tron
 from .constants import BALANCE_FUNCS
 from .db import connect, meta_get, meta_set, update_proposal
 from .derive import derive_all, rebuild_blacklist
@@ -112,18 +112,19 @@ def cmd_update(args, conn=None):
     before = alerts.snapshot(conn)
     before_pairs = crosschain.pairs(conn)
     max_fr = conn.execute("SELECT COALESCE(MAX(rowid),0) FROM freezes").fetchone()[0]
+    max_inflow = conn.execute("SELECT COALESCE(MAX(rowid),0) FROM inflows_after_freeze").fetchone()[0]
     results = [do_sync(conn, c, None, args.budget) for c in chains_of(getattr(args, "chain", "all"))]
     ok = any(results)  # one failing source must not fail the whole run (rate limits, missing optional keys)
     refresh_balances(conn)
     rebuild_blacklist(conn)
     conn.commit()
     budget = int(env("ANALYTICS_BUDGET_SEC", "120"))
-    for step in (analytics.enrich_destroy_amounts, analytics.refresh_balances):
+    for step in (analytics.enrich_destroy_amounts, analytics.refresh_balances, inflows.refresh):
         try:
             step(conn, budget)
         except Exception as e:  # noqa: BLE001
             log.warning("analytics step %s failed: %s", step.__name__, str(e)[:100])
-    n = alerts.run_alerts(conn, before, max_fr, before_pairs, AUTH_CHANGES)
+    n = alerts.run_alerts(conn, before, max_fr, before_pairs, AUTH_CHANGES, max_inflow)
     if n:
         log.info("alerts sent: %s", n)
     return 0 if ok else 1

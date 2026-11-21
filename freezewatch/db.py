@@ -107,6 +107,28 @@ CREATE TABLE IF NOT EXISTS balances (
     PRIMARY KEY (chain, address)
 );
 
+CREATE TABLE IF NOT EXISTS inflows_after_freeze (
+    chain TEXT NOT NULL,
+    token TEXT,
+    frozen_address TEXT NOT NULL,
+    sender TEXT NOT NULL,
+    amount REAL NOT NULL,
+    ts TEXT NOT NULL,
+    tx_hash TEXT NOT NULL,
+    log_index INTEGER NOT NULL DEFAULT 0,
+    first_seen_at TEXT NOT NULL,
+    PRIMARY KEY (chain, tx_hash, log_index, frozen_address)
+);
+CREATE INDEX IF NOT EXISTS ix_inflow_ts ON inflows_after_freeze(ts);
+
+CREATE TABLE IF NOT EXISTS inflow_cursor (
+    chain TEXT NOT NULL,
+    address TEXT NOT NULL,
+    cursor TEXT,                   -- last scanned block (EVM) / timestamp ms (TRON)
+    checked_at TEXT,
+    PRIMARY KEY (chain, address)
+);
+
 CREATE TABLE IF NOT EXISTS alerts (
     chain TEXT NOT NULL,
     tx_id INTEGER NOT NULL,

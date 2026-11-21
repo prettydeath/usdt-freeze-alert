@@ -203,6 +203,7 @@ def compute(conn, now=None):
         c = cell(issues[i][2], issues[i][0])
         c[14] += 1
         c[15] += issues[i][1]
+    inflow = inflow_stats(conn, now)
     top = sorted(([chain, addr, usd, ts] for ts, chain, addr, kind, usd in freezes if kind == "still" and usd),
                  key=lambda x: -x[2])[:300]
     still_total = sum(1 for f in freezes if f[3] == "still")
@@ -213,7 +214,7 @@ def compute(conn, now=None):
             "coverage": {"checked": len([t for t in targets if t in bal]), "total": len(targets), "rows": checked},
             "reissue": {"pairs": len(pairs), "reissued_usd": sum(issues[i][1] for i, _ in pairs),
                         "window_days": REISSUE_WINDOW // 86400, "tolerance": REISSUE_TOL},
-            "still_open": still_total, "generated_at": iso(now)}
+            "still_open": still_total, "inflow": inflow, "generated_at": iso(now)}
 
 
 # ---------------- balances ----------------
@@ -410,4 +411,49 @@ def summarize(an, chains=None, since=None, token=None):
                 continue
             for k, x in zip(IDX, v):
                 tot[k] += x
+    return tot
+
+
+PERIODS = {"30d": 30, "90d": 90, "12m": 365, "all": None}
+
+
+def inflow_stats(conn, now):
+    """Transfers sent to already-frozen addresses: exact distinct counts and top lists for every period."""
+    rows = [(r["chain"], r["frozen_address"], r["sender"], r["amount"], parse_iso(r["ts"]))
+            for r in conn.execute("SELECT chain, frozen_address, sender, amount, ts FROM inflows_after_freeze")]
+    out = {"periods": {}, "senders": {}, "receivers": {}}
+    try:
+        from . import inflows
+        out["coverage"] = list(inflows.coverage(conn))
+    except Exception:  # noqa: BLE001
+        out["coverage"] = None
+    for p, days in PERIODS.items():
+        cutoff = now - days * 86400 if days else 0
+        per, snd, rcv = {}, {}, {}
+        for chain, addr, sender, amt, ts in rows:
+            if ts < cutoff:
+                continue
+            c = per.setdefault(chain, [set(), set(), 0, 0.0])
+            c[0].add(addr)
+            c[1].add(sender)
+            c[2] += 1
+            c[3] += amt
+            for d, key in ((snd, (chain, sender)), (rcv, (chain, addr))):
+                e = d.setdefault(key, [0, 0.0, 0])
+                e[0] += 1
+                e[1] += amt
+                e[2] = max(e[2], ts)
+        out["periods"][p] = {ch: [len(v[0]), len(v[1]), v[2], round(v[3], 2)] for ch, v in per.items()}
+        for name, d in (("senders", snd), ("receivers", rcv)):
+            top = sorted(d.items(), key=lambda kv: -kv[1][1])[:150]
+            out[name][p] = [[k[0], k[1], v[0], round(v[1], 2), v[2]] for k, v in top]
+    return out
+
+
+def inflow_summary(an, period, chains=None):
+    """[addresses, senders, transfers, usd] summed over chains (mirrors the dashboard)."""
+    tot = [0, 0, 0, 0.0]
+    for ch, v in an["inflow"]["periods"][period].items():
+        if chains is None or ch in chains:
+            tot = [a + b for a, b in zip(tot, v)]
     return tot

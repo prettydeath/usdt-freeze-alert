@@ -22,7 +22,7 @@ FRESH_SEC = 3 * 3600          # event time must be this recent
 NEAR_FRESH_SEC = 24 * 3600    # "one signature left" may come later than the proposal
 MIN_XCHAIN_USD = 1000
 TRACKED = FREEZE_FUNCS + UNFREEZE_FUNCS + DESTROY_FUNCS
-PRIO = {"new": 0, "near": 1, "frozen": 2, "destroy": 3, "xchain": 4, "unfrozen": 5, "authority": 6}
+PRIO = {"new": 0, "near": 1, "frozen": 2, "destroy": 3, "inflow": 4, "xchain": 5, "unfrozen": 6, "authority": 7}
 NL = chr(10)
 
 
@@ -212,6 +212,18 @@ def fmt_authority(ch):
             f"was {e(ch['old'])}" + NL + f"now {e(ch['new'])}")
 
 
+def fmt_inflow(r):
+    ch = r["chain"]
+    meta = meta_of(ch)
+    lines = [f"💸 <b>SENT TO A FROZEN ADDRESS</b> · {e(short(ch))}",
+             f"<b>{num(r['amount'])} {r['token'] or token_of(ch)}</b>",
+             f"from <code>{e(r['sender'])}</code> → to <code>{e(r['frozen_address'])}</code>",
+             "🔒 funds are now locked", f"<blockquote>tx {e(r['tx_hash'])}</blockquote>",
+             f"{tag(short(ch))} #lockedfunds"]
+    lk = link(meta.get("tx"), r["tx_hash"], text="explorer")
+    return NL.join(lines + ([lk] if lk else []))
+
+
 def fmt_summary(n):
     return f'📊 <b>+{n} more events</b> → <a href="{DASHBOARD}">dashboard</a>'
 
@@ -224,7 +236,7 @@ def snapshot(conn):
 
 
 def collect_events(conn, before, max_freeze_rowid, before_pairs, auth_changes=(), now=None, min_balance=None,
-                   balances=None):
+                   balances=None, max_inflow_rowid=None, min_inflow=None):
     """Candidate events after an update. Returns a list of dicts: kind, chain, id, key_kind, text."""
     now = now or now_ts()
     if min_balance is None:
@@ -264,6 +276,13 @@ def collect_events(conn, before, max_freeze_rowid, before_pairs, auth_changes=()
         if now - (parse_iso(f["ts"]) or 0) <= FRESH_SEC:
             ev.append({"kind": "frozen", "chain": f["source"], "id": f["rid"], "key_kind": "freeze",
                        "text": fmt_freeze_row(f)})
+    if max_inflow_rowid is not None:
+        if min_inflow is None:
+            min_inflow = float(env("ALERT_MIN_INFLOW", "1000") or 1000)
+        for r in conn.execute("SELECT rowid AS rid, * FROM inflows_after_freeze WHERE rowid>? AND amount>=? ORDER BY rowid",
+                              (max_inflow_rowid, min_inflow)).fetchall():
+            if now - (parse_iso(r["ts"]) or 0) <= FRESH_SEC:
+                ev.append({"kind": "inflow", "chain": r["chain"], "id": r["rid"], "key_kind": "inflow", "text": fmt_inflow(r)})
     ev += crosschain_events(conn, before_pairs, now, balances)
     for ch in auth_changes:
         ev.append({"kind": "authority", "chain": "authority", "id": int(now) // 3600, "key_kind": "authority:" + ch["source"],
@@ -324,14 +343,15 @@ def dispatch(conn, events, send, limit=MAX_PER_RUN):
     return sent
 
 
-def run_alerts(conn, before, max_freeze_rowid, before_pairs, auth_changes=()):
+def run_alerts(conn, before, max_freeze_rowid, before_pairs, auth_changes=(), max_inflow_rowid=None):
     """Entry point used by `update`. No-op unless Telegram is configured."""
     changes = list(auth_changes)
     if hasattr(auth_changes, "clear"):
         auth_changes.clear()
     if not configured():
         return 0
-    return dispatch(conn, collect_events(conn, before, max_freeze_rowid, before_pairs, changes), send_message)
+    return dispatch(conn, collect_events(conn, before, max_freeze_rowid, before_pairs, changes,
+                                         max_inflow_rowid=max_inflow_rowid), send_message)
 
 
 # ---------- fixtures for `alert-test` ----------
@@ -348,5 +368,7 @@ def sample_messages():
             "balance_now": 12000.0}
     return [fmt_new(base, 60), fmt_new(safe, 5413), fmt_near(eth), fmt_frozen(base), fmt_frozen({**base, "delay_seconds": 0}),
             fmt_destroy(eth), fmt_unfrozen({**base, "function": "removeBlackList"}),
+            fmt_inflow({"chain": "tron", "token": "USDT", "amount": 48250.0, "sender": "TXyz5S4fRrYJm3LPrAfF2wGZvz8xA1aBcD",
+                        "frozen_address": "TCKiW9WztxAWa6shxdoWn4L4wiKrHeokmd", "tx_hash": "ab" * 32}),
             fmt_xchain("0xe485e7a70b1131216cb47ca4555c4bbb2c742478", "pol", {"pol", "arb1"}, {"eth": 25000.0}),
             fmt_summary(7)]
