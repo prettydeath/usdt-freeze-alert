@@ -87,6 +87,7 @@ only (no interactive bot): `TG_BOT_TOKEN` + `TG_CHAT_ID` secrets, nothing is sen
 | 🚨 | **Freeze incoming**: new addBlackList / addToBlockedList proposal with balance, signature bar and usual time-to-execution |
 | ⚠️ | **Last signature pending** (needs `required` > 2 or progress beyond the initial signature) |
 | 🧊 | **Frozen**: executed, with delay or "no advance notice" |
+| 💸 | **Sent to a frozen address**: a transfer (>= `ALERT_MIN_INFLOW`, default $1,000) to an already-blacklisted address; the funds are locked at once |
 | 🔥 | **Funds burned**: destroyBlackFunds / destroyBlockedFunds executed |
 | 🔗 | **Cross-chain signal**: an address frozen on one chain still holds >= $1,000 on another |
 | 🟢 | **Unfrozen** |
@@ -105,7 +106,7 @@ Preview every template without sending: `python -m freezewatch alert-test` (`--s
 
 ## Data and attribution
 
-The dashboard has an **Analytics** tab (frozen / burned / unfrozen / reissued $, still-frozen balances); its raw aggregates are published as `site/analytics.json` on the `data` branch. Burned amounts come from destroy events, still-frozen from current balances (filled gradually, `ANALYTICS_BUDGET_SEC` per run).
+The dashboard has an **Analytics** tab (including **funds sent to already-frozen addresses**: Ethereum, USDC, Celo, Avalanche and TRON are scanned; Solana, NEAR, Aptos, TON, Kaia, Kava and the USDT0 chains are not covered yet) (frozen / burned / unfrozen / reissued $, still-frozen balances); its raw aggregates are published as `site/analytics.json` on the `data` branch. Burned amounts come from destroy events, still-frozen from current balances (filled gradually, `ANALYTICS_BUDGET_SEC` per run).
 
 Everything is read from public chain data and APIs. Delays were cross-checked against
 [BitOK's tether-blacklist-research](https://github.com/BitOKorg/tether-blacklist-research) (bitok.org, CC BY 4.0):

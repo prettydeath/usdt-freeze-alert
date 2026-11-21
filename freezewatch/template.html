@@ -102,6 +102,7 @@ nav.tabs{display:flex;gap:4px;padding:0 16px;max-width:1280px;margin:0 auto;over
 .farr{align-self:center;color:var(--mut);font-size:18px}
 .fsplit{display:flex;flex-direction:column;gap:6px}
 th.sortable{cursor:pointer;user-select:none}
+#akpis{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
 .sharebar{display:flex;height:22px;border-radius:5px;overflow:hidden;border:1px solid var(--hair);margin:8px 0}
 .sharebar span{display:block;min-width:2px}
 footer{margin:30px 0 18px;color:var(--mut);font-size:12px;border-top:1px solid var(--hair);padding-top:10px}
@@ -160,6 +161,7 @@ footer{margin:30px 0 18px;color:var(--mut);font-size:12px;border-top:1px solid v
   </div>
   <div class="kpis" id="akpis"></div>
   <div class="mut" id="acov" style="margin-top:6px"></div>
+  <div class="mut" id="acov2"></div>
 
   <h2>Lifecycle</h2>
   <div class="funnel" id="funnel"></div>
@@ -175,7 +177,12 @@ footer{margin:30px 0 18px;color:var(--mut);font-size:12px;border-top:1px solid v
     <div class="box"><h3>Top 20 frozen addresses by balance</h3><div class="tw" style="border:0"><table id="atop"></table></div></div>
     <div class="box"><h3>Freezes by chain</h3><div class="sharebar" id="ashare"></div><div class="legend" id="ashareLegend"></div></div>
   </div>
-  <p class="mut" style="margin-top:14px">Burned = amount in the DestroyedBlackFunds event. Still frozen = current balance of blacklisted addresses (frozen funds cannot move), refreshed incrementally. Frozen $ = burned amount if later destroyed, else current balance, else last balance seen while frozen. Reissued = issue/mint matched to an earlier destroy (+-1%, 30 days). Raw aggregates: <a href="analytics.json">analytics.json</a>.</p>
+  <h2>Funds sent to already-frozen addresses</h2>
+  <div class="cols">
+    <div class="box"><h3>Top senders (often exchanges and bridges)</h3><div class="tw" style="border:0"><table id="asend"></table></div></div>
+    <div class="box"><h3>Frozen addresses still receiving funds</h3><div class="tw" style="border:0"><table id="arecv"></table></div></div>
+  </div>
+  <p class="mut" style="margin-top:14px">Sent after freeze = token transfers whose recipient was blacklisted at the time; those funds are locked at once and are typically burned at the next destroy. Burned = amount in the DestroyedBlackFunds event. Still frozen = current balance of blacklisted addresses (frozen funds cannot move), refreshed incrementally. Frozen $ = burned amount if later destroyed, else current balance, else last balance seen while frozen. Reissued = issue/mint matched to an earlier destroy (+-1%, 30 days). Raw aggregates: <a href="analytics.json">analytics.json</a>.</p>
 </div>
 
 <div id="tab-signers" hidden>
@@ -477,16 +484,21 @@ function renderAnalytics(){
   document.querySelectorAll('#pseg button').forEach(b => b.classList.toggle('on', b.dataset.v === AX.period));
   document.querySelectorAll('#tseg button').forEach(b => b.classList.toggle('on', b.dataset.v === AX.token));
   const s = anSum();
+  const inf = [0, 0, 0, 0];
+  for(const [c, v] of Object.entries((AN.inflow && AN.inflow.periods[AX.period]) || {})) if(chOk(c)) v.forEach((x, i) => inf[i] += x);
   const pct = s.burned_usd ? Math.round(s.reiss_usd / s.burned_usd * 100) : 0;
   const unfS = s.unfrozen_usd > 0 ? usdS(s.unfrozen_usd) + ' <span class="mut" style="font-size:13px">· ' + s.unfrozen_n + ' addr.</span>' : s.unfrozen_n + ' <span class="mut" style="font-size:13px">addresses</span>';
   $('akpis').innerHTML = [
     ['🧊 Frozen', usdS(s.frozen_usd), s.frozen_n.toLocaleString('en-US') + ' addresses' + (s.frozen_unk ? ' · +' + s.frozen_unk.toLocaleString('en-US') + ' unknown' : ''), APX('Burned amount if later destroyed, else current balance of the frozen address (frozen funds cannot move). Unknown = balance not read yet.')],
     ['🔥 Burned', usdS(s.burned_usd), s.burned_n.toLocaleString('en-US') + ' destroys' + (s.burned_unk ? ' · ' + s.burned_unk + ' amount unknown' : ''), ''],
     ['♻️ Reissued', usdS(s.reiss_usd), pct + '% of burned · ' + s.reiss_n + ' matches', APX('issue/mint proposals matched 1:1 to an earlier destroy on the same chain: same amount (+-1%), within 30 days.')],
+    ['💸 Sent after freeze', usdS(inf[3]), inf[0].toLocaleString('en-US') + ' frozen addresses · ' + inf[1].toLocaleString('en-US') + ' senders · ' + inf[2].toLocaleString('en-US') + ' transfers', ''],
     ['🟢 Unfrozen', unfS, s.unfrozen_unk && s.unfrozen_usd > 0 ? s.unfrozen_unk + ' without known balance' : 'balance when unfrozen is rarely known', APX('Balance last observed while the address was frozen; the exact amount at unfreeze is not recorded on chain.')],
   ].map(([l,v,sub,tag]) => `<div class="kpi"><div class="l">${l} ${tag}</div><div class="v">${v}</div><div class="s">${sub}</div></div>`).join('');
 
   const cov = AN.coverage;
+  const ic = AN.inflow && AN.inflow.coverage;
+  $('acov2').textContent = ic ? 'Transfers to frozen addresses: ' + ic[0].toLocaleString('en-US') + ' of ' + ic[1].toLocaleString('en-US') + ' addresses scanned (Ethereum, USDC, Celo, Avalanche, TRON; other chains not covered yet).' : '';
   $('acov').textContent = cov.checked < cov.total ? 'Balances checked for ' + cov.checked.toLocaleString('en-US') + ' of ' + cov.total.toLocaleString('en-US') + ' frozen addresses - "still frozen" and "frozen $" are partial until the check completes.' : 'Balances checked for all ' + cov.total.toLocaleString('en-US') + ' frozen addresses.';
 
   // funnel
@@ -497,7 +509,7 @@ function renderAnalytics(){
     `<div class="fsplit">${step(s.burned_n.toLocaleString('en-US'), 'Burned', usdS(s.burned_usd), '')}${step(s.unfrozen_n.toLocaleString('en-US'), 'Unfrozen', s.unfrozen_usd > 0 ? usdS(s.unfrozen_usd) : '', '')}</div>`;
   $('never').textContent = s.never_n.toLocaleString('en-US') + ' proposals never executed (stale / revoked / failed) · ' + usd(s.never_usd) + ' still on those addresses';
 
-  renderAnChart(); renderAnTable(); renderAnTop(); renderAnShare();
+  renderAnChart(); renderAnTable(); renderAnTop(); renderAnShare(); renderAnInflow();
 }
 
 function renderAnChart(){
@@ -554,6 +566,18 @@ function renderAnTop(){
   let h = '<tr><th>Chain</th><th>Address</th><th>Frozen now</th><th>Since</th></tr>';
   for(const [c, a, v, ts] of rows) h += `<tr><td class="ch">${esc(cshort(c))}</td><td class="m addr">${addrL(c, a)}</td><td>${usd(v)}</td><td class="m">${new Date(ts*1000).toISOString().slice(0,10)}</td></tr>`;
   $('atop').innerHTML = rows.length ? h : '<tr><td class="empty">No balances known yet for this selection.</td></tr>';
+}
+
+function renderAnInflow(){
+  const I = AN.inflow; if(!I){ return; }
+  const rows = (I.senders[AX.period] || []).filter(r => chOk(r[0])).slice(0, 15);
+  let h = '<tr><th>Chain</th><th>Sender</th><th>Transfers</th><th>Sent</th></tr>';
+  for(const [c, a, n, v] of rows) h += `<tr><td class="ch">${esc(cshort(c))}</td><td class="m addr">${addrL(c, a)}</td><td>${n.toLocaleString('en-US')}</td><td>${usd(v)}</td></tr>`;
+  $('asend').innerHTML = rows.length ? h : '<tr><td class="empty">No transfers found yet for this selection.</td></tr>';
+  const rr = (I.receivers[AX.period] || []).filter(r => chOk(r[0])).slice(0, 15);
+  h = '<tr><th>Chain</th><th>Frozen address</th><th>Transfers</th><th>Received</th><th>Last</th></tr>';
+  for(const [c, a, n, v, ts] of rr) h += `<tr><td class="ch">${esc(cshort(c))}</td><td class="m addr">${addrL(c, a)}</td><td>${n.toLocaleString('en-US')}</td><td>${usd(v)}</td><td class="m">${new Date(ts*1000).toISOString().slice(0,10)}</td></tr>`;
+  $('arecv').innerHTML = rr.length ? h : '<tr><td class="empty">No transfers found yet for this selection.</td></tr>';
 }
 
 function renderAnShare(){
