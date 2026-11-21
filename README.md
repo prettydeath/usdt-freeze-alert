@@ -1,10 +1,10 @@
 <p align="center"><img src="assets/banner.svg" alt="USDT Freeze Alert - See USDT freezes before they happen" width="100%"></p>
 
 <p align="center">
-  <a href="https://github.com/OWNER/usdt-freeze-alert/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/OWNER/usdt-freeze-alert/actions/workflows/ci.yml/badge.svg"></a>
-  <a href="https://github.com/OWNER/usdt-freeze-alert/actions/workflows/watch.yml"><img alt="watch" src="https://github.com/OWNER/usdt-freeze-alert/actions/workflows/watch.yml/badge.svg"></a>
-  <img alt="last update" src="https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2FOWNER%2Fusdt-freeze-alert%2Fdata%2Fsite%2Fbadges%2Fupdated.json">
-  <img alt="chains" src="https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2FOWNER%2Fusdt-freeze-alert%2Fdata%2Fsite%2Fbadges%2Fchains.json">
+  <a href="https://github.com/prettydeath/usdt-freeze-alert/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/prettydeath/usdt-freeze-alert/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="https://github.com/prettydeath/usdt-freeze-alert/actions/workflows/watch.yml"><img alt="watch" src="https://github.com/prettydeath/usdt-freeze-alert/actions/workflows/watch.yml/badge.svg"></a>
+  <img alt="last update" src="https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fprettydeath%2Fusdt-freeze-alert%2Fdata%2Fsite%2Fbadges%2Fupdated.json">
+  <img alt="chains" src="https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fprettydeath%2Fusdt-freeze-alert%2Fdata%2Fsite%2Fbadges%2Fchains.json">
   <img alt="python" src="https://img.shields.io/badge/python-3.11%2B-blue">
   <img alt="license" src="https://img.shields.io/badge/license-MIT-green">
 </p>
@@ -12,10 +12,12 @@
 Tether freezes USDT through multisig wallets. The proposal is public before it is executed - this project watches
 those queues across chains, stores everything in SQLite, measures how long proposals wait, and renders a static dashboard.
 
+**Live dashboard: https://prettydeath.github.io/usdt-freeze-alert/**
+
 <p align="center">
-  <img alt="pending now" src="https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2FOWNER%2Fusdt-freeze-alert%2Fdata%2Fsite%2Fbadges%2Fpending.json&style=for-the-badge">
-  <img alt="median delay" src="https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2FOWNER%2Fusdt-freeze-alert%2Fdata%2Fsite%2Fbadges%2Fmedian.json&style=for-the-badge">
-  <img alt="freezes 7d" src="https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2FOWNER%2Fusdt-freeze-alert%2Fdata%2Fsite%2Fbadges%2Ffreezes7d.json&style=for-the-badge">
+  <img alt="pending now" src="https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fprettydeath%2Fusdt-freeze-alert%2Fdata%2Fsite%2Fbadges%2Fpending.json&style=for-the-badge">
+  <img alt="median delay" src="https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fprettydeath%2Fusdt-freeze-alert%2Fdata%2Fsite%2Fbadges%2Fmedian.json&style=for-the-badge">
+  <img alt="freezes 7d" src="https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fprettydeath%2Fusdt-freeze-alert%2Fdata%2Fsite%2Fbadges%2Ffreezes7d.json&style=for-the-badge">
 </p>
 
 <p align="center">
@@ -41,11 +43,9 @@ Ethereum executions land in the same block and cannot be seen coming.
 
 | Mechanism | Chains |
 |---|---|
-| **On-chain pending** (multisig contract) | Ethereum, TRON, Avalanche, Celo*, Kaia*, Kava*, NEAR, Aptos, TON* |
+| **On-chain pending** (multisig contract) | Ethereum, TRON, Avalanche, Celo, Kaia, Kava, NEAR, Aptos, TON |
 | **Safe API pending** (off-chain, not guaranteed) | USDT0 on Arbitrum, Polygon, Plasma, Mantle, Optimism, Monad, Unichain, Stable, Morph, Ink, HyperEVM, Berachain |
 | **Executed only** (no queue exists) | USDC on Ethereum, USDC and USDT on Solana |
-
-\* delays are `n/a`: no reliable timestamps from public indexers.
 
 ## Quick start
 
@@ -66,18 +66,38 @@ published to Pages from that branch only when something changed.
 
 | Secret | Required | Purpose |
 |---|---|---|
-| `ETHERSCAN_API_KEY` | yes | Ethereum and USDC logs (Etherscan V2) |
-| `TRONGRID_API_KEY` | no | faster TRON reads (public limit is 3 req/s) |
-| `SAFE_API_KEY` | no | Safe Transaction Service |
-| `TONAPI_KEY` | no | tonapi.io |
+| `ETHERSCAN_API_KEY` | for Ethereum | Ethereum and USDC logs (Etherscan V2). Without it Ethereum is skipped with a warning. Comma-separated list allowed |
+| `TRONGRID_API_KEY` | no | faster TRON reads (public limit is 3 req/s). Comma-separated list allowed |
+| `SAFE_API_KEY` | no | Safe Transaction Service. Comma-separated list allowed |
+| `TONAPI_KEY` | no | tonapi.io. Comma-separated list allowed |
 | `ETH_RPC_URL`, `SOLANA_RPC_URL` | no | your own RPCs (the public Solana RPC is very slow) |
-| `TG_BOT_TOKEN`, `TG_CHAT_ID` | no | Telegram alerts: new proposal, quorum-1, executed, new freeze, new chain for an address |
+| `TG_BOT_TOKEN`, `TG_CHAT_ID` | no | [Telegram alerts](#telegram-alerts) |
 
 Seed the `data` branch once from a local run (see the commands in the release notes), or let the first runs build it.
 
+Several keys are used round-robin; a rate-limited or invalid key is cooled down and the next one is tried (key values are never logged).
+
+## Telegram alerts
+
+Follow the channel: **[t.me/usdt_freeze_alert](https://t.me/usdt_freeze_alert)**. Alerts are sent by the GitHub Actions job
+only (no interactive bot): `TG_BOT_TOKEN` + `TG_CHAT_ID` secrets, nothing is sent without them.
+
+| | Alert |
+|---|---|
+| 🚨 | **Freeze incoming**: new addBlackList / addToBlockedList proposal with balance, signature bar and usual time-to-execution |
+| ⚠️ | **Last signature pending** (needs `required` > 2 or progress beyond the initial signature) |
+| 🧊 | **Frozen**: executed, with delay or "no advance notice" |
+| 🔥 | **Funds burned**: destroyBlackFunds / destroyBlockedFunds executed |
+| 🔗 | **Cross-chain signal**: an address frozen on one chain still holds >= $1,000 on another |
+| 🟢 | **Unfrozen** |
+
+Each event is sent once (dedupe table), at most 20 messages per run then one `+N more events` summary, history is never
+replayed (the first run on an empty database sends nothing). Optional `ALERT_MIN_BALANCE` filters small proposals.
+Preview every template without sending: `python -m freezewatch alert-test` (`--send` posts one test message).
+
 ## Limits worth knowing
 
-- TRON execution time is inferred from confirmations (the multisig emits no queryable events); verified against on-chain state in batches.
+- TRON execution time is inferred from confirmations (the multisig emits no queryable events); every proposal is cross-checked against on-chain `executed`.
 - Safe queues live off-chain: a signer can skip them, so "no proposal" does not mean "no freeze".
 - Solana freezes a token account, not the wallet; Solana USDT history fills gradually on the public RPC.
 - Not financial advice.

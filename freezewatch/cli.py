@@ -181,6 +181,12 @@ def main(argv=None):
     args = ap.parse_args(argv)
     logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO,
                         format="%(asctime)s %(levelname)s %(name)s: %(message)s", datefmt="%H:%M:%S")
+    from .util import key_report
+    summary, warns = key_report()
+    if summary:
+        log.info("API keys: %s", summary)
+    for w in warns:
+        log.warning(w)
     fn = {"backfill": cmd_backfill, "update": cmd_update, "stats": cmd_stats, "render": cmd_render, "run": cmd_run,
           "alert-test": cmd_alert_test}[args.cmd]
     if args.cmd == "run" and args.loop:

@@ -87,3 +87,21 @@ def test_etherscan_missing_key_and_exhaustion(monkeypatch):
     monkeypatch.setattr(eth, "http_json", lambda *a, **k: {"status": "0", "message": "NOTOK", "result": "Max rate limit reached"})
     with pytest.raises(HttpError):
         eth._es({})
+
+
+def test_parsing_separators_and_whitespace():
+    p = KeyPool(" a ; b," + chr(10) + " c" + chr(13) + chr(10) + ",, ;d ")
+    assert p.keys == ["a", "b", "c", "d"]
+
+
+def test_key_report_counts_and_warns_without_values(monkeypatch):
+    from freezewatch.util import key_report
+    good_e = "A" * 34
+    monkeypatch.setenv("ETHERSCAN_API_KEY", good_e + ",short")
+    monkeypatch.setenv("TRONGRID_API_KEY", "12345678-1234-1234-1234-123456789abc;12345678-1234-1234-1234-123456789abd")
+    monkeypatch.delenv("TONAPI_KEY", raising=False)
+    monkeypatch.delenv("SAFE_API_KEY", raising=False)
+    summary, warns = key_report()
+    assert summary == "etherscan: 2 keys, trongrid: 2 keys"
+    assert warns == ["etherscan key#2 has unusual shape (length 5, expected 36)".replace("36", "34")]
+    assert "short" not in summary + "".join(warns) and good_e not in summary

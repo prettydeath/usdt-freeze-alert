@@ -2,6 +2,7 @@
 import hashlib
 import logging
 import os
+import re
 import threading
 import time
 from datetime import datetime, timezone
@@ -137,7 +138,7 @@ class KeyPool:
     """Round-robin over comma-separated API keys with per-key cooldown. Key values are never logged: use label()."""
 
     def __init__(self, raw, cooldown=60.0, clock=time.monotonic):
-        self.keys = [k.strip() for k in (raw or "").split(",") if k.strip()]
+        self.keys = [k.strip() for k in re.split(r"[,;\r\n]+", raw or "") if k.strip()]
         self.cooldown = cooldown
         self.clock = clock
         self._i = 0
@@ -197,3 +198,22 @@ RATE_LIMIT_MARKERS = ("rate limit", "max calls", "invalid api key", "api key", "
 def looks_rate_limited(obj) -> bool:
     s = str(obj).lower()
     return any(m in s for m in RATE_LIMIT_MARKERS)
+
+
+# expected key shapes: (provider label, env var, length, pattern)
+KEY_SHAPES = [("etherscan", "ETHERSCAN_API_KEY", 34, r"[A-Za-z0-9]+"), ("trongrid", "TRONGRID_API_KEY", 36, r"[0-9a-fA-F-]+")]
+
+
+def key_report():
+    """Startup summary: counts per provider and warnings about unusual key shapes (index and length only, never values)."""
+    parts, warns = [], []
+    for name, var, ln, pat in KEY_SHAPES + [("tonapi", "TONAPI_KEY", 0, ""), ("safe", "SAFE_API_KEY", 0, "")]:
+        pool = key_pool(var)
+        if not len(pool):
+            continue
+        parts.append(f"{name}: {len(pool)} key{'s' if len(pool) != 1 else ''}")
+        if ln:
+            for i, k in enumerate(pool.keys, 1):
+                if len(k) != ln or not re.fullmatch(pat, k):
+                    warns.append(f"{name} key#{i} has unusual shape (length {len(k)}, expected {ln})")
+    return ", ".join(parts), warns
