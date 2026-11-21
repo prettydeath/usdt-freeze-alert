@@ -82,6 +82,7 @@ footer{margin:30px 0 18px;color:var(--mut);font-size:12px;border-top:1px solid v
 <header class="bar"><div class="wrap">
   <h1>USDT Freeze Alert<small>See USDT freezes before they happen</small></h1>
   <span class="pill live" id="live">live</span>
+  <span class="pill" id="nch"></span>
   <div class="filters" id="filters"></div>
 </div></header>
 
@@ -135,7 +136,7 @@ const NOW = Date.now() / 1000;
 const CH = D.chains;
 const ORDER = ['eth','tron','avax','celo','kaia','kava','near','aptos','ton','arb1','pol','plasma','mantle','oeth','monad','unichain','stable','morph','ink','hyper','berachain','usdc_eth','sol_usdc','sol_usdt'];
 const COLORS = ['#2a78d6','#eb6834','#2a9d8f','#8e5bd6','#c99a1b','#d6558b','#4f8a3c','#7a8594','#b0524a','#3d9bd6'];
-const NO_DELAY = ['celo','kaia','kava','ton','usdc_eth','sol_usdc','sol_usdt'];
+const NO_DELAY = ['usdc_eth','sol_usdc','sol_usdt'];
 const cname = c => (CH[c] && CH[c].label) || c;
 const cshort = c => ({eth:'ETH',tron:'TRON',avax:'AVAX',celo:'CELO',kaia:'KAIA',kava:'KAVA',near:'NEAR',aptos:'APT',ton:'TON',usdc_eth:'USDC-ETH',sol_usdc:'USDC-SOL',sol_usdt:'USDT-SOL'}[c] || c.toUpperCase());
 const SAFE = Object.keys(CH).filter(c => CH[c].mech === 'safe_api');
@@ -158,9 +159,9 @@ const age = s => { if(!s) return 'unknown'; return dur(NOW - Date.parse(s)/1000)
 const addrL = (c,a) => { if(!a) return '<span class="mut">-</span>'; const b=(CH[c]||{}).addr; return b ? `<a href="${b}${esc(a)}" target="_blank" rel="noopener">${esc(a)}</a>` : esc(a); };
 const txL = (c,h) => { if(!h) return '-'; const b=(CH[c]||{}).tx; return b && /^[0-9a-zA-Z]+$/.test(h) ? `<a href="${b}${esc(h)}" target="_blank" rel="noopener">${esc(h)}</a>` : esc(h); };
 const med = a => { if(!a.length) return null; a=[...a].sort((x,y)=>x-y); const k=(a.length-1)/2; return (a[Math.floor(k)]+a[Math.ceil(k)])/2; };
-const FREEZE = ['addBlackList','addToBlockedList','freeze_accounts','freeze'];
+const FREEZE = ['addBlackList','addToBlockedList','freeze_accounts','freeze_wallet','freeze'];
 const DESTROY = ['destroyBlackFunds','destroyBlockedFunds'];
-const REMOVE = ['removeBlackList','removeFromBlockedList','unfreeze_accounts','unfreeze'];
+const REMOVE = ['removeBlackList','removeFromBlockedList','unfreeze_accounts','unfreeze_wallet','unfreeze'];
 function fnTag(r){
   const f=r.function; const k = FREEZE.includes(f)?'t-add':DESTROY.includes(f)?'t-des':REMOVE.includes(f)?'t-rem':'';
   return `<span class="tag ${k}">${esc(f)}</span>`;
@@ -171,6 +172,7 @@ const exA = () => D.ex.filter(e => active(e[0]));
   const ageMin = Math.max(0, Math.round((NOW - Date.parse(D.generated_at)/1000)/60));
   const el = $('live'); el.textContent = 'live · data changed ' + (ageMin < 90 ? ageMin + ' min' : Math.round(ageMin/60) + ' h') + ' ago';
   if(ageMin > 180) el.classList.add('old');
+  $('nch').textContent = Object.keys(CH).length + ' chains & tokens';
   const f = $('filters');
   const all = document.createElement('span'); all.className='pill fp on'; all.textContent='All'; f.appendChild(all);
   all.onclick = () => { sel.clear(); window.sync(); render(); };
@@ -329,9 +331,9 @@ function renderBadges(){
   const cov = D.coverage || {};
   $('badges').innerHTML = Object.keys(CH).sort((a,b)=>ORDER.indexOf(a)-ORDER.indexOf(b)).filter(c => active(c)).map(c => {
     const m = CH[c], cv = cov[c], o = (D.others||{})[c];
-    const note = ({celo:'delays n/a',kaia:'delays n/a',kava:'delays n/a',ton:'delays n/a'})[c] || '';
+    const note = '';
     const extra = cv ? cv.proposals + ' proposals, ' + cv.executed + ' executed' : o ? o.freezes + ' freezes' + (o.coverage.complete ? '' : ', partial history') : '';
-    return `<div class="badge ${cls[m.mech]||''}"><b>${esc(m.label)}</b><div class="bm">${lbl[m.mech]||m.mech} · ${esc((m.threshold||'').replace(' із ',' of '))}</div><div class="bm">${esc(extra)}${note ? ' · ' + note : ''}</div></div>`;
+    return `<div class="badge ${cls[m.mech]||''}"><b>${esc(m.label)}</b><div class="bm">${lbl[m.mech]||m.mech} · ${esc((m.threshold||''))}</div><div class="bm">${esc(extra)}${note ? ' · ' + note : ''}</div></div>`;
   }).join('');
 }
 
@@ -363,7 +365,7 @@ function render(){
 render();
 $('foot').innerHTML = 'Sources: ' + D.sources.map(esc).join(', ') + '. Data changed: ' + dt(D.generated_at) + '. ' +
   'Freezing actions = addBlackList / addToBlockedList; destroy*; remove*. ' +
-  'TRON execution time is inferred from confirmations; Safe queues live off-chain; USDC and Solana have no queue (delay n/a); Celo, Kaia, Kava and TON have no reliable timestamps (n/a). ' +
+  'TRON execution time is inferred from confirmations; Safe queues live off-chain; USDC and Solana have no queue (delay n/a). ' +
   'Not financial advice.';
 </script>
 </body>

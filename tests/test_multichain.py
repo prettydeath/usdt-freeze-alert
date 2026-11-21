@@ -9,7 +9,7 @@ from freezewatch.util import tron_from_hex20
 
 ARB_TOKEN = SAFE_CHAINS["arb1"]["token"]
 
-# Скорочена копія реальної Safe-транзакції (Arbitrum, nonce 185, 2026-11-09).
+# Shortened copy of a real Safe transaction (Arbitrum, nonce 185, 2026-11-09).
 SAFE_TX = {
     "safe": "0x4DFF9b5b0143E642a3F63a5bcf2d1C328e600bf8", "to": ARB_TOKEN, "nonce": 185,
     "data": "0x3c7c9b90000000000000000000000000e485e7a70b1131216cb47ca4555c4bbb2c742478",
@@ -44,7 +44,7 @@ def test_safe_pending_revoked_and_multisend():
     multi = {**SAFE_TX, "to": "0xMultiSend", "data": "0x", "dataDecoded": {"method": "multiSend", "parameters": [
         {"valueDecoded": [{"to": "0xother", "data": "0x12345678"}, {"to": ARB_TOKEN, "data": SAFE_TX["data"]}]}]}}
     r = safe.row_from_safe_tx(multi, ARB_TOKEN, 186)
-    assert len(r) == 1 and r[0]["tx_id"] == 18501  # індекс виклику всередині multiSend
+    assert len(r) == 1 and r[0]["tx_id"] == 18501  # call index inside multiSend
     assert safe.row_from_safe_tx({**SAFE_TX, "to": "0xnot_token"}, ARB_TOKEN, 186) == []
 
 
@@ -82,21 +82,21 @@ def test_near_history_pairing():
            json.dumps({"account_id": "0x4ad0aaaee18a66b12caff45df515c0047a8dac0c"})),
         tx("CONF", 1781640972, "member2", near.MULTISIG, "confirm", json.dumps({"request_id": 34})),
         tx("CREATE", 1781625826, "member1", near.MULTISIG, "add_request_and_confirm", req),
-        tx("CREATE", 1781625826, "member1", near.MULTISIG, "add_request_and_confirm", req),  # дубль receipt
+        tx("CREATE", 1781625826, "member1", near.MULTISIG, "add_request_and_confirm", req),  # duplicate receipt
         tx("FAIL", 1781625000, "member1", near.MULTISIG, "add_request_and_confirm", req, ok=False),
     ]
     cr, cf, ex = near.parse_history(txns)
     assert len(cr) == 1 and len(cf) == 1 and len(ex) == 1
     assert cr[0]["function"] == "addBlackList" and cr[0]["target"] == "0x4ad0aaaee18a66b12caff45df515c0047a8dac0c"
     m = near.match_executions(cr, ex)
-    assert m[0]["ts"] - cr[0]["ts"] == 1781640973 - 1781625826  # ~4.2 години
+    assert m[0]["ts"] - cr[0]["ts"] == 1781640973 - 1781625826  # ~4.2 hours
 
 
 def test_aptos_bcs_payload():
     addr = bytes.fromhex(aptos.PKG[2:])
     s = lambda x: bytes([len(x)]) + x.encode()
     victim = bytes.fromhex("11" * 32)
-    arg = bytes([1]) + victim  # vector<address> з 1 елемента
+    arg = bytes([1]) + victim  # vector<address> with 1 element
     payload = bytes([0]) + addr + s("usdt") + s("freeze_accounts") + bytes([0]) + bytes([1]) + bytes([len(arg)]) + arg
     d = aptos.decode_payload(payload.hex())
     assert d["function"] == "freeze_accounts" and d["module"].endswith("::usdt")
@@ -164,7 +164,7 @@ def test_crosschain_tron_matches_evm(tmp_path):
 
 
 def test_ingest_logs_generic_chain(tmp_path):
-    """Події MSW для довільної мережі (avax): Submission+Confirmation у тій самій tx => submit; Execution => виконано."""
+    """MSW events for an arbitrary network (avax): Submission+Confirmation in the same tx => submit; Execution => executed."""
     from freezewatch import eth
     from freezewatch.derive import derive_all
     t32 = lambda n: "0x" + f"{n:064x}"

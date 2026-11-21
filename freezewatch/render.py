@@ -1,4 +1,4 @@
-"""Статичний дашборд site/index.html, експорт CSV/JSON і блок статистики в README."""
+"""Static dashboard site/index.html, CSV/JSON export and the statistics block in the README."""
 import csv
 import json
 import re
@@ -7,7 +7,7 @@ from pathlib import Path
 from .constants import DATA_DIR, ROOT, SITE_DIR
 from .util import iso, now_ts, parse_iso
 
-NO_DELAY = {"celo", "kaia", "kava", "ton"}  # no reliable submit/execute timestamps
+NO_DELAY: set = set()  # chains without reliable submit/execute timestamps (none right now)
 MARK_A, MARK_B = "<!-- STATS:START -->", "<!-- STATS:END -->"
 COLS = ["chain", "tx_id", "destination", "function", "target", "amount", "raw_data", "submitted_at", "submit_tx",
         "submitter", "executed", "executed_at", "exec_tx", "executor", "confirmations", "required", "status",
@@ -46,8 +46,8 @@ def export_files(conn):
 
 
 def build_payload(conn, stats, stale_days):
-    """Дані дашборда. ex - компактні виконані дії за ~400 днів: [chain, exec_epoch, delay|-1, class(1 freeze,2 destroy,
-    3 unfreeze)] - з них у браузері рахуються KPI, гістограма, тижневі ряди (з урахуванням фільтра мереж)."""
+    """Dashboard data. ex - compact executed actions over ~400 days: [chain, exec_epoch, delay|-1, class(1 freeze,2 destroy,
+    3 unfreeze)] - the browser computes KPIs, the histogram and weekly series from them (respecting the network filter)."""
     from . import crosschain
     from .constants import SOURCE_LABELS
     from .registry import chain_meta

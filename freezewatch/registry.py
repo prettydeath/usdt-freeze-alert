@@ -1,33 +1,33 @@
-"""Реєстр мереж: механізм заморожування, мультисиги, джерела. Єдине місце конфігурації."""
+"""Network registry: freeze mechanism, multisigs, sources. The single place for configuration."""
 from .constants import ETH_USDT, TRON_USDT
 
-# механізми (бейджі дашборда)
-MECH_ONCHAIN = "onchain"        # пропозиція видна в ланцюзі (мультисиг-контракт)
-MECH_SAFE = "safe_api"          # пропозиція видна в Safe Transaction Service (поза ланцюгом, не гарантовано)
-MECH_EXECUTED = "executed_only"  # лише виконані дії
+# mechanisms (dashboard badges)
+MECH_ONCHAIN = "onchain"        # proposal is visible on-chain (multisig contract)
+MECH_SAFE = "safe_api"          # proposal is visible in Safe Transaction Service (off-chain, not guaranteed)
+MECH_EXECUTED = "executed_only"  # executed actions only
 MECH_LABELS = {MECH_ONCHAIN: "on-chain pending", MECH_SAFE: "Safe API pending", MECH_EXECUTED: "executed only"}
 
-# Gnosis MultiSigWallet-мережі (Tier A, EVM): reuse логіки ETH
+# Gnosis MultiSigWallet networks (Tier A, EVM): reuses ETH logic
 MSW_CHAINS = {
     "avax": {"label": "USDt - Avalanche", "rpc": "https://api.avax.network/ext/bc/C/rpc",
              "token": "0x9702230a8ea53601f5cd2dc00fdbc13d4df4a8c7",
              "msw": "0xd83d5c96bfb9e5f890e8be48165b13ddb0ecd2aa",
-             "logs": "https://api.routescan.io/v2/network/mainnet/evm/43114/etherscan/api",
+             "logs": {"kind": "compat", "url": "https://api.routescan.io/v2/network/mainnet/evm/43114/etherscan/api"},
              "addr": "https://snowscan.xyz/address/", "tx": "https://snowscan.xyz/tx/", "threshold": "3 of 6"},
     "celo": {"label": "USDT - Celo", "rpc": "https://forno.celo.org",
              "token": "0x48065fbbe25f71c9282ddf5e1cd6d6a887483d5e",
              "msw": "0xba2a995bd4ab9e605454ccef88169352cd5f75a6",
-             "logs": "https://celo.blockscout.com/api",
+             "logs": {"kind": "etherscan_v2", "chainid": 42220},
              "addr": "https://celoscan.io/address/", "tx": "https://celoscan.io/tx/", "threshold": "3 of 6"},
     "kaia": {"label": "USDT - Kaia", "rpc": "https://public-en.node.kaia.io",
              "token": "0xd077a400968890eacc75cdc901f0356c943e4fdb",
              "msw": "0xba2a995bd4ab9e605454ccef88169352cd5f75a6",
-             "logs": "https://api.routescan.io/v2/network/mainnet/evm/8217/etherscan/api",
+             "logs": {"kind": "rpc", "chunk": 2_000_000},
              "addr": "https://kaiascan.io/account/", "tx": "https://kaiascan.io/tx/", "threshold": "3 of 6"},
     "kava": {"label": "USDT - Kava EVM", "rpc": "https://kava-evm-rpc.publicnode.com",
              "token": "0x919c1c267bc06a7039e03fcc2ef738525769109c",
              "msw": "0x10b4af8e4efb44a953081c36a3f6ea2c0e9b4e8a",
-             "logs": "https://kavascan.com/api",
+             "logs": {"kind": "rpc", "url": "https://rpc.ankr.com/kava_evm", "chunk": 10_000, "parallel": 4},
              "addr": "https://kavascan.com/address/", "tx": "https://kavascan.com/tx/", "threshold": "3 of 6"},
 }
 
@@ -65,7 +65,7 @@ SAFE_CHAINS = {
 for _k, _u in {'arb1': 'https://arb1.arbitrum.io/rpc', 'pol': 'https://polygon-bor-rpc.publicnode.com', 'plasma': 'https://rpc.plasma.to', 'mantle': 'https://rpc.mantle.xyz', 'oeth': 'https://mainnet.optimism.io', 'monad': 'https://rpc.monad.xyz', 'unichain': 'https://mainnet.unichain.org', 'stable': 'https://rpc.stable.xyz', 'morph': 'https://rpc.morphl2.io', 'ink': 'https://rpc-gel.inkonchain.com', 'hyper': 'https://rpc.hyperliquid.xyz/evm', 'berachain': 'https://rpc.berachain.com'}.items():
     SAFE_CHAINS[_k]["rpc"] = _u
 
-# не-EVM
+# non-EVM
 NON_EVM = {
     "near": {"label": "USDt - NEAR", "addr": "https://nearblocks.io/address/", "tx": "https://nearblocks.io/txns/",
              "threshold": "2 of 3"},
@@ -77,7 +77,7 @@ NON_EVM = {
 
 
 def chain_meta():
-    """{chain_key: {label, mech, addr, tx, threshold}} для всіх мереж з таблиці proposals."""
+    """{chain_key: {label, mech, addr, tx, threshold}} for all networks in the proposals table."""
     m = {
         "eth": {"label": "USDT - Ethereum", "mech": MECH_ONCHAIN, "addr": "https://etherscan.io/address/",
                 "tx": "https://etherscan.io/tx/", "threshold": "3 of 6", "token": ETH_USDT},
@@ -96,5 +96,5 @@ def chain_meta():
     return m
 
 
-# мережі, де цільова адреса - 20-байтна EVM-сумісна (для крос-чейн збігу); TRON конвертується окремо
+# networks where the target address is a 20-byte EVM-compatible one (for cross-chain matching); TRON is converted separately
 EVM_CHAINS = ["eth", *MSW_CHAINS, *SAFE_CHAINS]

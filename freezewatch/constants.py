@@ -1,4 +1,4 @@
-"""Константи: адреси, селектори, topic-хеші (обчислені keccak на етапі розробки)."""
+"""Constants: addresses, selectors, topic hashes (keccak computed at development time)."""
 from pathlib import Path
 import os
 
@@ -15,7 +15,7 @@ TRON_DUMMY_CALLER = "T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb"
 
 USDT_DECIMALS = 6
 
-# селектори USDT: selector -> (назва, тип аргументу)
+# USDT selectors: selector -> (name, argument type)
 USDT_SELECTORS = {
     "0ecb93c0": ("addBlackList", "address"),
     "e4997dc5": ("removeBlackList", "address"),
@@ -27,7 +27,7 @@ USDT_SELECTORS = {
     "3f4ba83a": ("unpause", "none"),
     "0753c30c": ("deprecate", "address"),
     "c0324c77": ("setParams", "raw"),
-    # нове покоління TetherToken / USDT0 (WithBlockedList)
+    # new-generation TetherToken / USDT0 (WithBlockedList)
     "40c10f19": ("mint", "raw"),
     "3c7c9b90": ("addToBlockedList", "address"),
     "1a14f449": ("removeFromBlockedList", "address"),
@@ -70,7 +70,7 @@ SEL_CONFIRM = "c01a8c84"
 SEL_REVOKE = "20ea8d86"
 SEL_EXECUTE = "ee22610b"
 
-# topic0 подій Gnosis MultiSigWallet
+# topic0 of Gnosis MultiSigWallet events
 TOPIC_SUBMISSION = "0xc0ba8fe4b176c1714197d43b9cc6bcf797a4a7461c5fe8d0ef6e184ae7601e51"
 TOPIC_CONFIRMATION = "0x4a504a94899432a9846e1aa406dceb1bcfd538bb839071d49d1e5e23f5be30ef"
 TOPIC_REVOCATION = "0xf6a317157440607f36269043eb55f1287a5a19ba2216afeab88cd46cbcfb88e9"
@@ -84,11 +84,11 @@ TOPIC_SIGS = {
     TOPIC_EXEC_FAILURE: "ExecutionFailure(uint256)",
 }
 
-# функції з адресою-ціллю, для яких береться баланс USDT
+# functions with a target address for which the USDT balance is fetched
 BALANCE_FUNCS = ("addBlackList", "destroyBlackFunds", "addToBlockedList", "destroyBlockedFunds")
-# класи дій для крос-чейн перегляду
-FREEZE_FUNCS = ("addBlackList", "addToBlockedList", "freeze_accounts")
-UNFREEZE_FUNCS = ("removeBlackList", "removeFromBlockedList", "unfreeze_accounts")
+# action classes for the cross-chain view
+FREEZE_FUNCS = ("addBlackList", "addToBlockedList", "freeze_accounts", "freeze_wallet")
+UNFREEZE_FUNCS = ("removeBlackList", "removeFromBlockedList", "unfreeze_accounts", "unfreeze_wallet")
 DESTROY_FUNCS = ("destroyBlackFunds", "destroyBlockedFunds")
 SEL_IS_BLOCKED = "fbac3951"
 TOPIC_BLOCK_PLACED = "0x406bbf2d8d145125adf1198d2cf8a67c66cc4bb0ab01c37dccd4f7c0aae1e7c7"
