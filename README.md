@@ -97,6 +97,7 @@ Preview every template without sending: `python -m freezewatch alert-test` (`--s
 
 ## Limits worth knowing
 
+- **Speed.** Tether now often executes a freeze within 1–2 minutes of the proposal. The GitHub Actions job runs every ~10 minutes, so some proposals reach the channel already executed. True early warning needs a self-hosted poller checking every 10–20 seconds.
 - TRON execution time is inferred from confirmations (the multisig emits no queryable events); every proposal is cross-checked against on-chain `executed`.
 - Safe queues live off-chain: a signer can skip them, so "no proposal" does not mean "no freeze".
 - Solana freezes a token account, not the wallet; Solana USDT history fills gradually on the public RPC.
