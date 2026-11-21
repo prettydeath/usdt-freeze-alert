@@ -105,6 +105,8 @@ Preview every template without sending: `python -m freezewatch alert-test` (`--s
 
 ## Data and attribution
 
+The dashboard has an **Analytics** tab (frozen / burned / unfrozen / reissued $, still-frozen balances); its raw aggregates are published as `site/analytics.json` on the `data` branch. Burned amounts come from destroy events, still-frozen from current balances (filled gradually, `ANALYTICS_BUDGET_SEC` per run).
+
 Everything is read from public chain data and APIs. Delays were cross-checked against
 [BitOK's tether-blacklist-research](https://github.com/BitOKorg/tether-blacklist-research) (bitok.org, CC BY 4.0):
 Ethereum matches on 2251 of 2251 shared proposals, TRON on 7204 of 7204. No BitOK data is included in this repository.
