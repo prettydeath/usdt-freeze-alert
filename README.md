@@ -55,7 +55,7 @@ The **Analytics** tab (period 30d / 90d / 12m / all, token filter) answers "how 
 
 - **Frozen $**: burned amount if the address was later destroyed, otherwise its current balance (frozen funds cannot move).
 - **Burned $**: exact amount of the `DestroyedBlackFunds` / `DestroyedBlockedFunds` event.
-- **Sent after freeze**: transfers to an address *while it was blacklisted* (ETH, USDC, Celo, Avalanche, TRON), with the part **later burned**. Broader than "sent to a blacklisted address and burned at the next destroy" (e.g. BitOK's count), because we count every inflow during the frozen interval. The zero address and token contracts, which Tether blacklists to burn mistaken sends, are excluded.
+- **Sent after freeze**: transfers to an address *while it was blacklisted* (ETH, USDC, Celo, Avalanche, TRON), with the part **later burned**. Broader than "sent to a blacklisted address and burned at the next destroy" (e.g. BitOK's count), because we count every inflow during the frozen interval. The zero address and token contracts, which Tether blacklists to burn mistaken sends, are excluded. (USDC rejects transfers to blacklisted addresses, so it shows none.)
 - **Unfrozen**: count, and $ only where a balance was observed while frozen.
 - Balances are filled gradually (`ANALYTICS_BUDGET_SEC` per run); the page shows "balances checked N of M" until complete. Reissue to victims happens off-chain / through treasury transfers and is not tracked.
 
