@@ -1,5 +1,6 @@
 """Ethereum: multisig events via Etherscan V2, state via a public RPC (eth_call)."""
 import logging
+import time
 
 from . import abi
 from .constants import (ETH_MULTISIG, ETH_USDT, SEL_BALANCE_OF, SEL_CONF_COUNT, SEL_REQUIRED, SEL_TRANSACTIONS,
@@ -7,7 +8,7 @@ from .constants import (ETH_MULTISIG, ETH_USDT, SEL_BALANCE_OF, SEL_CONF_COUNT, 
                         TOPIC_SUBMISSION, USDT_DECIMALS)
 from .db import add_event, ensure_proposal, meta_get, meta_set, update_proposal
 from .derive import derive_all
-from .util import HttpError, env, http_json, iso
+from .util import HttpError, env, http_json, iso, key_pool, looks_rate_limited
 
 log = logging.getLogger("freezewatch.eth")
 CHAIN = "eth"
@@ -76,12 +77,32 @@ def balance_of(addr):
 
 # ---------- Etherscan ----------
 def _es(params, chainid=1):
-    key = env("ETHERSCAN_API_KEY")
-    if not key:
-        raise HttpError("ETHERSCAN_API_KEY is not set (required for ETH history)")
-    p = {"chainid": chainid, "apikey": key, **params}
-    return http_json("GET", ETHERSCAN, params=p, interval=0.25,
-                     validate=lambda o: o.get("status") == "1" or o.get("message") == "No records found")
+    """Etherscan V2 call with key rotation: a rate-limited / invalid key is put on cooldown, the next key is used."""
+    pool = key_pool("ETHERSCAN_API_KEY")
+    if not len(pool):
+        raise HttpError("ETHERSCAN_API_KEY not set (needed for Ethereum history)")
+    last = None
+    for attempt in range(6 + 3 * len(pool)):
+        key = pool.next()
+        try:
+            o = http_json("GET", ETHERSCAN, params={"chainid": chainid, "apikey": key, **params}, interval=0.25 / len(pool),
+                          retries=1)
+        except HttpError as ex:
+            last = str(ex)
+            pool.mark_bad(key, 30)
+            log.info("Etherscan %s failed (%s)", pool.label(key), last[:60])
+            time.sleep(min(2 ** attempt, 10) if pool.cooling() >= len(pool) else 0.2)
+            continue
+        if o.get("status") == "1" or o.get("message") == "No records found":
+            return o
+        if looks_rate_limited(o.get("result")) or looks_rate_limited(o.get("message")):
+            pool.mark_bad(key, 60)
+            log.info("Etherscan %s rate-limited/invalid, cooling", pool.label(key))
+            time.sleep(1.0 if pool.cooling() >= len(pool) else 0.1)
+            last = str(o)[:100]
+            continue
+        raise HttpError(f"Etherscan: {str(o)[:150]}")
+    raise HttpError(f"Etherscan: retries exhausted ({last})")
 
 
 def get_logs(frm, to, address=ETH_MULTISIG, topic0=None, chainid=1):

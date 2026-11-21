@@ -7,7 +7,7 @@ from .constants import (SEL_BALANCE_OF, SEL_CONF_COUNT, SEL_REQUIRED, SEL_TRANSA
                         TRON_MULTISIG, TRON_USDT, USDT_DECIMALS, SIG)
 from .db import add_event, ensure_proposal, events_grouped, meta_get, meta_set, update_proposal
 from .derive import derive_all, infer_exec
-from .util import HttpError, env, http_json, iso, tron_from_hex20, tron_to_hex20
+from .util import HttpError, env, http_json, iso, key_pool, tron_from_hex20, tron_to_hex20
 
 log = logging.getLogger("freezewatch.tron")
 CHAIN = "tron"
@@ -20,19 +20,30 @@ METHODS = {"submitTransaction": "submit", "confirmTransaction": "confirm",
 
 
 # ---------- TronGrid constant calls ----------
-def _grid_headers():
-    k = env("TRONGRID_API_KEY")
-    return {"TRON-PRO-API-KEY": k} if k else {}
-
-
 def constant_call(selector_hex_name: str, parameter: str = "", contract: str = TRON_MULTISIG) -> str:
-    """selector_hex_name - signature, e.g. 'transactions(uint256)'."""
+    """selector_hex_name - signature, e.g. 'transactions(uint256)'. TronGrid keys rotate round-robin
+    (TRONGRID_API_KEY may be a comma-separated list); an empty result or rate-limit reply cools the key down."""
     body = {"owner_address": TRON_DUMMY_CALLER, "contract_address": contract,
             "function_selector": selector_hex_name, "parameter": parameter, "visible": True}
-    interval = 0.06 if env("TRONGRID_API_KEY") else 0.5
-    o = http_json("POST", f"{TRONGRID}/wallet/triggerconstantcontract", json=body, headers=_grid_headers(),
-                  interval=interval, retries=8, validate=lambda x: bool(x.get("constant_result")))
-    return o["constant_result"][0]
+    pool = key_pool("TRONGRID_API_KEY")
+    interval = 0.06 / max(1, len(pool)) if len(pool) else 0.5
+    last = None
+    for attempt in range(10 + 3 * len(pool)):
+        key = pool.next()
+        headers = {"TRON-PRO-API-KEY": key} if key else {}
+        try:
+            o = http_json("POST", f"{TRONGRID}/wallet/triggerconstantcontract", json=body, headers=headers,
+                          interval=interval, retries=1)
+            if o.get("constant_result"):
+                return o["constant_result"][0]
+            last = str(o)[:100]
+        except HttpError as ex:
+            last = str(ex)[:100]
+        if key:
+            pool.mark_bad(key, 20)
+            log.debug("TronGrid %s cooling (%s)", pool.label(key), last[:40])
+        time.sleep(min(1 + attempt, 8) if (not key or pool.cooling() >= len(pool)) else 0.1)
+    raise HttpError(f"TronGrid: retries exhausted ({last})")
 
 
 def pad_int(n):

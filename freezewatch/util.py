@@ -130,3 +130,70 @@ def now_ts() -> int:
 def env(name: str, default: str | None = None) -> str | None:
     v = os.environ.get(name)
     return v if v else default
+
+
+# ---------- API key rotation ----------
+class KeyPool:
+    """Round-robin over comma-separated API keys with per-key cooldown. Key values are never logged: use label()."""
+
+    def __init__(self, raw, cooldown=60.0, clock=time.monotonic):
+        self.keys = [k.strip() for k in (raw or "").split(",") if k.strip()]
+        self.cooldown = cooldown
+        self.clock = clock
+        self._i = 0
+        self._until = {}
+        self._lock = threading.Lock()
+
+    def __len__(self):
+        return len(self.keys)
+
+    def next(self):
+        """Next usable key (round-robin, skipping cooling ones). If all are cooling, the one that recovers first.
+        Returns None when no keys are configured."""
+        if not self.keys:
+            return None
+        with self._lock:
+            now = self.clock()
+            n = len(self.keys)
+            for step in range(n):
+                idx = (self._i + step) % n
+                if self._until.get(idx, 0) <= now:
+                    self._i = (idx + 1) % n
+                    return self.keys[idx]
+            idx = min(range(n), key=lambda j: self._until.get(j, 0))
+            self._i = (idx + 1) % n
+            return self.keys[idx]
+
+    def mark_bad(self, key, seconds=None):
+        """Put a key on cooldown (rate limit / invalid key)."""
+        if key in self.keys:
+            with self._lock:
+                self._until[self.keys.index(key)] = self.clock() + (seconds or self.cooldown)
+
+    def label(self, key):
+        return f"key#{self.keys.index(key) + 1}" if key in self.keys else "no-key"
+
+    def cooling(self):
+        now = self.clock()
+        return sum(1 for i in range(len(self.keys)) if self._until.get(i, 0) > now)
+
+
+_pools = {}
+
+
+def key_pool(name):
+    """Pool for env var `name` (comma-separated list allowed); rebuilt if the variable changes."""
+    raw = os.environ.get(name, "")
+    p = _pools.get(name)
+    if p is None or p[0] != raw:
+        p = (raw, KeyPool(raw))
+        _pools[name] = p
+    return p[1]
+
+
+RATE_LIMIT_MARKERS = ("rate limit", "max calls", "invalid api key", "api key", "too many", "429", "suspended")
+
+
+def looks_rate_limited(obj) -> bool:
+    s = str(obj).lower()
+    return any(m in s for m in RATE_LIMIT_MARKERS)

@@ -12,7 +12,7 @@ import time
 
 from .db import add_event, ensure_proposal, update_proposal
 from .derive import compute_status
-from .util import http_json, iso
+from .util import http_json, iso, key_pool
 
 log = logging.getLogger("freezewatch.ton")
 CHAIN = "ton"
@@ -150,10 +150,12 @@ def rows_from_multisig(j, stale_days=7, now=None):
 
 
 def sync(conn, stale_days=7):
-    h = {}
-    if os.environ.get("TONAPI_KEY"):
-        h["Authorization"] = "Bearer " + os.environ["TONAPI_KEY"]
-    j = http_json("GET", API, headers=h, interval=1.0, retries=5, validate=lambda x: "orders" in x)
+    pool = key_pool("TONAPI_KEY")  # comma-separated list allowed; rotated per request
+
+    def hdr():
+        k = pool.next()
+        return {"Authorization": "Bearer " + k} if k else {}
+    j = http_json("GET", API, headers=hdr(), interval=1.0, retries=5, validate=lambda x: "orders" in x)
     rows = rows_from_multisig(j, stale_days)
     log.info("TON: %s orders", len(rows))
     for r in rows:

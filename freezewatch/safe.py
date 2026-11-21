@@ -8,7 +8,7 @@ from .constants import USDT_SELECTORS
 from .db import add_event, ensure_proposal, update_proposal
 from .derive import compute_status
 from .registry import SAFE_CHAINS
-from .util import env, http_json, now_ts, parse_iso
+from .util import http_json, key_pool, now_ts, parse_iso
 
 log = logging.getLogger("freezewatch.safe")
 BASE = "https://api.safe.global/tx-service"
@@ -16,7 +16,7 @@ NOT_ADVANCE_SEC = 60
 
 
 def _headers():
-    k = env("SAFE_API_KEY")
+    k = key_pool("SAFE_API_KEY").next()  # comma-separated list allowed; rotated per request
     return {"Authorization": f"Bearer {k}"} if k else {}
 
 
