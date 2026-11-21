@@ -1,4 +1,4 @@
-"""Analytics: how much money was frozen / burned / unfrozen / reissued, and how much is still frozen.
+"""Analytics: how much money was frozen / burned / unfrozen / sent to frozen addresses, and how much is still frozen.
 
 Methodology (all approximations are labelled in the UI):
 - Burned $: exact amount of the DestroyedBlackFunds / DestroyedBlockedFunds event of the executing transaction
@@ -7,14 +7,15 @@ Methodology (all approximations are labelled in the UI):
   frozen amount (table `balances`, refreshed incrementally and resumably within a time budget).
 - Frozen $ of one freeze = burned amount if the address was later destroyed, else current balance if still frozen,
   else the balance last observed while frozen if it was unfrozen, else unknown (counted separately).
-- Reissued (approx.): executed issue()/mint proposals matched 1:1 to an earlier destroy of the same chain with the
-  same amount (+-1%) within 30 days."""
+- Special sinks (zero address, the token contracts themselves) are blacklisted by Tether to burn mistaken sends; they
+  are excluded everywhere.
+- Reissuance to victims happens off-chain / via treasury transfers and is NOT tracked."""
 import logging
 import time
 
 from . import crosschain, eth
-from .constants import (DESTROY_FUNCS, FREEZE_FUNCS, SEL_BALANCE_OF, SOLANA_SOURCES, UNFREEZE_FUNCS, USDC_ETH,
-                        USDT_DECIMALS)
+from .constants import (DESTROY_FUNCS, FREEZE_FUNCS, SEL_BALANCE_OF, SOLANA_SOURCES, TRON_USDT, UNFREEZE_FUNCS,
+                        USDC_ETH, USDT_DECIMALS)
 from .registry import MSW_CHAINS, SAFE_CHAINS
 from .util import iso, now_ts, parse_iso
 
@@ -23,11 +24,25 @@ log = logging.getLogger("freezewatch.analytics")
 # topic0 of DestroyedBlackFunds(address,uint256) (legacy USDT, ETH and TRON)
 TOPIC_DESTROYED_LEGACY = "61e6e66b0d6339b2980aecc6ccc0039736791f0ccde9ed512e789a7fbdd698c6"
 TOPIC_DESTROYED_NEW = "6a2859ae7902313752498feb80a014e6e7275fe964c79aa965db815db1c7f1e9"
-ISSUE_FUNCS = ("issue", "mint")
-REISSUE_WINDOW = 30 * 86400
-REISSUE_TOL = 0.01
 IDX = ["frozen_n", "frozen_usd", "frozen_unk", "burned_n", "burned_usd", "burned_unk", "unfrozen_n", "unfrozen_usd",
-       "unfrozen_unk", "proposed_n", "still_n", "still_usd", "never_n", "never_usd", "reiss_n", "reiss_usd"]
+       "unfrozen_unk", "proposed_n", "still_n", "still_usd", "never_n", "never_usd"]
+TRON_ZERO = "T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb"
+EVM_ZERO = "0x" + "0" * 40
+
+
+def special_sinks(chain):
+    """Addresses Tether blacklists to burn mistaken sends: zero address and the token contract itself."""
+    if chain == "tron":
+        return {TRON_ZERO, TRON_USDT}
+    if chain == "usdc_eth":
+        return {EVM_ZERO, USDC_ETH.lower()}
+    try:
+        token = crosschain.rpc_and_token(chain)[1]
+    except Exception:  # noqa: BLE001
+        token = None
+    if token or chain in ("eth", "avax", "celo", "kaia", "kava") or chain in SAFE_CHAINS:
+        return {EVM_ZERO} | ({token.lower()} if token else set())
+    return set()
 
 
 def token_of(chain):
@@ -40,39 +55,6 @@ def norm(chain, addr):
     if not addr:
         return None
     return addr.lower() if (chain in ("eth", "usdc_eth", "avax", "celo", "kaia", "kava") or chain in SAFE_CHAINS) else addr
-
-
-def mint_amount(raw_data):
-    """mint(address,uint256) calldata -> amount in USDT, else None."""
-    d = (raw_data or "").lower().removeprefix("0x")
-    if d.startswith("40c10f19") and len(d) >= 8 + 128:
-        return int(d[8 + 64:8 + 128], 16) / 10 ** USDT_DECIMALS
-    return None
-
-
-# ---------------- reissue matching (pure) ----------------
-def match_reissue(destroys, issues, window=REISSUE_WINDOW, tol=REISSUE_TOL):
-    """destroys/issues: [(ts, amount, chain)]. Returns [(issue_index, destroy_index)] matched 1:1 (greedy, closest
-    amount), same chain, amount within +-tol, destroy before issue and at most `window` seconds earlier."""
-    used, pairs = set(), []
-    order = sorted(range(len(issues)), key=lambda i: issues[i][0])
-    for i in order:
-        its, iamt, ich = issues[i]
-        if not iamt:
-            continue
-        best, bd = None, None
-        for j, (dts, damt, dch) in enumerate(destroys):
-            if j in used or dch != ich or not damt:
-                continue
-            if not (dts <= its <= dts + window):
-                continue
-            diff = abs(iamt - damt) / max(iamt, damt)
-            if diff <= tol and (bd is None or diff < bd):
-                best, bd = j, diff
-        if best is not None:
-            used.add(best)
-            pairs.append((i, best))
-    return pairs
 
 
 # ---------------- timelines and attribution (pure) ----------------
@@ -122,8 +104,8 @@ def month_of(ts):
 
 # ---------------- DB access ----------------
 def load_events(conn):
-    """All executed freeze/unfreeze/destroy actions as events, plus issue/mint rows and never-executed proposals."""
-    ev, issues, never, proposed = [], [], [], []
+    """All executed freeze/unfreeze/destroy actions as events, plus never-executed proposals (special sinks excluded)."""
+    ev, never, proposed = [], [], []
     cls = {**{f: "freeze" for f in FREEZE_FUNCS}, **{f: "unfreeze" for f in UNFREEZE_FUNCS},
            **{f: "destroy" for f in DESTROY_FUNCS}}
     for r in conn.execute("SELECT chain, tx_id, function, target, amount, raw_data, status, executed, submitted_at, "
@@ -138,16 +120,14 @@ def load_events(conn):
             if r["executed"] and r["executed_at"] and r["target"]:
                 amt = r["amount"] if cls[fn] == "destroy" and (r["amount"] or 0) >= 0 else None
                 ev.append((parse_iso(r["executed_at"]), r["chain"], norm(r["chain"], r["target"]), cls[fn], amt))
-        elif fn in ISSUE_FUNCS and r["executed"] and r["executed_at"]:
-            amt = r["amount"] if r["amount"] is not None else mint_amount(r["raw_data"])
-            if amt:
-                issues.append((parse_iso(r["executed_at"]), amt, r["chain"]))
     for f in conn.execute("SELECT source, subject, action, ts, amount FROM freezes"):
         ev.append((parse_iso(f["ts"]), f["source"], norm(f["source"], f["subject"]),
                    "freeze" if f["action"] == "freeze" else "unfreeze", f["amount"] if f["action"] == "freeze" else None))
         if f["action"] == "freeze":
             proposed.append((parse_iso(f["ts"]), f["source"]))
-    return ev, issues, never, proposed
+    sinks = {}
+    ev = [e for e in ev if e[2] not in sinks.setdefault(e[1], special_sinks(e[1]))]
+    return ev, never, proposed
 
 
 def load_balances(conn):
@@ -158,7 +138,7 @@ def load_balances(conn):
 def compute(conn, now=None):
     """Aggregates per chain x month (see IDX) plus the top still-frozen list and coverage numbers."""
     now = now or now_ts()
-    events, issues, never, proposed = load_events(conn)
+    events, never, proposed = load_events(conn)
     bal = load_balances(conn)
     freezes, destroys, unfreezes = attribute(events, bal)
     monthly = {}
@@ -197,12 +177,6 @@ def compute(conn, now=None):
         c = cell(chain, ts)
         c[12] += 1
         c[13] += usd or 0
-    d_rows = [(ts, usd, chain) for ts, chain, addr, usd in destroys if usd]
-    pairs = match_reissue(d_rows, issues)
-    for i, _j in pairs:
-        c = cell(issues[i][2], issues[i][0])
-        c[14] += 1
-        c[15] += issues[i][1]
     inflow = inflow_stats(conn, now)
     top = sorted(([chain, addr, usd, ts] for ts, chain, addr, kind, usd in freezes if kind == "still" and usd),
                  key=lambda x: -x[2])[:300]
@@ -212,8 +186,6 @@ def compute(conn, now=None):
     return {"idx": IDX, "monthly": {ch: m for ch, m in monthly.items()},
             "tokens": {ch: token_of(ch) for ch in monthly}, "top": top,
             "coverage": {"checked": len([t for t in targets if t in bal]), "total": len(targets), "rows": checked},
-            "reissue": {"pairs": len(pairs), "reissued_usd": sum(issues[i][1] for i, _ in pairs),
-                        "window_days": REISSUE_WINDOW // 86400, "tolerance": REISSUE_TOL},
             "still_open": still_total, "inflow": inflow, "generated_at": iso(now)}
 
 
@@ -225,7 +197,7 @@ def supported(chain):
 
 def open_targets(conn):
     """(chain, address) of currently frozen, not destroyed addresses (the ones whose balance is 'still frozen')."""
-    events, _i, _n, _p = load_events(conn)
+    events, _n, _p = load_events(conn)
     freezes, _d, _u = attribute(events, {})
     return sorted({(chain, addr) for ts, chain, addr, kind, usd in freezes if kind == "still" and supported(chain)})
 
@@ -418,32 +390,52 @@ PERIODS = {"30d": 30, "90d": 90, "12m": 365, "all": None}
 
 
 def inflow_stats(conn, now):
-    """Transfers sent to already-frozen addresses: exact distinct counts and top lists for every period."""
-    rows = [(r["chain"], r["frozen_address"], r["sender"], r["amount"], parse_iso(r["ts"]))
-            for r in conn.execute("SELECT chain, frozen_address, sender, amount, ts FROM inflows_after_freeze")]
+    """Transfers sent to already-frozen addresses: exact distinct counts and top lists for every period, plus the part
+    that was burned afterwards (an executed destroy of that address after the transfer)."""
+    import json
+    events, _n, _p = load_events(conn)
+    destroy_ts = {}
+    for ts, chain, addr, action, _a in events:
+        if action == "destroy":
+            destroy_ts.setdefault((chain, addr), []).append(ts)
+    rows = []
+    for r in conn.execute("SELECT chain, frozen_address, sender, amount, ts FROM inflows_after_freeze"):
+        if r["frozen_address"] in special_sinks(r["chain"]):
+            continue
+        ts = parse_iso(r["ts"])
+        burned = any(d > ts for d in destroy_ts.get((r["chain"], r["frozen_address"]), ()))
+        rows.append((r["chain"], r["frozen_address"], r["sender"], r["amount"], ts, burned))
     out = {"periods": {}, "senders": {}, "receivers": {}}
     try:
         from . import inflows
         out["coverage"] = list(inflows.coverage(conn))
     except Exception:  # noqa: BLE001
         out["coverage"] = None
+    try:
+        out["excluded"] = json.loads(conn.execute("SELECT value FROM meta WHERE key='inflow_excluded'").fetchone()[0])
+    except Exception:  # noqa: BLE001
+        out["excluded"] = None
     for p, days in PERIODS.items():
         cutoff = now - days * 86400 if days else 0
         per, snd, rcv = {}, {}, {}
-        for chain, addr, sender, amt, ts in rows:
+        for chain, addr, sender, amt, ts, burned in rows:
             if ts < cutoff:
                 continue
-            c = per.setdefault(chain, [set(), set(), 0, 0.0])
+            c = per.setdefault(chain, [set(), set(), 0, 0.0, set(), 0.0])
             c[0].add(addr)
             c[1].add(sender)
             c[2] += 1
             c[3] += amt
+            if burned:
+                c[4].add(addr)
+                c[5] += amt
             for d, key in ((snd, (chain, sender)), (rcv, (chain, addr))):
                 e = d.setdefault(key, [0, 0.0, 0])
                 e[0] += 1
                 e[1] += amt
                 e[2] = max(e[2], ts)
-        out["periods"][p] = {ch: [len(v[0]), len(v[1]), v[2], round(v[3], 2)] for ch, v in per.items()}
+        out["periods"][p] = {ch: [len(v[0]), len(v[1]), v[2], round(v[3], 2), len(v[4]), round(v[5], 2)]
+                             for ch, v in per.items()}
         for name, d in (("senders", snd), ("receivers", rcv)):
             top = sorted(d.items(), key=lambda kv: -kv[1][1])[:150]
             out[name][p] = [[k[0], k[1], v[0], round(v[1], 2), v[2]] for k, v in top]
@@ -451,8 +443,8 @@ def inflow_stats(conn, now):
 
 
 def inflow_summary(an, period, chains=None):
-    """[addresses, senders, transfers, usd] summed over chains (mirrors the dashboard)."""
-    tot = [0, 0, 0, 0.0]
+    """[addresses, senders, transfers, usd, burned addresses, burned usd] summed over chains (mirrors the dashboard)."""
+    tot = [0, 0, 0, 0.0, 0, 0.0]
     for ch, v in an["inflow"]["periods"][period].items():
         if chains is None or ch in chains:
             tot = [a + b for a, b in zip(tot, v)]

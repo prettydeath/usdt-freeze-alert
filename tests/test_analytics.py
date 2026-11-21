@@ -6,18 +6,6 @@ DAY = 86400
 T0 = 1_760_000_000  # fixed "now"
 
 
-def test_reissue_matching_rules():
-    destroys = [(T0, 1_000_000.0, "eth"), (T0, 500_000.0, "tron"), (T0 + 40 * DAY, 2_000_000.0, "eth")]
-    issues = [(T0 + 5 * DAY, 1_005_000.0, "eth"),     # +0.5% and 5 days: matched with destroy 0
-              (T0 + 6 * DAY, 500_000.0, "eth"),       # amount matches a TRON destroy only: no (other chain)
-              (T0 + 10 * DAY, 1_000_000.0, "eth"),    # destroy 0 already used
-              (T0 + 80 * DAY, 2_000_000.0, "eth"),    # 40 days after destroy 2: outside the 30-day window
-              (T0 - DAY, 1_000_000.0, "eth"),         # before the destroy
-              (T0 + 7 * DAY, 1_020_000.0, "eth")]     # +2%: outside tolerance
-    assert A.match_reissue(destroys, issues) == [(0, 0)]
-    assert A.match_reissue(destroys, [(T0 + 41 * DAY, 2_010_000.0, "eth")]) == [(0, 2)]
-
-
 def test_attribution_burned_still_unfrozen_and_dup():
     ev = [
         (T0, "eth", "0xa", "freeze", None), (T0 + 10, "eth", "0xa", "destroy", 1234.5),      # burned
@@ -52,10 +40,11 @@ def test_parse_destroy_logs_legacy_and_new_and_tron():
     assert A.parse_destroy_logs([{"topics": ["0xdead"], "data": "0x"}], addr) is None
 
 
-def test_mint_amount_and_token_map():
-    raw = "0x40c10f19" + "0" * 24 + "ab" * 20 + f"{250 * 10**6:064x}"
-    assert A.mint_amount(raw) == 250.0 and A.mint_amount("0x1234") is None
+def test_token_map_and_special_sinks():
     assert A.token_of("arb1") == "USDT0" and A.token_of("usdc_eth") == "USDC" and A.token_of("tron") == "USDT"
+    assert A.special_sinks("eth") == {A.EVM_ZERO, "0xdac17f958d2ee523a2206206994597c13d831ec7"}
+    assert A.special_sinks("tron") == {"T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb", "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t"}
+    assert "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48" in A.special_sinks("usdc_eth")
 
 
 def test_compute_and_period_filtering(tmp_path):
@@ -71,14 +60,13 @@ def test_compute_and_period_filtering(tmp_path):
     prop("eth", 2, "destroyBlackFunds", "0xa1", old + 100, amount=1000.0)
     prop("eth", 3, "addBlackList", "0xb2", recent)
     prop("eth", 4, "addBlackList", "0xc3", recent, status="stale")
-    prop("eth", 5, "issue", None, recent + 3 * DAY, amount=1000.0)
+    prop("eth", 6, "addBlackList", A.EVM_ZERO, recent)  # special sink: never counted
     conn.execute("INSERT INTO balances(chain,address,token,balance,checked_at,frozen_balance) VALUES('eth','0xb2','USDT',250.0,'2026-01-01',250.0)")
     conn.commit()
     an = A.compute(conn, now=T0)
     all_ = A.summarize(an)
     assert all_["frozen_n"] == 2 and all_["burned_usd"] == 1000.0 and all_["frozen_usd"] == 1000.0 + 250.0
     assert all_["still_n"] == 1 and all_["still_usd"] == 250.0
-    assert all_["reiss_n"] == 0  # the destroy is 400 days earlier than the issue: outside the 30-day window
     since12 = A.months_since("12m", T0)
     last = A.summarize(an, since=since12)
     assert last["frozen_n"] == 1 and last["burned_usd"] == 0 and last["never_n"] == 1  # old burn excluded

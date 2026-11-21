@@ -151,7 +151,7 @@ def fetch_tron(addr, min_ts_ms):
 # ---------------- driver ----------------
 def candidates(conn):
     """[(chain, address, intervals, start_ts)] for covered chains, newest freezes first."""
-    events, _i, _n, _p = analytics.load_events(conn)
+    events, _n, _p = analytics.load_events(conn)
     iv = blocked_intervals([e for e in events if e[1] in COVERED])
     out = [(c, a, ivs, ivs[0][0]) for (c, a), ivs in iv.items()]
     out.sort(key=lambda x: -x[3])
@@ -162,6 +162,7 @@ def refresh(conn, budget_sec=120):
     """Check frozen addresses for inbound transfers: never-checked (newest freeze first), then those checked before
     today. Cursors make every check incremental. Returns the number of addresses checked."""
     t0 = time.time()
+    purge_sinks(conn)
     today = iso(now_ts())[:10]
     cur = {(r["chain"], r["address"]): (r["cursor"], r["checked_at"]) for r in conn.execute("SELECT * FROM inflow_cursor")}
     todo = [c for c in candidates(conn) if cur.get((c[0], c[1]), (None, None))[1] != today]
@@ -201,6 +202,31 @@ def refresh(conn, budget_sec=120):
     conn.commit()
     log.info("inflows: %s addresses checked (%s remaining)", n, max(0, len(todo) - n))
     return n
+
+
+def purge_sinks(conn):
+    """Remove inflow rows / cursors of special sinks (zero address, token contracts); keep a running total of what was
+    excluded so the dashboard can mention it."""
+    import json
+    tot_n, tot_usd = 0, 0.0
+    for r in conn.execute("SELECT chain, frozen_address, COUNT(*) n, SUM(amount) usd FROM inflows_after_freeze "
+                          "GROUP BY chain, frozen_address").fetchall():
+        if r["frozen_address"] in analytics.special_sinks(r["chain"]):
+            tot_n += r["n"]
+            tot_usd += r["usd"] or 0.0
+            conn.execute("DELETE FROM inflows_after_freeze WHERE chain=? AND frozen_address=?", (r["chain"], r["frozen_address"]))
+            conn.execute("DELETE FROM inflow_cursor WHERE chain=? AND address=?", (r["chain"], r["frozen_address"]))
+    for r in conn.execute("SELECT chain, address FROM inflow_cursor").fetchall():
+        if r["address"] in analytics.special_sinks(r["chain"]):
+            conn.execute("DELETE FROM inflow_cursor WHERE chain=? AND address=?", (r["chain"], r["address"]))
+    if tot_n:
+        row = conn.execute("SELECT value FROM meta WHERE key='inflow_excluded'").fetchone()
+        old = json.loads(row[0]) if row else {"n": 0, "usd": 0.0}
+        new = {"n": old["n"] + tot_n, "usd": round(old["usd"] + tot_usd, 2)}
+        conn.execute("INSERT INTO meta(key,value) VALUES('inflow_excluded',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+                     (json.dumps(new),))
+    conn.commit()
+    return tot_n, tot_usd
 
 
 def coverage(conn):

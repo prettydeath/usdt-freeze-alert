@@ -43,26 +43,50 @@ def test_save_filters_interval_dust_selfsend_and_dedupes(tmp_path):
     assert conn.execute("SELECT COUNT(*) FROM inflows_after_freeze").fetchone()[0] == 1
 
 
-def test_inflow_stats_distinct_and_periods(tmp_path):
+def test_inflow_stats_distinct_burned_and_sinks(tmp_path):
+    from freezewatch.db import ensure_proposal, update_proposal
     conn = connect(tmp_path / "a.sqlite")
 
     def add(chain, frozen, sender, amt, ts, tx):
         conn.execute("INSERT INTO inflows_after_freeze(chain,token,frozen_address,sender,amount,ts,tx_hash,first_seen_at) "
                      "VALUES(?,?,?,?,?,?,?,?)", (chain, "USDT", frozen, sender, amt, iso(ts), tx, iso(NOW)))
+
+    def act(tid, fn, target, ts):
+        ensure_proposal(conn, "eth", tid)
+        update_proposal(conn, "eth", tid, destination="x", function=fn, target=target, executed=1, status="executed",
+                        executed_at=iso(ts), submitted_at=iso(ts - 60))
     add("eth", A, SENDER, 1000, NOW - 10 * DAY, "t1")
     add("eth", A, SENDER, 2000, NOW - 5 * DAY, "t2")       # same pair: one sender, one address, 2 transfers
     add("eth", B, "0x" + "22" * 20, 500, NOW - 200 * DAY, "t3")
     add("tron", "TFrozen", "TSend", 10_000, NOW - 400 * DAY, "t4")
+    add("eth", analytics.EVM_ZERO, SENDER, 9_999_999, NOW - 3 * DAY, "sink")   # mistaken send: excluded
+    act(1, "addBlackList", A, NOW - 20 * DAY)
+    act(2, "destroyBlackFunds", A, NOW - 7 * DAY)            # burns the t1 funds only (t2 came after the destroy)
     conn.commit()
     st = analytics.inflow_stats(conn, NOW)
-    assert st["periods"]["30d"] == {"eth": [1, 1, 2, 3000.0]}
-    assert st["periods"]["12m"]["eth"] == [2, 2, 3, 3500.0] and "tron" not in st["periods"]["12m"]
-    assert st["periods"]["all"]["tron"] == [1, 1, 1, 10000.0]
+    assert st["periods"]["30d"] == {"eth": [1, 1, 2, 3000.0, 1, 1000.0]}
+    assert st["periods"]["12m"]["eth"] == [2, 2, 3, 3500.0, 1, 1000.0] and "tron" not in st["periods"]["12m"]
+    assert st["periods"]["all"]["tron"] == [1, 1, 1, 10000.0, 0, 0.0]
     an = {"inflow": st}
-    assert analytics.inflow_summary(an, "all") == [3, 3, 4, 13500.0]
-    assert analytics.inflow_summary(an, "all", {"eth"}) == [2, 2, 3, 3500.0]
+    assert analytics.inflow_summary(an, "all") == [3, 3, 4, 13500.0, 1, 1000.0]
+    assert analytics.inflow_summary(an, "all", {"eth"}) == [2, 2, 3, 3500.0, 1, 1000.0]
     assert st["senders"]["all"][0][:4] == ["tron", "TSend", 1, 10000.0]  # ranked by amount
     assert st["receivers"]["30d"][0][1] == A
+
+
+def test_purge_sinks_keeps_total(tmp_path):
+    conn = connect(tmp_path / "a.sqlite")
+    for i, (frozen, amt) in enumerate([(analytics.EVM_ZERO, 100.0), ("0xdac17f958d2ee523a2206206994597c13d831ec7", 50.0), (A, 7.0)]):
+        conn.execute("INSERT INTO inflows_after_freeze(chain,token,frozen_address,sender,amount,ts,tx_hash,first_seen_at) "
+                     "VALUES('eth','USDT',?,?,?,?,?,?)", (frozen, SENDER, amt, iso(NOW), f"t{i}", iso(NOW)))
+    conn.execute("INSERT INTO inflow_cursor(chain,address,cursor,checked_at) VALUES('eth',?, '1', 'x')", (analytics.EVM_ZERO,))
+    conn.commit()
+    assert inflows.purge_sinks(conn) == (2, 150.0)
+    assert conn.execute("SELECT COUNT(*) FROM inflows_after_freeze").fetchone()[0] == 1
+    assert conn.execute("SELECT COUNT(*) FROM inflow_cursor").fetchone()[0] == 0
+    assert inflows.purge_sinks(conn) == (0, 0.0)  # idempotent; running total kept in meta
+    import json
+    assert json.loads(conn.execute("SELECT value FROM meta WHERE key='inflow_excluded'").fetchone()[0]) == {"n": 2, "usd": 150.0}
 
 
 def test_inflow_alert_rules_and_format(tmp_path):
