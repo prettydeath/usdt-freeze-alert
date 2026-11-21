@@ -1,161 +1,352 @@
-"""Необов'язкові Telegram-сповіщення. Без TG_BOT_TOKEN/TG_CHAT_ID - нічого не робить."""
+"""Optional Telegram alerts (HTML). No TG_BOT_TOKEN / TG_CHAT_ID -> nothing is sent.
+
+Event types (priority order): new freeze proposal, one signature left, frozen (executed), funds destroyed,
+cross-chain balance, unfrozen, SPL multisig change. Each event is sent at most once (table `alerts`), at most
+MAX_PER_RUN messages are sent per run (the rest become one summary line), and history is never replayed:
+nothing is sent on the first run against an empty DB, and only events younger than the freshness window qualify."""
+import html
 import logging
+import time
+from urllib.parse import urlparse
 
 import requests
 
-from .constants import BALANCE_FUNCS
+from .constants import DESTROY_FUNCS, FREEZE_FUNCS, UNFREEZE_FUNCS
 from .db import iso
-from .util import env, now_ts
+from .util import env, now_ts, parse_iso
 
 log = logging.getLogger("freezewatch.alerts")
-TRACKED = ("addBlackList", "removeBlackList", "destroyBlackFunds", "addToBlockedList", "removeFromBlockedList",
-           "destroyBlockedFunds")
+DASHBOARD = "https://prettydeath.github.io/usdt-freeze-alert/"
+MAX_PER_RUN = 20
+FRESH_SEC = 3 * 3600          # event time must be this recent
+NEAR_FRESH_SEC = 24 * 3600    # "one signature left" may come later than the proposal
+MIN_XCHAIN_USD = 1000
+TRACKED = FREEZE_FUNCS + UNFREEZE_FUNCS + DESTROY_FUNCS
+PRIO = {"new": 0, "near": 1, "frozen": 2, "destroy": 3, "xchain": 4, "unfrozen": 5, "authority": 6}
 NL = chr(10)
-EXPLORER = {"eth": "https://etherscan.io/address/", "tron": "https://tronscan.org/#/address/"}
-
-
-def explorer(chain):
-    from .registry import chain_meta
-    return EXPLORER.get(chain) or chain_meta().get(chain, {}).get("addr", "")
 
 
 def configured():
     return bool(env("TG_BOT_TOKEN") and env("TG_CHAT_ID"))
 
 
+def send_message(text):
+    r = requests.post(f"https://api.telegram.org/bot{env('TG_BOT_TOKEN')}/sendMessage",
+                      json={"chat_id": env("TG_CHAT_ID"), "text": text, "parse_mode": "HTML",
+                            "disable_web_page_preview": True}, timeout=20)
+    r.raise_for_status()
+
+
+# ---------- formatting ----------
+def e(x):
+    return html.escape(str(x), quote=False)
+
+
+def num(x):
+    """Thousands separators; no decimals from 1000 up."""
+    if x is None:
+        return "n/a"
+    return f"{x:,.0f}" if abs(x) >= 1000 else f"{x:,.2f}"
+
+
+def human(sec, approx=True):
+    if sec is None:
+        return "n/a"
+    sec = int(sec)
+    p = "~" if approx else ""
+    if sec < 60:
+        return f"{p}{max(sec, 1)} s"
+    if sec < 5400:
+        return f"{p}{round(sec / 60)} min"
+    if sec < 172800:
+        h, m = divmod(sec // 60, 60)
+        return f"{p}{h} h" + (f" {m} min" if m else "")
+    return f"{p}{round(sec / 86400)} d"
+
+
+def meta_of(chain):
+    from .registry import chain_meta
+    return chain_meta().get(chain, {"label": chain})
+
+
+TAGS = {"arb1": "ARB", "pol": "POL", "oeth": "OP", "usdc_eth": "USDC-ETH", "sol_usdc": "USDC-SOL",
+        "sol_usdt": "USDT-SOL", "hyper": "HYPER", "berachain": "BERA"}
+
+
+def short(chain):
+    """Uppercase short chain name: TRON, ETH, AVAX, ARB, POL ..."""
+    return TAGS.get(chain, chain.upper())
+
+
+def tag(s):
+    import re
+    return "#" + re.sub(r"\W", "", str(s))
+
+
+def token_of(chain):
+    from .registry import SAFE_CHAINS
+    if chain in SAFE_CHAINS:
+        return "USDT0"
+    return "USDC" if chain in ("usdc_eth", "sol_usdc") else "USDT"
+
+
+def bar(conf, req, cells=10):
+    if not req:
+        return "▱" * cells
+    n = max(0, min(cells, round(cells * conf / req)))
+    return "▰" * n + "▱" * (cells - n)
+
+
+def link(url_base, value, text=None):
+    if not url_base or not value:
+        return ""
+    host = urlparse(url_base).netloc.split(".")
+    name = text or (host[-2] if len(host) >= 2 else host[0])
+    return f'<a href="{html.escape(url_base + str(value), quote=True)}">{e(name)}</a>'
+
+
+def footer_links(chain, target):
+    lk = link(meta_of(chain).get("addr"), target, text="explorer")
+    return (lk + " · " if lk else "") + f'<a href="{DASHBOARD}">dashboard</a>'
+
+
+def median_30d(conn, chain, now=None):
+    now = now or now_ts()
+    d = sorted(r[0] for r in conn.execute(
+        "SELECT delay_seconds FROM proposals WHERE chain=? AND executed=1 AND delay_seconds IS NOT NULL "
+        "AND executed_at>=?", (chain, iso(now - 30 * 86400))))
+    if not d:
+        return None
+    n = len(d)
+    return d[n // 2] if n % 2 else (d[n // 2 - 1] + d[n // 2]) / 2
+
+
+def proposal_ref(r):
+    from .registry import SAFE_CHAINS
+    return f"Safe nonce {r['tx_id'] // 100}" if r["chain"] in SAFE_CHAINS else f"proposal #{r['tx_id']}"
+
+
+def fmt_new(r, med=None, seen=None):
+    from .registry import SAFE_CHAINS
+    ch, bal = r["chain"], r["balance_now"]
+    seen = seen or time.strftime("%H:%M:%S", time.gmtime())
+    lines = [f"🚨 <b>FREEZE INCOMING</b> · {e(short(ch))}", f"<code>{e(r['target'])}</code>"]
+    if bal is not None:
+        lines.append(f"💰 <b>{num(bal)} {token_of(ch)}</b> on the line")
+    lines.append(f"✍️ {bar(r['confirmations'], r['required'])} {r['confirmations']}/{r['required']} signed")
+    if med is not None:
+        lines.append(f"⏱ usually lands in <b>{human(med)}</b>")
+    detail = f"{proposal_ref(r)} · {e(r['function'])}" + (" · via Safe API (off-chain queue)" if ch in SAFE_CHAINS else "")
+    lines.append(f"<blockquote>{detail}{NL}seen {seen} UTC</blockquote>")
+    tags = f"{tag(short(ch))} {tag(r['function'])}" + (" #whale" if (bal or 0) >= 100_000 else "")
+    lines += [tags, footer_links(ch, r["target"])]
+    return NL.join(lines)
+
+
+def fmt_near(r):
+    ch, bal = r["chain"], r["balance_now"]
+    first = f"<code>{e(r['target'])}</code>" + (f" · 💰 {num(bal)}" if bal is not None else "")
+    return NL.join([f"⚠️ <b>LAST SIGNATURE PENDING</b> · {e(short(ch))}", first,
+                    f"✍️ {bar(r['confirmations'], r['required'])} {r['confirmations']}/{r['required']} signed",
+                    f"{tag(short(ch))} {tag(r['function'])}"])
+
+
+def fmt_frozen(r, advance=True):
+    ch = r["chain"]
+    bal = r["balance_at_detect"] if r["balance_at_detect"] is not None else r["balance_now"]
+    lines = [f"🧊 <b>FROZEN</b> · {e(short(ch))}", f"<code>{e(r['target'])}</code>"]
+    if bal is not None:
+        lines.append(f"💰 {num(bal)} {token_of(ch)} locked")
+    if r["delay_seconds"] in (None, 0) or not advance:
+        if r["delay_seconds"] is not None or not advance:
+            lines.append("⚡ <b>no advance notice</b>")
+    else:
+        lines.append(f"⚡ executed in <b>{human(r['delay_seconds'], approx=False)}</b>")
+    lines.append(f"<blockquote>{r['confirmations']}/{r['required']} signed · tx {e(r['exec_tx'] or 'n/a')}</blockquote>")
+    lines += [f"{tag(short(ch))} #frozen", footer_links(ch, r["target"]).replace("explorer", "explorer")]
+    return NL.join(lines)
+
+
+def fmt_destroy(r):
+    ch = r["chain"]
+    bal = r["balance_at_detect"] if r["balance_at_detect"] is not None else r["balance_now"]
+    lines = [f"🔥 <b>FUNDS BURNED</b> · {e(short(ch))}", f"<code>{e(r['target'])}</code>"]
+    if bal is not None:
+        lines.append(f"💸 <b>{num(bal)} {token_of(ch)}</b> destroyed")
+    lines.append(f"<blockquote>tx {e(r['exec_tx'] or 'n/a')}</blockquote>")
+    lines.append(f"{tag(short(ch))} #burned")
+    return NL.join(lines)
+
+
+def fmt_unfrozen(r):
+    ch = r["chain"]
+    return NL.join([f"🟢 <b>UNFROZEN</b> · {e(short(ch))}", f"<code>{e(r['target'])}</code>",
+                    f"{tag(short(ch))} #unfrozen"])
+
+
+def fmt_freeze_row(f):
+    """Executed-only freezes (USDC Ethereum, Solana): there is no queue, so no delay line."""
+    src = f["source"]
+    lines = [f"🧊 <b>FROZEN</b> · {e(short(src))}", f"<code>{e(f['subject'])}</code>"]
+    if f["owner"] and f["owner"] != f["subject"]:
+        lines.append(f"owner <code>{e(f['owner'])}</code>")
+    if f["amount"] is not None:
+        lines.append(f"💰 {num(f['amount'])} {token_of(src)} locked")
+    lines.append("⚡ <b>no advance notice</b>")
+    lines.append(f"<blockquote>tx {e(f['tx_hash'])}</blockquote>")
+    lines.append(f"{tag(short(src))} #frozen")
+    return NL.join(lines)
+
+
+def fmt_xchain(addr, chain, have, elsewhere):
+    lines = ["🔗 <b>CROSS-CHAIN SIGNAL</b>", f"<code>{e(addr)}</code>",
+             f"frozen on {e(', '.join(sorted(short(c) for c in have)))}"]
+    for c, b in sorted(elsewhere.items()):
+        lines.append(f"still holds 💰 {num(b)} {token_of(c)} on {e(short(c))}")
+    lines.append("#crosschain")
+    return NL.join(lines)
+
+
+def fmt_authority(ch):
+    return (f"⚠️ <b>SPL MULTISIG CHANGED</b> · {e(ch['source'])}" + NL +
+            f"was {e(ch['old'])}" + NL + f"now {e(ch['new'])}")
+
+
+def fmt_summary(n):
+    return f'📊 <b>+{n} more events</b> → <a href="{DASHBOARD}">dashboard</a>'
+
+
+# ---------- event collection ----------
 def snapshot(conn):
-    """{(chain,id): (executed, confirmations, required, function, status)} - для порівняння до/після update."""
+    """{(chain,id): (executed, confirmations, required, function, status)} before an update."""
     return {(r["chain"], r["tx_id"]): (r["executed"], r["confirmations"], r["required"], r["function"], r["status"])
             for r in conn.execute("SELECT chain,tx_id,executed,confirmations,required,function,status FROM proposals")}
 
 
-def _send(text):
-    r = requests.post(f"https://api.telegram.org/bot{env('TG_BOT_TOKEN')}/sendMessage",
-                      json={"chat_id": env("TG_CHAT_ID"), "text": text, "disable_web_page_preview": True}, timeout=20)
-    r.raise_for_status()
-
-
-def _fmt(r, head):
-    bal = f"{r['balance_now']:,.2f} USDT" if r["balance_now"] is not None else "n/a"
-    t = f"{head}\n{r['chain'].upper()} #{r['tx_id']} {r['function']}\n"
-    if r["target"]:
-        t += f"Target: {r['target']}\n{explorer(r['chain'])}{r['target']}\n"
-    if r["function"] in BALANCE_FUNCS:
-        t += f"Balance: {bal}\n"
-    t += f"Signatures: {r['confirmations']}/{r['required']}"
-    if r["delay_seconds"] is not None:
-        t += f"\nDelay proposal->execution: {r['delay_seconds']} s"
-    return t
-
-
-def process(conn, before, max_age_days=3):
-    """Порівнює стан до/після update і шле по одному сповіщенню на подію (таблиця alerts)."""
-    if not configured():
-        return 0
-    sent = 0
-    cutoff = now_ts() - max_age_days * 86400
-    for r in conn.execute("SELECT * FROM proposals WHERE function IN (?,?,?)", TRACKED):
+def collect_events(conn, before, max_freeze_rowid, before_pairs, auth_changes=(), now=None, min_balance=None,
+                   balances=None):
+    """Candidate events after an update. Returns a list of dicts: kind, chain, id, key_kind, text."""
+    now = now or now_ts()
+    if min_balance is None:
+        min_balance = float(env("ALERT_MIN_BALANCE", "0") or 0)
+    if not before and max_freeze_rowid == 0:  # first run against an empty DB: initialise, do not announce history
+        return []
+    ev = []
+    new_keys = set()
+    qm = ",".join("?" * len(TRACKED))
+    for r in conn.execute(f"SELECT * FROM proposals WHERE function IN ({qm})", TRACKED).fetchall():
         key = (r["chain"], r["tx_id"])
         prev = before.get(key)
-        events = []
-        if prev is None and r["function"] in ("addBlackList", "addToBlockedList") and r["status"] == "pending":
-            events.append(("new", "New freeze proposal"))
-        if r["required"] and r["required"] >= 3 and r["status"] == "pending" and r["confirmations"] >= r["required"] - 1 \
-                and (prev is None or prev[1] < r["required"] - 1):
-            events.append(("near", "Proposal reached required-1 signatures"))
-        if r["executed"] and (prev is None or not prev[0]) and prev is not None:
-            events.append(("executed", "Executed"))
-        for kind, head in events:
-            from .util import parse_iso
-            sub = parse_iso(r["submitted_at"])
-            if kind != "executed" and sub and sub < cutoff:
-                continue
-            if conn.execute("SELECT 1 FROM alerts WHERE chain=? AND tx_id=? AND kind=?", (r["chain"], r["tx_id"], kind)).fetchone():
-                continue
-            try:
-                _send(_fmt(r, head))
-            except Exception as e:  # noqa: BLE001
-                log.warning("Telegram: %s", e)
-                continue
-            conn.execute("INSERT INTO alerts(chain,tx_id,kind,sent_at) VALUES(?,?,?,?)",
-                         (r["chain"], r["tx_id"], kind, iso(now_ts())))
-            sent += 1
-    conn.commit()
-    return sent
-
-
-def process_freezes(conn, max_rowid_before, auth_changes=()):
-    """Нові виконані заморожування USDC/Solana (лише з update, не з backfill) + зміни складу multisig Solana."""
-    if not configured():
-        return 0
-    from .constants import SOURCE_LABELS
-    from .util import parse_iso
-    sent = 0
-    cutoff = now_ts() - 3 * 86400
-    for r in conn.execute("SELECT rowid AS rid, * FROM freezes WHERE rowid>? AND action='freeze' ORDER BY rowid",
-                          (max_rowid_before,)).fetchall():
-        if (parse_iso(r["ts"]) or 0) < cutoff:
-            continue
-        if conn.execute("SELECT 1 FROM alerts WHERE chain=? AND tx_id=? AND kind='freeze'", (r["source"], r["rid"])).fetchone():
-            continue
-        t = f"Frozen ({SOURCE_LABELS.get(r['source'], r['source'])})" + NL + f"Account/address: {r['subject']}" + NL
-        if r["owner"] and r["owner"] != r["subject"]:
-            t += f"Owner: {r['owner']}" + NL
-        if r["amount"] is not None:
-            kind = "at tx time" if r["amount_kind"] == "at_tx" else "current balance"
-            t += f"Amount: {r['amount']:,.2f} ({kind})" + NL
-        t += f"Tx: {r['tx_hash']}" + NL + f"Time: {r['ts']}"
-        try:
-            _send(t)
-        except Exception as e:  # noqa: BLE001
-            log.warning("Telegram: %s", e)
-            continue
-        conn.execute("INSERT INTO alerts(chain,tx_id,kind,sent_at) VALUES(?,?,?,?)",
-                     (r["source"], r["rid"], "freeze", iso(now_ts())))
-        sent += 1
+        sub = parse_iso(r["submitted_at"])
+        exe = parse_iso(r["executed_at"])
+        fn = r["function"]
+        if fn in FREEZE_FUNCS and r["status"] == "pending" and prev is None and sub and now - sub <= FRESH_SEC \
+                and (r["balance_now"] or 0) >= min_balance:
+            ev.append({"kind": "new", "chain": r["chain"], "id": r["tx_id"], "key_kind": "new",
+                       "text": fmt_new(r, median_30d(conn, r["chain"], now))})
+            new_keys.add(key)
+        if fn in FREEZE_FUNCS and r["status"] == "pending" and r["required"] and r["required"] > 1 \
+                and r["confirmations"] == r["required"] - 1 and (prev is None or prev[1] < r["confirmations"]) \
+                and sub and now - sub <= NEAR_FRESH_SEC and not (key in new_keys and r["confirmations"] == 1)                 and (r["balance_now"] or 0) >= min_balance:
+            ev.append({"kind": "near", "chain": r["chain"], "id": r["tx_id"], "key_kind": "near", "text": fmt_near(r)})
+        if r["executed"] and (prev is None or not prev[0]) and exe and now - exe <= FRESH_SEC and r["target"]:
+            if fn in FREEZE_FUNCS:
+                ev.append({"kind": "frozen", "chain": r["chain"], "id": r["tx_id"], "key_kind": "frozen",
+                           "text": fmt_frozen(r, advance=prev is not None)})
+            elif fn in DESTROY_FUNCS:
+                ev.append({"kind": "destroy", "chain": r["chain"], "id": r["tx_id"], "key_kind": "destroy",
+                           "text": fmt_destroy(r)})
+            elif fn in UNFREEZE_FUNCS:
+                ev.append({"kind": "unfrozen", "chain": r["chain"], "id": r["tx_id"], "key_kind": "unfrozen",
+                           "text": fmt_unfrozen(r)})
+    for f in conn.execute("SELECT rowid AS rid, * FROM freezes WHERE rowid>? AND action='freeze' ORDER BY rowid",
+                          (max_freeze_rowid,)).fetchall():
+        if now - (parse_iso(f["ts"]) or 0) <= FRESH_SEC:
+            ev.append({"kind": "frozen", "chain": f["source"], "id": f["rid"], "key_kind": "freeze",
+                       "text": fmt_freeze_row(f)})
+    ev += crosschain_events(conn, before_pairs, now, balances)
     for ch in auth_changes:
-        try:
-            _send(f"WARNING: SPL multisig freeze authority changed: {ch['source']}" + NL
-                  + f"Was: {ch['old']}" + NL + f"Now: {ch['new']}")
-            sent += 1
-        except Exception as e:  # noqa: BLE001
-            log.warning("Telegram: %s", e)
-    auth_changes.clear() if hasattr(auth_changes, "clear") else None
-    conn.commit()
-    return sent
+        ev.append({"kind": "authority", "chain": "authority", "id": int(now) // 3600, "key_kind": "authority:" + ch["source"],
+                   "text": fmt_authority(ch)})
+    ev.sort(key=lambda x: PRIO[x["kind"]])
+    return ev
 
 
-def process_crosschain(conn, before_pairs, max_age_days=3):
-    """Нова поява адреси в мережі (пропозиція або виконання): повідомляє, де ще вона є і де на ній ще лежить USDT."""
-    if not configured():
-        return 0
+def crosschain_events(conn, before_pairs, now, balances=None):
+    """Address newly seen on a chain that still holds USDT (>= $1000) on chains where it is not yet frozen."""
     from . import crosschain
-    from .util import parse_iso
-    sent = 0
-    now = crosschain.collect(conn)
-    cutoff = now_ts() - max_age_days * 86400
-    for addr, items in now.items():
+    balances = balances or crosschain.balances_elsewhere
+    out = []
+    cur = crosschain.collect(conn)
+    for addr, items in cur.items():
         have = {it["chain"] for it in items}
         for ch in have:
             if (addr, ch) in before_pairs:
                 continue
             ts = max((parse_iso(it["ts"]) or 0) for it in items if it["chain"] == ch)
-            if ts < cutoff:
+            if now - ts > FRESH_SEC:
                 continue
-            key = int(addr[2:16], 16)
-            kind = "xchain:" + ch
-            if conn.execute("SELECT 1 FROM alerts WHERE chain='xchain' AND tx_id=? AND kind=?", (key, kind)).fetchone():
-                continue
-            elsewhere = crosschain.balances_elsewhere(addr, have)
-            lines = [f"Address {addr} first seen on {ch}", "Already on: " + ", ".join(sorted(have))]
+            elsewhere = {c: b for c, b in balances(addr, have).items() if b >= MIN_XCHAIN_USD}
             if elsewhere:
-                lines.append("not frozen there yet, but holds USDT: " + ", ".join(f"{c} {b:,.2f}" for c, b in elsewhere.items()))
-            try:
-                _send(NL.join(lines))
-            except Exception as e:  # noqa: BLE001
-                log.warning("Telegram: %s", e)
-                continue
-            conn.execute("INSERT INTO alerts(chain,tx_id,kind,sent_at) VALUES('xchain',?,?,?)", (key, kind, iso(now_ts())))
+                out.append({"kind": "xchain", "chain": "xchain", "id": int(addr[2:16], 16), "key_kind": "xchain:" + ch,
+                            "text": fmt_xchain(addr, ch, have, elsewhere)})
+    return out
+
+
+# ---------- dispatch ----------
+def dispatch(conn, events, send, limit=MAX_PER_RUN):
+    """Send events once each (dedupe via `alerts`), flood-guarded. Returns the number of messages sent."""
+    sent = overflow = 0
+    for ev in events:
+        if conn.execute("SELECT 1 FROM alerts WHERE chain=? AND tx_id=? AND kind=?",
+                        (ev["chain"], ev["id"], ev["key_kind"])).fetchone():
+            continue
+        if sent >= limit:
+            overflow += 1
+            conn.execute("INSERT OR IGNORE INTO alerts(chain,tx_id,kind,sent_at) VALUES(?,?,?,?)",
+                         (ev["chain"], ev["id"], ev["key_kind"], iso(now_ts())))
+            continue
+        try:
+            send(ev["text"])
+        except Exception as ex:  # noqa: BLE001
+            log.warning("Telegram: %s", ex)
+            continue
+        conn.execute("INSERT OR IGNORE INTO alerts(chain,tx_id,kind,sent_at) VALUES(?,?,?,?)",
+                     (ev["chain"], ev["id"], ev["key_kind"], iso(now_ts())))
+        sent += 1
+    if overflow:
+        try:
+            send(fmt_summary(overflow))
             sent += 1
+        except Exception as ex:  # noqa: BLE001
+            log.warning("Telegram: %s", ex)
     conn.commit()
     return sent
+
+
+def run_alerts(conn, before, max_freeze_rowid, before_pairs, auth_changes=()):
+    """Entry point used by `update`. No-op unless Telegram is configured."""
+    changes = list(auth_changes)
+    if hasattr(auth_changes, "clear"):
+        auth_changes.clear()
+    if not configured():
+        return 0
+    return dispatch(conn, collect_events(conn, before, max_freeze_rowid, before_pairs, changes), send_message)
+
+
+# ---------- fixtures for `alert-test` ----------
+def sample_messages():
+    base = {"chain": "tron", "tx_id": 11957, "function": "addBlackList", "target": "TCKiW9WztxAWa6shxdoWn4L4wiKrHeokmd",
+            "balance_now": 355678.98, "balance_at_detect": 355678.98, "confirmations": 1, "required": 2,
+            "delay_seconds": 6564, "exec_tx": "9830c04b5c02cb5279b3c4f855a528b4c619f8ced34dbdbb8678b97645595d60"}
+    eth = {**base, "chain": "eth", "tx_id": 5870, "function": "destroyBlackFunds",
+           "target": "0xe3d1143fccc957186b013fec87c492c31fb15e14", "balance_now": 5680262.52,
+           "balance_at_detect": 5680262.52, "confirmations": 2,
+           "required": 3, "exec_tx": "0x" + "ab" * 32}
+    safe = {**base, "chain": "arb1", "tx_id": 18500, "function": "addToBlockedList",
+            "target": "0xe485e7a70b1131216cb47ca4555c4bbb2c742478", "confirmations": 1, "required": 3,
+            "balance_now": 12000.0}
+    return [fmt_new(base, 60), fmt_new(safe, 5413), fmt_near(eth), fmt_frozen(base), fmt_frozen({**base, "delay_seconds": 0}),
+            fmt_destroy(eth), fmt_unfrozen({**base, "function": "removeBlackList"}),
+            fmt_xchain("0xe485e7a70b1131216cb47ca4555c4bbb2c742478", "pol", {"pol", "arb1"}, {"eth": 25000.0}),
+            fmt_summary(7)]
