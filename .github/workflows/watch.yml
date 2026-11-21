@@ -1,0 +1,91 @@
+name: watch
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+    inputs:
+      backfill:
+        description: "Run a long backfill instead of the incremental update"
+        type: boolean
+        default: false
+      chain:
+        description: "Chain or group for backfill (eth, tron, sol, safe, msw, all ...)"
+        default: "all"
+      budget_sec:
+        description: "Time budget per source in seconds (backfill only)"
+        default: "1500"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: freezewatch
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    outputs:
+      changed: ${{ steps.publish.outputs.changed }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Restore data from the data branch
+        uses: actions/checkout@v4
+        with:
+          ref: data
+          path: _data
+        continue-on-error: true
+
+      - run: |
+          mkdir -p data
+          if [ -f _data/data/freezewatch.sqlite ]; then cp _data/data/freezewatch.sqlite data/; fi
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install requests
+
+      - name: Run
+        env:
+          ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
+          TRONGRID_API_KEY: ${{ secrets.TRONGRID_API_KEY }}
+          TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
+          TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
+          SAFE_API_KEY: ${{ secrets.SAFE_API_KEY }}
+          TONAPI_KEY: ${{ secrets.TONAPI_KEY }}
+          ETH_RPC_URL: ${{ secrets.ETH_RPC_URL }}
+          SOLANA_RPC_URL: ${{ secrets.SOLANA_RPC_URL }}
+          FREEZEWATCH_BUDGET_SEC: "300"
+        run: |
+          if [ "${{ github.event.inputs.backfill }}" = "true" ]; then
+            python -m freezewatch backfill --chain "${{ github.event.inputs.chain }}" --budget "${{ github.event.inputs.budget_sec }}" || true
+          fi
+          python -m freezewatch run
+
+      - name: Publish to the data branch (single orphan commit)
+        id: publish
+        run: |
+          if [ -d _data ] && diff -rq --exclude=.git _data/data data >/dev/null 2>&1 && diff -rq --exclude=.git _data/site site >/dev/null 2>&1; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"; echo "no changes"; exit 0
+          fi
+          rm -rf _pub && mkdir _pub && cp -r data site _pub/
+          cd _pub
+          git init -q -b data
+          git config user.name "freezewatch-bot"
+          git config user.email "freezewatch-bot@users.noreply.github.com"
+          git add -A
+          git commit -q -m "data: update"
+          git push -q -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" data
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+  pages:
+    needs: run
+    if: needs.run.outputs.changed == 'true'
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/pages.yml
