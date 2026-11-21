@@ -22,6 +22,7 @@ log = logging.getLogger("freezewatch.inflows")
 TRANSFER_TOPIC = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
 TRONGRID = "https://api.trongrid.io"
 MIN_INFLOW_USD = 0.01
+MAX_SANE_AMOUNT = 1e12  # above any stablecoin supply: rejects max-uint approvals / malformed rows
 # chain -> (token label, token contract, how to query)
 EVM_TOKENS = {
     "eth": ("USDT", ETH_USDT, ("v2", 1)),
@@ -67,14 +68,21 @@ def parse_evm_log(lg):
     if len(t) < 3 or t[0].lower() != TRANSFER_TOPIC:
         return None
     amt = int((lg.get("data") or "0x0"), 16) / 10 ** USDT_DECIMALS
+    if amt > MAX_SANE_AMOUNT:
+        return None
     return ("0x" + t[1][-40:], amt, eth._h(lg["timeStamp"]), lg["transactionHash"], eth._h(lg.get("logIndex", "0x0")))
 
 
 def parse_tron_transfer(row):
-    """TronGrid trc20 row -> (sender, amount, ts, tx_hash, 0) or None."""
+    """TronGrid trc20 row -> (sender, amount, ts, tx_hash, 0) or None. The endpoint also returns Approval events
+    (often with max-uint values): only Transfer rows count."""
+    if row.get("type", "Transfer") != "Transfer":
+        return None
     try:
-        return (row["from"], int(row["value"]) / 10 ** USDT_DECIMALS, int(row["block_timestamp"]) // 1000,
-                row["transaction_id"], 0)
+        amt = int(row["value"]) / 10 ** USDT_DECIMALS
+        if amt > MAX_SANE_AMOUNT:
+            return None
+        return (row["from"], amt, int(row["block_timestamp"]) // 1000, row["transaction_id"], 0)
     except (KeyError, ValueError):
         return None
 
@@ -158,10 +166,24 @@ def candidates(conn):
     return out
 
 
+def cleanup_bad_rows(conn):
+    """One-time fix: early TRON scans stored Approval events too. Drop TRON rows + cursors once so they are rescanned
+    with the Transfer-only parser; drop any absurd amount on every run."""
+    from .db import meta_get, meta_set
+    if meta_get(conn, "inflows_tron_transfer_only") != "1":
+        n = conn.execute("DELETE FROM inflows_after_freeze WHERE chain='tron'").rowcount
+        conn.execute("DELETE FROM inflow_cursor WHERE chain='tron'")
+        meta_set(conn, "inflows_tron_transfer_only", "1")
+        log.info("inflows: dropped %s TRON rows for a Transfer-only rescan", n)
+    conn.execute("DELETE FROM inflows_after_freeze WHERE amount > ?", (MAX_SANE_AMOUNT,))
+    conn.commit()
+
+
 def refresh(conn, budget_sec=120):
     """Check frozen addresses for inbound transfers: never-checked (newest freeze first), then those checked before
     today. Cursors make every check incremental. Returns the number of addresses checked."""
     t0 = time.time()
+    cleanup_bad_rows(conn)
     purge_sinks(conn)
     today = iso(now_ts())[:10]
     cur = {(r["chain"], r["address"]): (r["cursor"], r["checked_at"]) for r in conn.execute("SELECT * FROM inflow_cursor")}
