@@ -170,34 +170,54 @@ def refresh(conn, budget_sec=120):
     todo.sort(key=lambda c: (cur.get((c[0], c[1])) is not None, cur.get((c[0], c[1]), (0, ""))[1] or "", prio[c[0]], -c[3]))
     latest = {}
     n = 0
-    for chain, addr, ivs, start in todo:
+
+    def done(chain, addr, ivs, token, rows, new_cursor):
+        save(conn, chain, token, addr, rows, ivs)
+        conn.execute("INSERT INTO inflow_cursor(chain,address,cursor,checked_at) VALUES(?,?,?,?) "
+                     "ON CONFLICT(chain,address) DO UPDATE SET cursor=excluded.cursor, checked_at=excluded.checked_at",
+                     (chain, addr, str(new_cursor), today))
+
+    evm = [c for c in todo if c[0] != "tron"]
+    for chain, addr, ivs, start in evm:
         if time.time() - t0 > budget_sec:
             break
         cursor = cur.get((chain, addr), (None, None))[0]
         try:
-            if chain == "tron":
-                now_ms = now_ts() * 1000
-                from_ms = max(start * 1000, int(cursor)) if cursor else start * 1000
-                rows = fetch_tron(addr, from_ms)
-                new_cursor = now_ms - 60_000
-                token = "USDT"
-            else:
-                if chain not in latest:
-                    latest[chain] = latest_block(chain)
-                rows = fetch_evm(chain, addr, int(cursor) + 1 if cursor else 0)
-                new_cursor = latest[chain]
-                token = EVM_TOKENS[chain][0]
+            if chain not in latest:
+                latest[chain] = latest_block(chain)
+            rows = fetch_evm(chain, addr, int(cursor) + 1 if cursor else 0)
         except Exception as e:  # noqa: BLE001
             log.warning("inflows %s %s: %s", chain, str(addr)[:12], str(e)[:80])
             if "ETHERSCAN" in str(e):
                 break
             continue
-        save(conn, chain, token, addr, rows, ivs)
-        conn.execute("INSERT INTO inflow_cursor(chain,address,cursor,checked_at) VALUES(?,?,?,?) "
-                     "ON CONFLICT(chain,address) DO UPDATE SET cursor=excluded.cursor, checked_at=excluded.checked_at",
-                     (chain, addr, str(new_cursor), today))
+        done(chain, addr, ivs, EVM_TOKENS[chain][0], rows, latest[chain])
         n += 1
         if n % 20 == 0:
+            conn.commit()
+    # TRON: TronGrid latency (~2 s) dominates, so addresses are fetched concurrently (the shared limiter keeps the rate)
+    from concurrent.futures import ThreadPoolExecutor
+    trn = [c for c in todo if c[0] == "tron"]
+
+    def one(item):
+        chain, addr, ivs, start = item
+        cursor = cur.get((chain, addr), (None, None))[0]
+        from_ms = max(start * 1000, int(cursor)) if cursor else start * 1000
+        now_ms = now_ts() * 1000
+        try:
+            return item, fetch_tron(addr, from_ms), now_ms - 60_000
+        except Exception as e:  # noqa: BLE001
+            log.warning("inflows tron %s: %s", str(addr)[:10], str(e)[:80])
+            return item, None, None
+    with ThreadPoolExecutor(max_workers=6) as ex:
+        for i in range(0, len(trn), 24):
+            if time.time() - t0 > budget_sec:
+                break
+            for item, rows, new_cursor in ex.map(one, trn[i:i + 24]):
+                if rows is None:
+                    continue
+                done("tron", item[1], item[2], "USDT", rows, new_cursor)
+                n += 1
             conn.commit()
     conn.commit()
     log.info("inflows: %s addresses checked (%s remaining)", n, max(0, len(todo) - n))
