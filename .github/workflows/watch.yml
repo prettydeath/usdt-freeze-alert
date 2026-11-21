@@ -59,6 +59,7 @@ jobs:
           ETH_RPC_URL: ${{ secrets.ETH_RPC_URL }}
           SOLANA_RPC_URL: ${{ secrets.SOLANA_RPC_URL }}
           FREEZEWATCH_BUDGET_SEC: "300"
+          FREEZEWATCH_SOL_HISTORY_SEC: "60"
         run: |
           if [ "${{ github.event.inputs.backfill }}" = "true" ]; then
             python -m freezewatch backfill --chain "${{ github.event.inputs.chain }}" --budget "${{ github.event.inputs.budget_sec }}" || true

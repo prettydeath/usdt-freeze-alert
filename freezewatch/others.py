@@ -3,6 +3,7 @@ The submission->execution delay cannot be measured here (N/A): the decision is m
 import base64
 import json
 import logging
+import os
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
@@ -254,11 +255,14 @@ def sync_solana(conn, source, since_ts=None, budget_sec=None):
     # B. history backward
     before = oldest
     first = newest is None
+    # history is optional work: in scheduled runs keep it short so the whole run fits the cron interval
+    hist_budget = int(os.environ.get("FREEZEWATCH_SOL_HISTORY_SEC", "0") or 0) or budget_sec
+    page_limit = 50 if hist_budget and hist_budget <= 300 else 250
     while not complete and (oldest_ts is None or int(oldest_ts) > since_ts):
-        if budget_sec and time.time() - t0 > budget_sec:
+        if hist_budget and time.time() - t0 > hist_budget:
             log.warning("%s: time budget exhausted, history will continue on the next run", source)
             break
-        page = _sigs(auth, before=before)
+        page = _sigs(auth, before=before, limit=page_limit)
         if not page:
             complete = True
             meta_set(conn, f"{source}_complete", "1")
