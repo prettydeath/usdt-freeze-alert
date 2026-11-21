@@ -5,14 +5,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>USDT Freeze Alert</title>
 <meta name="description" content="See USDT freezes before they happen: live Tether multisig freeze proposals across chains.">
+<script>try{var t=localStorage.getItem('ufa.theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>
 <style>
 :root{
   --bg:#f5f6f7;--surf:#fff;--fg:#15191f;--mut:#667080;--hair:#dfe3e8;--acc:#2a78d6;--accfg:#fff;
   --red:#c63a2f;--redbg:#fbe9e7;--amb:#a96b00;--ambbg:#fdf0d6;--grn:#23803f;--grnbg:#e3f3e8;--gry:#6b7280;--grybg:#eceef1;
   --serif:Georgia,"Iowan Old Style","Palatino Linotype",serif;--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
-@media (prefers-color-scheme:dark){:root{
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#0f1216;--surf:#171b21;--fg:#e8ebef;--mut:#98a2b0;--hair:#2a3039;--acc:#6da6ee;--accfg:#0f1216;
   --red:#ff8a7f;--redbg:#3a1f1c;--amb:#f0b650;--ambbg:#3a2d12;--grn:#6fd08c;--grnbg:#173323;--gry:#a0a8b4;--grybg:#252a32}}
+:root[data-theme="dark"]{
+  --bg:#0f1216;--surf:#171b21;--fg:#e8ebef;--mut:#98a2b0;--hair:#2a3039;--acc:#6da6ee;--accfg:#0f1216;
+  --red:#ff8a7f;--redbg:#3a1f1c;--amb:#f0b650;--ambbg:#3a2d12;--grn:#6fd08c;--grnbg:#173323;--gry:#a0a8b4;--grybg:#252a32}
+:root{color-scheme:light dark}:root[data-theme="light"]{color-scheme:light}:root[data-theme="dark"]{color-scheme:dark}
+.themebtn{cursor:pointer;font:inherit;font-size:12px;line-height:1.4}
+.themebtn:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--fg);font:13px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 a{color:var(--acc);text-decoration:none}a:hover{text-decoration:underline}
@@ -84,6 +91,7 @@ footer{margin:30px 0 18px;color:var(--mut);font-size:12px;border-top:1px solid v
   <span class="pill live" id="live">live</span>
   <span class="pill" id="nch"></span>
   <div class="filters" id="filters"></div>
+  <button type="button" class="pill themebtn" id="themeBtn" title="Theme: auto / light / dark" aria-label="Switch theme">🌓 Auto</button>
 </div></header>
 
 <main class="wrap">
@@ -363,6 +371,21 @@ function render(){
   renderBadges(); renderSigners(); renderCross();
 }
 render();
+(function(){
+  const btn = $('themeBtn'), root = document.documentElement;
+  const MODES = ['auto','light','dark'], LBL = {auto:'🌓 Auto', light:'☀️ Light', dark:'🌙 Dark'};
+  let mode = root.getAttribute('data-theme') || 'auto';
+  const repaint = () => { renderHist(); renderWeekly(); };
+  const apply = () => {
+    if(mode === 'auto') root.removeAttribute('data-theme'); else root.setAttribute('data-theme', mode);
+    btn.textContent = LBL[mode]; btn.setAttribute('aria-label', 'Theme: ' + mode + '. Click to switch');
+    try { localStorage.setItem('ufa.theme', mode); } catch(e) {}
+    repaint();
+  };
+  btn.textContent = LBL[mode];
+  btn.onclick = () => { mode = MODES[(MODES.indexOf(mode) + 1) % MODES.length]; apply(); };
+  try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if(mode === 'auto') repaint(); }); } catch(e) {}
+})();
 $('foot').innerHTML = 'Sources: ' + D.sources.map(esc).join(', ') + '. Data changed: ' + dt(D.generated_at) + '. ' +
   'Freezing actions = addBlackList / addToBlockedList; destroy*; remove*. ' +
   'TRON execution time is inferred from confirmations; Safe queues live off-chain; USDC and Solana have no queue (delay n/a). ' +
