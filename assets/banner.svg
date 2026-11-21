@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 300" role="img" aria-label="USDT Freeze Alert - See USDT freezes before they happen">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0d1b2a"/><stop offset="1" stop-color="#14263d"/></linearGradient>
+  </defs>
+  <rect width="1200" height="300" rx="20" fill="url(#bg)"/>
+  <g transform="translate(150 150)" stroke="#6da6ee" stroke-width="7" stroke-linecap="round" fill="none">
+    <circle r="86" stroke="#2a78d6" stroke-width="3" opacity=".55"/>
+    <circle r="62" stroke-width="3" opacity=".35"/>
+    <path d="M0-58V58M-50-29L50 29M-50 29L50-29"/>
+    <path d="M0-58l-12 12M0-58l12 12M0 58l-12-12M0 58l12-12M-50-29l17 3M-50-29l7 16M50 29l-17-3M50 29l-7-16M-50 29l7-16M-50 29l17-3M50-29l-7 16M50-29l-17 3"/>
+    <circle r="7" fill="#eb6834" stroke="none"/>
+  </g>
+  <text x="290" y="145" font-family="Georgia,'Times New Roman',serif" font-size="76" font-weight="600" fill="#f2f5f9">USDT Freeze Alert</text>
+  <text x="294" y="203" font-family="system-ui,-apple-system,'Segoe UI',Roboto,sans-serif" font-size="30" fill="#9db3cc">See USDT freezes before they happen</text>
+  <g font-family="ui-monospace,Menlo,Consolas,monospace" font-size="19" fill="#6da6ee">
+    <text x="294" y="250">ETH · TRON · AVAX · NEAR · APT · TON · 12× USDT0 · USDC · SOL</text>
+  </g>
+</svg>
