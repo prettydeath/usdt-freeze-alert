@@ -1,0 +1,5 @@
+freezewatch/template.html linguist-language=Python linguist-detectable=false
+site/** linguist-generated
+data/** linguist-generated
+assets/** linguist-documentation
+*.svg linguist-detectable=false
