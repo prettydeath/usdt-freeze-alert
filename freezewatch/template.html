@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>USDT Freeze Alert</title>
+<meta name="description" content="See USDT freezes before they happen: live Tether multisig freeze proposals across chains.">
+<style>
+:root{
+  --bg:#f5f6f7;--surf:#fff;--fg:#15191f;--mut:#667080;--hair:#dfe3e8;--acc:#2a78d6;--accfg:#fff;
+  --red:#c63a2f;--redbg:#fbe9e7;--amb:#a96b00;--ambbg:#fdf0d6;--grn:#23803f;--grnbg:#e3f3e8;--gry:#6b7280;--grybg:#eceef1;
+  --serif:Georgia,"Iowan Old Style","Palatino Linotype",serif;--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#0f1216;--surf:#171b21;--fg:#e8ebef;--mut:#98a2b0;--hair:#2a3039;--acc:#6da6ee;--accfg:#0f1216;
+  --red:#ff8a7f;--redbg:#3a1f1c;--amb:#f0b650;--ambbg:#3a2d12;--grn:#6fd08c;--grnbg:#173323;--gry:#a0a8b4;--grybg:#252a32}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:13px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+a{color:var(--acc);text-decoration:none}a:hover{text-decoration:underline}
+.wrap{max-width:1280px;margin:0 auto;padding:0 16px}
+header.bar{position:sticky;top:0;z-index:5;background:var(--surf);border-bottom:1px solid var(--hair)}
+header .wrap{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;padding-top:10px;padding-bottom:10px}
+h1{font-size:15px;margin:0;font-weight:700;letter-spacing:.2px}
+h1 small{font-weight:400;color:var(--mut);margin-left:8px;font-size:12px}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:2px 9px;border:1px solid var(--hair);border-radius:999px;font-size:12px;background:var(--surf);color:var(--fg)}
+.live::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--grn)}
+.live.old::before{background:var(--amb)}
+.filters{display:flex;flex-wrap:wrap;gap:6px;margin-left:auto}
+.fp{cursor:pointer;user-select:none}
+.fp.on{background:var(--acc);border-color:var(--acc);color:var(--accfg)}
+h2{font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:var(--mut);margin:22px 0 8px;font-weight:600}
+.kpis{display:grid;gap:10px;grid-template-columns:repeat(4,1fr);margin-top:14px}
+@media (max-width:820px){.kpis{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:var(--surf);border:1px solid var(--hair);border-radius:6px;padding:10px 12px}
+.kpi .l{color:var(--mut);font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+.kpi .v{font-size:24px;font-weight:650;margin:2px 0}
+.kpi .s{color:var(--mut);font-size:12px}
+.tw{overflow-x:auto;background:var(--surf);border:1px solid var(--hair);border-radius:6px}
+table{border-collapse:collapse;width:100%;min-width:640px}
+th,td{padding:5px 9px;text-align:left;border-bottom:1px solid var(--hair);vertical-align:top;font-size:12px}
+tr:last-child td{border-bottom:0}
+th{color:var(--mut);font-weight:600;white-space:nowrap;font-size:11px;text-transform:uppercase;letter-spacing:.4px}
+td.m,.m{font-family:var(--mono);font-size:11.5px;word-break:break-all;overflow-wrap:anywhere}
+td.addr{min-width:260px}
+.tag{display:inline-block;padding:0 6px;border-radius:4px;font-size:11px;font-weight:600;background:var(--grybg);color:var(--gry);white-space:nowrap}
+.t-add{background:var(--redbg);color:var(--red)}.t-des{background:var(--ambbg);color:var(--amb)}
+.t-rem{background:var(--grnbg);color:var(--grn)}
+.ch{font-weight:600;white-space:nowrap}
+.warn{color:var(--amb)}.mut{color:var(--mut)}
+.empty{padding:14px;color:var(--mut)}
+.stalehd{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:22px 0 8px}
+.stalehd h2{margin:0}
+.sw{position:relative;display:inline-block;width:34px;height:18px}
+.sw input{opacity:0;width:0;height:0}
+.sw span{position:absolute;inset:0;background:var(--grybg);border:1px solid var(--hair);border-radius:18px;cursor:pointer;transition:.15s}
+.sw span::before{content:"";position:absolute;width:12px;height:12px;left:2px;top:2px;background:var(--mut);border-radius:50%;transition:.15s}
+.sw input:checked+span{background:var(--acc);border-color:var(--acc)}
+.sw input:checked+span::before{transform:translateX(16px);background:var(--accfg)}
+.sw input:focus-visible+span{outline:2px solid var(--acc);outline-offset:2px}
+#staleBox{display:none}#staleBox.open{display:block}
+.report{margin-top:34px;border-top:1px solid var(--hair);padding-top:6px}
+.report h2{font-family:var(--serif);text-transform:none;letter-spacing:0;font-size:20px;color:var(--fg);margin:24px 0 10px;font-weight:600}
+.hero{display:grid;gap:18px;grid-template-columns:repeat(3,1fr);margin:18px 0}
+@media (max-width:820px){.hero{grid-template-columns:1fr}}
+.hero .n{font-family:var(--serif);font-size:48px;line-height:1.05;font-weight:500}
+.hero .c{color:var(--mut);font-size:13px;margin-top:4px;max-width:34ch}
+.cols{display:grid;gap:18px;grid-template-columns:1fr 1fr}
+@media (max-width:900px){.cols{grid-template-columns:1fr}}
+.box{background:var(--surf);border:1px solid var(--hair);border-radius:6px;padding:12px}
+.box h3{margin:0 0 6px;font-size:13px;font-weight:600}
+.legend{display:flex;flex-wrap:wrap;gap:4px 14px;margin:6px 0 2px;font-size:12px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+canvas{max-height:280px}
+.story{font-family:var(--serif);font-size:17px;line-height:1.6;max-width:72ch;margin:16px 0}
+.badges{display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}
+.badge{border:1px solid var(--hair);border-radius:6px;padding:8px 10px;background:var(--surf)}
+.b-on{border-left:3px solid var(--grn)}.b-safe{border-left:3px solid var(--amb)}.b-ex{border-left:3px solid var(--gry)}
+.bm{font-size:11px;color:var(--mut)}
+footer{margin:30px 0 18px;color:var(--mut);font-size:12px;border-top:1px solid var(--hair);padding-top:10px}
+</style>
+</head>
+<body>
+<header class="bar"><div class="wrap">
+  <h1>USDT Freeze Alert<small>See USDT freezes before they happen</small></h1>
+  <span class="pill live" id="live">live</span>
+  <div class="filters" id="filters"></div>
+</div></header>
+
+<main class="wrap">
+  <div class="kpis" id="kpis"></div>
+
+  <h2>Pending queue</h2>
+  <div class="tw"><table id="pending"></table></div>
+
+  <div class="stalehd">
+    <h2 id="staleTitle">Stale proposals</h2>
+    <label class="sw" title="Show stale proposals"><input type="checkbox" id="staleSw"><span></span></label>
+  </div>
+  <div id="staleBox">
+    <div class="mut" style="margin-bottom:6px" id="staleHint"></div>
+    <div class="tw"><table id="stale"></table></div>
+  </div>
+
+  <h2>Recently executed</h2>
+  <div class="tw"><table id="recent"></table></div>
+
+  <section class="report">
+    <div class="hero" id="hero"></div>
+    <h2>How much time is there? Delay from proposal to execution (last 12 months)</h2>
+    <div class="box"><div class="legend" id="hlegend"></div><canvas id="hist"></canvas></div>
+    <div class="cols" style="margin-top:18px">
+      <div class="box"><h3>Executed freezes per week (26 weeks)</h3><canvas id="weekly"></canvas>
+        <div class="mut" id="nochart"></div></div>
+      <div class="box"><h3>Mechanism by chain</h3><div class="badges" id="badges"></div></div>
+    </div>
+    <p class="story" id="story"></p>
+
+    <h2>Signers</h2>
+    <div class="tw"><table id="signers"></table></div>
+
+    <h2>Cross-chain: addresses on several chains</h2>
+    <div class="tw"><table id="cross"></table></div>
+    <div class="mut" id="crossNote" style="margin-top:4px"></div>
+  </section>
+
+  <footer id="foot"></footer>
+</main>
+
+<script id="data" type="application/json">__DATA__</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+const D = JSON.parse(document.getElementById('data').textContent);
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const NOW = Date.now() / 1000;
+const CH = D.chains;
+const ORDER = ['eth','tron','avax','celo','kaia','kava','near','aptos','ton','arb1','pol','plasma','mantle','oeth','monad','unichain','stable','morph','ink','hyper','berachain','usdc_eth','sol_usdc','sol_usdt'];
+const COLORS = ['#2a78d6','#eb6834','#2a9d8f','#8e5bd6','#c99a1b','#d6558b','#4f8a3c','#7a8594','#b0524a','#3d9bd6'];
+const NO_DELAY = ['celo','kaia','kava','ton','usdc_eth','sol_usdc','sol_usdt'];
+const cname = c => (CH[c] && CH[c].label) || c;
+const cshort = c => ({eth:'ETH',tron:'TRON',avax:'AVAX',celo:'CELO',kaia:'KAIA',kava:'KAVA',near:'NEAR',aptos:'APT',ton:'TON',usdc_eth:'USDC-ETH',sol_usdc:'USDC-SOL',sol_usdt:'USDT-SOL'}[c] || c.toUpperCase());
+const SAFE = Object.keys(CH).filter(c => CH[c].mech === 'safe_api');
+const GROUPS = [
+  {id:'eth', label:'ETH', ch:['eth']}, {id:'tron', label:'TRON', ch:['tron']}, {id:'avax', label:'AVAX', ch:['avax']},
+  {id:'usdt0', label:'USDT0/ARB…', ch:SAFE},
+  {id:'usdc', label:'USDC', ch:['usdc_eth']}, {id:'sol', label:'SOL', ch:['sol_usdc','sol_usdt']},
+  {id:'more', label:'', ch:['celo','kaia','kava','near','aptos','ton']}
+].map(g => ({...g, ch: g.ch.filter(c => CH[c])})).filter(g => g.ch.length);
+const moreG = GROUPS.find(g => g.id === 'more'); if (moreG) moreG.label = '+' + moreG.ch.length;
+const sel = new Set();
+const active = c => sel.size === 0 || GROUPS.some(g => sel.has(g.id) && g.ch.includes(c));
+
+function dur(sec){ if(sec==null||sec<0) return 'n/a'; sec=Math.round(sec);
+  const d=Math.floor(sec/86400),h=Math.floor(sec%86400/3600),m=Math.floor(sec%3600/60),s=sec%60;
+  if(d) return d+'d '+h+'h'; if(h) return h+'h '+m+'m'; if(m) return m+'m '+s+'s'; return s+'s'; }
+const usd = x => x==null ? '-' : '$' + Math.round(x).toLocaleString('en-US');
+const dt = s => s ? s.replace('T',' ').replace('Z',' UTC') : '-';
+const age = s => { if(!s) return 'unknown'; return dur(NOW - Date.parse(s)/1000); };
+const addrL = (c,a) => { if(!a) return '<span class="mut">-</span>'; const b=(CH[c]||{}).addr; return b ? `<a href="${b}${esc(a)}" target="_blank" rel="noopener">${esc(a)}</a>` : esc(a); };
+const txL = (c,h) => { if(!h) return '-'; const b=(CH[c]||{}).tx; return b && /^[0-9a-zA-Z]+$/.test(h) ? `<a href="${b}${esc(h)}" target="_blank" rel="noopener">${esc(h)}</a>` : esc(h); };
+const med = a => { if(!a.length) return null; a=[...a].sort((x,y)=>x-y); const k=(a.length-1)/2; return (a[Math.floor(k)]+a[Math.ceil(k)])/2; };
+const FREEZE = ['addBlackList','addToBlockedList','freeze_accounts','freeze'];
+const DESTROY = ['destroyBlackFunds','destroyBlockedFunds'];
+const REMOVE = ['removeBlackList','removeFromBlockedList','unfreeze_accounts','unfreeze'];
+function fnTag(r){
+  const f=r.function; const k = FREEZE.includes(f)?'t-add':DESTROY.includes(f)?'t-des':REMOVE.includes(f)?'t-rem':'';
+  return `<span class="tag ${k}">${esc(f)}</span>`;
+}
+const exA = () => D.ex.filter(e => active(e[0]));
+
+(function(){
+  const ageMin = Math.max(0, Math.round((NOW - Date.parse(D.generated_at)/1000)/60));
+  const el = $('live'); el.textContent = 'live · data changed ' + (ageMin < 90 ? ageMin + ' min' : Math.round(ageMin/60) + ' h') + ' ago';
+  if(ageMin > 180) el.classList.add('old');
+  const f = $('filters');
+  const all = document.createElement('span'); all.className='pill fp on'; all.textContent='All'; f.appendChild(all);
+  all.onclick = () => { sel.clear(); window.sync(); render(); };
+  for(const g of GROUPS){
+    const s = document.createElement('span'); s.className='pill fp'; s.textContent=g.label; s.dataset.g=g.id;
+    s.title = g.ch.map(cname).join(', ');
+    s.onclick = () => { sel.has(g.id) ? sel.delete(g.id) : sel.add(g.id); window.sync(); render(); };
+    f.appendChild(s);
+  }
+  window.sync = () => { f.querySelectorAll('.fp').forEach(x => x.classList.toggle('on', x.dataset.g ? sel.has(x.dataset.g) : sel.size===0)); };
+  // stale switch (state remembered)
+  let on = false; try { on = localStorage.getItem('ufa.stale') === '1'; } catch(e) {}
+  const sw = $('staleSw'); sw.checked = on; $('staleBox').classList.toggle('open', on);
+  sw.onchange = () => { $('staleBox').classList.toggle('open', sw.checked); try { localStorage.setItem('ufa.stale', sw.checked ? '1' : '0'); } catch(e) {} };
+})();
+
+function staleStats(){
+  let n = 0, usdv = 0;
+  for(const [c, v] of Object.entries(D.stale_by_chain || {})) if(active(c)){ n += v[0]; usdv += v[1]; }
+  return [n, usdv];
+}
+
+function renderKpis(){
+  const P = D.pending.filter(r => active(r.chain));
+  const addP = P.filter(r => FREEZE.includes(r.function));
+  const desP = P.filter(r => DESTROY.includes(r.function));
+  const risk = addP.reduce((s,r) => s + (r.balance_now||0), 0);
+  const desv = desP.reduce((s,r) => s + (r.balance_now||0), 0);
+  const ex = exA().filter(e => e[2] >= 0);
+  const d30 = ex.filter(e => NOW - e[1] <= 30*86400).map(e => e[2]);
+  const dp = ex.filter(e => NOW - e[1] > 30*86400 && NOW - e[1] <= 60*86400).map(e => e[2]);
+  const m30 = med(d30), mp = med(dp);
+  let delta = '<span class="mut">no comparison yet</span>';
+  if(m30 != null && mp) { const p = Math.round((m30/mp - 1)*100); delta = (p>0?'▲ ':p<0?'▼ ':'= ') + Math.abs(p) + '% vs previous 30 days'; }
+  const b7 = exA().filter(e => e[3]===1 && NOW - e[1] <= 7*86400);
+  const per = {}; b7.forEach(e => per[e[0]] = (per[e[0]]||0)+1);
+  const brk = Object.entries(per).sort((a,b)=>b[1]-a[1]).slice(0,4).map(([c,n]) => cshort(c)+' '+n).join(' · ') || 'none';
+  const [sn, sv] = staleStats();
+  $('kpis').innerHTML = [
+    ['Pending', P.length, addP.length + ' addBlackList · stale: ' + sn],
+    ['At risk', usd(risk), (desP.length ? 'destroy pending: ' + usd(desv) + ' · ' : '') + 'stale: ' + usd(sv)],
+    ['Median delay, 30d', dur(m30), delta],
+    ['Freezes, 7d', b7.length, brk],
+  ].map(([l,v,s]) => `<div class="kpi"><div class="l">${l}</div><div class="v">${v}</div><div class="s">${s}</div></div>`).join('');
+}
+
+function pendRows(rows, withAge){
+  let h = '<tr><th>Chain</th><th>ID</th><th>Action</th><th>Target</th><th>Signatures</th><th>Age</th><th>Balance</th></tr>';
+  for(const r of rows){
+    const tgt = r.target ? addrL(r.chain, r.target) : (r.amount!=null ? 'amount ' + usd(r.amount) : '<span class="mut">-</span>');
+    h += `<tr><td class="ch">${esc(cshort(r.chain))}</td><td class="m">${r.tx_id}</td><td>${fnTag(r)}</td>
+      <td class="m addr">${tgt}</td><td>${r.confirmations}/${r.required ?? '?'}</td><td>${age(r.submitted_at)}</td><td>${usd(r.balance_now)}</td></tr>`;
+  }
+  return h;
+}
+
+function renderPending(){
+  const rows = D.pending.filter(r => active(r.chain));
+  const risk = r => (FREEZE.includes(r.function) ? 1e9 + (r.balance_now||0) : 0) + (DESTROY.includes(r.function) ? 5e8 + (r.balance_now||0)/1e3 : 0);
+  rows.sort((a,b) => risk(b) - risk(a) || (b.tx_id - a.tx_id));
+  $('pending').innerHTML = rows.length ? pendRows(rows) : '<tr><td class="empty">No live pending proposals.</td></tr>';
+  const st = D.stale.filter(r => active(r.chain));
+  const [sn, sv] = staleStats();
+  $('staleTitle').textContent = 'Stale proposals (' + sn + ')';
+  $('staleHint').textContent = 'Proposed but never executed - funds may still be on the address. Stale = more than ' + D.stale_days + ' days without execution' + (sn > st.length ? ' (top ' + st.length + ' by balance shown; full list in data/proposals.csv)' : '') + '. Total balance: ' + usd(sv) + '.';
+  $('stale').innerHTML = st.length ? pendRows(st) : '<tr><td class="empty">None.</td></tr>';
+}
+
+function renderRecent(){
+  const rows = D.recent.filter(r => active(r.chain)).slice(0, 60);
+  let h = '<tr><th>Chain</th><th>Address</th><th>Action</th><th>Executed (UTC)</th><th>Delay</th><th>Tx</th></tr>';
+  for(const r of rows){
+    const hasD = r.delay != null && !NO_DELAY.includes(r.chain);
+    const dl = !hasD ? '<span class="mut">n/a</span>' : r.delay === 0 ? '<span class="warn">no warning</span>' : dur(r.delay);
+    h += `<tr><td class="ch">${esc(cshort(r.chain))}</td><td class="m addr">${addrL(r.chain, r.target)}${r.amount!=null?' <span class="mut">'+usd(r.amount)+'</span>':''}</td>
+      <td>${fnTag({function:r.function})}</td><td class="m">${dt(r.at).replace(' UTC','')}</td><td>${dl}</td><td class="m">${txL(r.chain, r.tx)}</td></tr>`;
+  }
+  $('recent').innerHTML = rows.length ? h : '<tr><td class="empty">No data.</td></tr>';
+}
+
+let histChart, weekChart;
+function bucketOf(d){ if(d===0) return 0; if(d<300) return 1; if(d<1800) return 2; if(d<3600) return 3; if(d<10800) return 4; if(d<21600) return 5; if(d<86400) return 6; return 7; }
+const BL = ['0 s','< 5 min','5-30 min','30-60 min','1-3 h','3-6 h','6-24 h','> 24 h'];
+
+function renderHero(){
+  const eth = D.ex.filter(e => e[0]==='eth' && e[2]>=0 && NOW-e[1] <= 365*86400);
+  const m = med(eth.map(e=>e[2]));
+  const z = eth.length ? eth.filter(e=>e[2]===0).length/eth.length : null;
+  const fz = D.ex.filter(e => e[3]===1 && NOW-e[1] <= 365*86400);
+  const nch = new Set(fz.map(e=>e[0])).size;
+  $('hero').innerHTML = [
+    [dur(m), 'median delay from proposal to execution on Ethereum, last 12 months: how long a proposal usually sits in the queue'],
+    [z==null?'n/a':Math.round(z*100)+'%', 'of Ethereum executions land in the same block as the proposal, so nobody can see them coming'],
+    [fz.length.toLocaleString('en-US'), 'freezing actions in the last 12 months across ' + nch + ' chains and tokens (incl. USDC and Solana, which have no queue)'],
+  ].map(([n,c]) => `<div><div class="n">${n}</div><div class="c">${c}</div></div>`).join('');
+}
+
+function renderHist(){
+  const data = {};
+  for(const e of D.ex){ if(e[2]>=0 && NOW-e[1] <= 365*86400 && active(e[0])){ (data[e[0]] = data[e[0]] || []).push(e[2]); } }
+  const chains = Object.keys(data).filter(c => data[c].length >= 5).sort((a,b) => ORDER.indexOf(a) - ORDER.indexOf(b));
+  const ds = chains.map((c,i) => {
+    const cnt = new Array(8).fill(0); data[c].forEach(d => cnt[bucketOf(d)]++);
+    const tot = data[c].length;
+    const k = ORDER.indexOf(c);
+    return {label: cshort(c), color: COLORS[k >= 0 && k < COLORS.length ? k : i % COLORS.length], n: tot, data: cnt.map(x => +(x/tot*100).toFixed(1))};
+  });
+  $('hlegend').innerHTML = ds.map(d => `<span><i style="background:${d.color}"></i>${esc(d.label)} <span class="mut">(n=${d.n})</span></span>`).join('') || '<span class="mut">Not enough data for the selected chains.</span>';
+  if(typeof Chart === 'undefined'){ $('nochart').textContent = 'Chart.js (cdnjs) unavailable - charts hidden.'; return; }
+  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  Chart.defaults.color = css('--mut'); Chart.defaults.borderColor = css('--hair');
+  if(histChart) histChart.destroy();
+  histChart = new Chart($('hist'), {type:'bar', data:{labels:BL, datasets:ds.map(d => ({label:d.label, data:d.data, backgroundColor:d.color}))},
+    options:{plugins:{legend:{display:false}, tooltip:{callbacks:{label:c => c.dataset.label + ': ' + c.parsed.y + '%'}}}, scales:{y:{beginAtZero:true, ticks:{callback:v=>v+'%'}}}}});
+}
+
+function renderWeekly(){
+  const W = 26, ws = [];
+  const monday = t => { const d = new Date(t*1000); const k = (d.getUTCDay()+6)%7; return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()-k)/1000; };
+  const m0 = monday(NOW);
+  for(let i=W-1;i>=0;i--) ws.push(m0 - i*7*86400);
+  const cnt = new Array(W).fill(0);
+  for(const e of exA()){ if(e[3]!==1) continue; const k = ws.indexOf(monday(e[1])); if(k>=0) cnt[k]++; }
+  if(typeof Chart === 'undefined') return;
+  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  if(weekChart) weekChart.destroy();
+  weekChart = new Chart($('weekly'), {type:'line', data:{labels:ws.map(t => new Date(t*1000).toISOString().slice(5,10)),
+    datasets:[{label:'Freezes', data:cnt, borderColor:css('--acc'), backgroundColor:css('--acc')+'33', fill:true, tension:.25, pointRadius:2}]},
+    options:{plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}}}});
+}
+
+function renderStory(){
+  const eth = D.ex.filter(e => e[0]==='eth' && e[2]>=0);
+  const now90 = eth.filter(e => NOW-e[1] <= 90*86400).map(e=>e[2]);
+  const ago90 = eth.filter(e => NOW-e[1] > 365*86400 && NOW-e[1] <= 455*86400).map(e=>e[2]);
+  const mn = med(now90), ma = med(ago90);
+  const parts = [];
+  if(mn != null){
+    let s = 'Over the last 90 days the median delay on Ethereum is ' + dur(mn);
+    if(ma != null){ const p = Math.round((mn/ma-1)*100); s += '; a year ago, in the same window, it was ' + dur(ma) + (Math.abs(p) < 5 ? ' (no material change)' : p < 0 ? ' - ' + Math.abs(p) + '% faster now' : ' - ' + p + '% slower now'); }
+    parts.push(s + '.');
+  }
+  const tron = D.ex.filter(e => e[0]==='tron' && e[2]>=0 && NOW-e[1] <= 90*86400).map(e=>e[2]);
+  if(tron.length) parts.push('On TRON the median over the same period is ' + dur(med(tron)) + ' (execution time is inferred from confirmations).');
+  const per = {}; D.ex.filter(e => e[3]===1 && NOW-e[1] <= 90*86400).forEach(e => per[e[0]] = (per[e[0]]||0)+1);
+  const top = Object.entries(per).sort((a,b)=>b[1]-a[1]).slice(0,3);
+  if(top.length) parts.push('Most freezes in 90 days: ' + top.map(([c,n]) => cname(c) + ' (' + n + ')').join(', ') + '.');
+  const queue = D.pending.length;
+  parts.push(queue ? queue + ' live proposals are in the queues right now.' : 'No live proposals are in the queues right now.');
+  $('story').textContent = parts.join(' ');
+}
+
+function renderBadges(){
+  const lbl = {onchain:'on-chain pending', safe_api:'Safe API pending (not guaranteed)', executed_only:'executed only'};
+  const cls = {onchain:'b-on', safe_api:'b-safe', executed_only:'b-ex'};
+  const cov = D.coverage || {};
+  $('badges').innerHTML = Object.keys(CH).sort((a,b)=>ORDER.indexOf(a)-ORDER.indexOf(b)).filter(c => active(c)).map(c => {
+    const m = CH[c], cv = cov[c], o = (D.others||{})[c];
+    const note = ({celo:'delays n/a',kaia:'delays n/a',kava:'delays n/a',ton:'delays n/a'})[c] || '';
+    const extra = cv ? cv.proposals + ' proposals, ' + cv.executed + ' executed' : o ? o.freezes + ' freezes' + (o.coverage.complete ? '' : ', partial history') : '';
+    return `<div class="badge ${cls[m.mech]||''}"><b>${esc(m.label)}</b><div class="bm">${lbl[m.mech]||m.mech} · ${esc((m.threshold||'').replace(' із ',' of '))}</div><div class="bm">${esc(extra)}${note ? ' · ' + note : ''}</div></div>`;
+  }).join('');
+}
+
+function renderSigners(){
+  let h = '<tr><th>Chain</th><th>Signer</th><th>Proposed</th><th>Confirmed</th><th>Revoked</th><th>Avg confirm latency</th></tr>';
+  let n = 0;
+  for(const c of Object.keys(D.signers).sort((a,b)=>ORDER.indexOf(a)-ORDER.indexOf(b))){
+    if(!active(c)) continue;
+    for(const s of D.signers[c]){ n++; h += `<tr><td class="ch">${esc(cshort(c))}</td><td class="m addr">${addrL(c,s.signer)}</td><td>${s.submits}</td><td>${s.confirms}</td><td>${s.revokes}</td><td>${NO_DELAY.includes(c) ? 'n/a' : dur(s.avg_confirm_latency)}</td></tr>`; }
+  }
+  $('signers').innerHTML = n ? h : '<tr><td class="empty">No data.</td></tr>';
+}
+
+function renderCross(){
+  const rows = D.cross.filter(r => r.items.some(i => active(i.chain)));
+  let h = '<tr><th>Address (EVM-normalized)</th><th>Chains</th><th>Where and when</th></tr>';
+  for(const r of rows.slice(0, 60)){
+    const items = r.items.map(i => `<span class="tag ${i.class==='freeze'?'t-add':i.class==='destroy'?'t-des':'t-rem'}" title="${esc(i.status)}">${esc(cshort(i.chain))} ${esc((i.ts||'').slice(0,10))}</span>`).join(' ');
+    h += `<tr><td class="m addr">${esc(r.address)}</td><td>${r.n_chains}</td><td>${items}</td></tr>`;
+  }
+  $('cross').innerHTML = rows.length ? h : '<tr><td class="empty">No addresses on several chains.</td></tr>';
+  $('crossNote').textContent = 'Addresses on 2+ chains: ' + D.cross_total + '. TRON addresses are matched to EVM by the shared 20-byte hex.';
+}
+
+function render(){
+  renderKpis(); renderPending(); renderRecent(); renderHero(); renderHist(); renderWeekly(); renderStory();
+  renderBadges(); renderSigners(); renderCross();
+}
+render();
+$('foot').innerHTML = 'Sources: ' + D.sources.map(esc).join(', ') + '. Data changed: ' + dt(D.generated_at) + '. ' +
+  'Freezing actions = addBlackList / addToBlockedList; destroy*; remove*. ' +
+  'TRON execution time is inferred from confirmations; Safe queues live off-chain; USDC and Solana have no queue (delay n/a); Celo, Kaia, Kava and TON have no reliable timestamps (n/a). ' +
+  'Not financial advice.';
+</script>
+</body>
+</html>
