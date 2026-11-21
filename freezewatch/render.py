@@ -106,11 +106,17 @@ def build_payload(conn, stats, stale_days):
         lst = (d.get("all") or [])[:8]
         if lst:
             signers[c] = lst
+    from . import analytics
+    an = analytics.compute(conn)
+    an_json = json.dumps(an, ensure_ascii=False, separators=(",", ":"))
+    SITE_DIR.mkdir(parents=True, exist_ok=True)
+    write_if_changed(SITE_DIR / "analytics.json", an_json)
     xt, xn = crosschain.table(conn, 150)
     auth = [dict(r) for r in conn.execute("SELECT * FROM authority_state")]
     return {"generated_at": iso(now), "stale_days": stale_days, "stale_total": stale_total, "chains": chains,
             "pending": kept, "stale": stale, "stale_by_chain": stale_by_chain, "ex": ex, "recent": recent[:200], "signers": signers, "coverage": stats.get("coverage", {}),
             "others": stats.get("others", {}), "authority": auth, "cross": xt, "cross_total": xn,
+            "analytics": an if len(an_json) < 1_200_000 else None, "analytics_url": "analytics.json",
             "sources": ["Etherscan V2", "public RPCs", "TronGrid/Tronscan", "Safe Transaction Service", "nearblocks",
                         "Aptos Indexer", "tonapi", "Solana RPC"]}
 

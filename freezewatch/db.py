@@ -96,6 +96,17 @@ CREATE TABLE IF NOT EXISTS authority_state (
     updated_at TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS balances (
+    chain TEXT NOT NULL,
+    address TEXT NOT NULL,
+    token TEXT,
+    balance REAL,                  -- latest balance (USDT/USDT0/USDC)
+    checked_at TEXT,               -- date of the last check
+    frozen_balance REAL,           -- last balance observed while the address was blocked
+    frozen_checked_at TEXT,
+    PRIMARY KEY (chain, address)
+);
+
 CREATE TABLE IF NOT EXISTS alerts (
     chain TEXT NOT NULL,
     tx_id INTEGER NOT NULL,

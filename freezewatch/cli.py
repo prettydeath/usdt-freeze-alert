@@ -5,7 +5,7 @@ import sys
 import time
 from datetime import datetime, timezone
 
-from . import alerts, crosschain, eth, evmmsw, others, safe, tron
+from . import alerts, analytics, crosschain, eth, evmmsw, others, safe, tron
 from .constants import BALANCE_FUNCS
 from .db import connect, meta_get, meta_set, update_proposal
 from .derive import derive_all, rebuild_blacklist
@@ -117,6 +117,12 @@ def cmd_update(args, conn=None):
     refresh_balances(conn)
     rebuild_blacklist(conn)
     conn.commit()
+    budget = int(env("ANALYTICS_BUDGET_SEC", "120"))
+    for step in (analytics.enrich_destroy_amounts, analytics.refresh_balances):
+        try:
+            step(conn, budget)
+        except Exception as e:  # noqa: BLE001
+            log.warning("analytics step %s failed: %s", step.__name__, str(e)[:100])
     n = alerts.run_alerts(conn, before, max_fr, before_pairs, AUTH_CHANGES)
     if n:
         log.info("alerts sent: %s", n)
