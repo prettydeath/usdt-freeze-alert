@@ -72,6 +72,7 @@ td.addr{min-width:260px}
 .hero .c{color:var(--mut);font-size:13px;margin-top:4px;max-width:34ch}
 .cols{display:grid;gap:18px;grid-template-columns:1fr 1fr}
 @media (max-width:900px){.cols{grid-template-columns:1fr}}
+.cols>*,.box{min-width:0}
 .box{background:var(--surf);border:1px solid var(--hair);border-radius:6px;padding:12px}
 .box h3{margin:0 0 6px;font-size:13px;font-weight:600}
 .legend{display:flex;flex-wrap:wrap;gap:4px 14px;margin:6px 0 2px;font-size:12px}
@@ -82,6 +83,27 @@ canvas{max-height:280px}
 .badge{border:1px solid var(--hair);border-radius:6px;padding:8px 10px;background:var(--surf)}
 .b-on{border-left:3px solid var(--grn)}.b-safe{border-left:3px solid var(--amb)}.b-ex{border-left:3px solid var(--gry)}
 .bm{font-size:11px;color:var(--mut)}
+
+[hidden]{display:none!important}
+nav.tabs{display:flex;gap:4px;padding:0 16px;max-width:1280px;margin:0 auto;overflow-x:auto}
+.tab{cursor:pointer;font:inherit;font-size:13px;font-weight:600;background:none;border:0;border-bottom:2px solid transparent;color:var(--mut);padding:8px 12px;white-space:nowrap}
+.tab.on{color:var(--fg);border-bottom-color:var(--acc)}
+.tab:focus-visible{outline:2px solid var(--acc);outline-offset:-2px}
+.ctl{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;margin-top:14px}
+.seg{display:inline-flex;border:1px solid var(--hair);border-radius:6px;overflow:hidden;background:var(--surf)}
+.seg button{cursor:pointer;font:inherit;font-size:12px;background:none;border:0;border-right:1px solid var(--hair);color:var(--fg);padding:4px 11px}
+.seg button:last-child{border-right:0}
+.seg button.on{background:var(--acc);color:var(--accfg)}
+.apx{display:inline-block;font-size:10px;font-weight:600;text-transform:none;letter-spacing:0;color:var(--amb);background:var(--ambbg);border-radius:4px;padding:0 5px;margin-left:4px;cursor:help;vertical-align:1px}
+.funnel{display:flex;flex-wrap:wrap;align-items:stretch;gap:8px;margin:8px 0}
+.fstep{background:var(--surf);border:1px solid var(--hair);border-radius:6px;padding:8px 12px;min-width:120px}
+.fstep .fn{font-size:20px;font-weight:650}.fstep .fl{color:var(--mut);font-size:11px;text-transform:uppercase;letter-spacing:.4px}
+.fstep .fv{font-weight:600;margin-top:2px}.fstep .fs{color:var(--mut);font-size:11px}
+.farr{align-self:center;color:var(--mut);font-size:18px}
+.fsplit{display:flex;flex-direction:column;gap:6px}
+th.sortable{cursor:pointer;user-select:none}
+.sharebar{display:flex;height:22px;border-radius:5px;overflow:hidden;border:1px solid var(--hair);margin:8px 0}
+.sharebar span{display:block;min-width:2px}
 footer{margin:30px 0 18px;color:var(--mut);font-size:12px;border-top:1px solid var(--hair);padding-top:10px}
 </style>
 </head>
@@ -92,9 +114,11 @@ footer{margin:30px 0 18px;color:var(--mut);font-size:12px;border-top:1px solid v
   <span class="pill" id="nch"></span>
   <div class="filters" id="filters"></div>
   <button type="button" class="pill themebtn" id="themeBtn" title="Theme: auto / light / dark" aria-label="Switch theme">🌓 Auto</button>
-</div></header>
+</div>
+<nav class="tabs" id="tabs" role="tablist" aria-label="Sections"></nav></header>
 
 <main class="wrap">
+<div id="tab-live">
   <div class="kpis" id="kpis"></div>
 
   <h2>Pending queue</h2>
@@ -123,13 +147,41 @@ footer{margin:30px 0 18px;color:var(--mut);font-size:12px;border-top:1px solid v
     </div>
     <p class="story" id="story"></p>
 
-    <h2>Signers</h2>
-    <div class="tw"><table id="signers"></table></div>
-
     <h2>Cross-chain: addresses on several chains</h2>
     <div class="tw"><table id="cross"></table></div>
     <div class="mut" id="crossNote" style="margin-top:4px"></div>
   </section>
+</div>
+
+<div id="tab-analytics" hidden>
+  <div class="ctl">
+    <span class="mut">Period</span><span class="seg" id="pseg"></span>
+    <span class="mut">Token</span><span class="seg" id="tseg"></span>
+  </div>
+  <div class="kpis" id="akpis"></div>
+  <div class="mut" id="acov" style="margin-top:6px"></div>
+
+  <h2>Lifecycle</h2>
+  <div class="funnel" id="funnel"></div>
+  <div class="mut" id="never"></div>
+
+  <h2>Money per month</h2>
+  <div class="box"><div class="legend" id="alegend"></div><canvas id="amonthly"></canvas></div>
+
+  <h2>By chain</h2>
+  <div class="tw"><table id="achain"></table></div>
+
+  <div class="cols" style="margin-top:18px">
+    <div class="box"><h3>Top 20 frozen addresses by balance</h3><div class="tw" style="border:0"><table id="atop"></table></div></div>
+    <div class="box"><h3>Freezes by chain</h3><div class="sharebar" id="ashare"></div><div class="legend" id="ashareLegend"></div></div>
+  </div>
+  <p class="mut" style="margin-top:14px">Burned = amount in the DestroyedBlackFunds event. Still frozen = current balance of blacklisted addresses (frozen funds cannot move), refreshed incrementally. Frozen $ = burned amount if later destroyed, else current balance, else last balance seen while frozen. Reissued = issue/mint matched to an earlier destroy (+-1%, 30 days). Raw aggregates: <a href="analytics.json">analytics.json</a>.</p>
+</div>
+
+<div id="tab-signers" hidden>
+  <h2>Signers</h2>
+  <div class="tw"><table id="signers"></table></div>
+</div>
 
   <footer id="foot"></footer>
 </main>
@@ -366,16 +418,180 @@ function renderCross(){
   $('crossNote').textContent = 'Addresses on 2+ chains: ' + D.cross_total + '. TRON addresses are matched to EVM by the shared 20-byte hex.';
 }
 
-function render(){
-  renderKpis(); renderPending(); renderRecent(); renderHero(); renderHist(); renderWeekly(); renderStory();
-  renderBadges(); renderSigners(); renderCross();
+// ================= tabs =================
+let TAB = 'live';
+const TABS = ['live','analytics','signers'];
+function showTab(t, push){
+  if(!TABS.includes(t)) t = 'live';
+  TAB = t;
+  for(const x of TABS){ $('tab-' + x).hidden = x !== t; }
+  document.querySelectorAll('#tabs .tab').forEach(b => { const on = b.dataset.t === t; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
+  try { localStorage.setItem('ufa.tab', t); } catch(e) {}
+  if(push !== false){ try { history.replaceState(null, '', '#' + t); } catch(e) { location.hash = t; } }
+  render();
 }
-render();
+(function(){
+  const nav = $('tabs');
+  const names = {live:'Live', analytics:'Analytics', signers:'Signers'};
+  for(const t of TABS){
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'tab'; b.dataset.t = t; b.textContent = names[t];
+    b.setAttribute('role', 'tab'); b.onclick = () => showTab(t); nav.appendChild(b);
+  }
+})();
+
+// ================= analytics =================
+let AN = D.analytics || null, ANLOAD = null;
+const AX = {period: '12m', token: 'all', sortKey: 'frozen_usd', sortDir: -1};
+try { const p = localStorage.getItem('ufa.period'), k = localStorage.getItem('ufa.token'); if(['30d','90d','12m','all'].includes(p)) AX.period = p; if(['all','USDT','USDT0','USDC'].includes(k)) AX.token = k; } catch(e) {}
+let anChart;
+const APX = (tip) => '<span class="apx" title="' + esc(tip) + '">approx.</span>';
+
+function loadAnalytics(){
+  if(AN) return Promise.resolve(AN);
+  if(!ANLOAD) ANLOAD = fetch(D.analytics_url).then(r => r.json()).then(j => { AN = j; return j; }).catch(() => null);
+  return ANLOAD;
+}
+function sinceMonth(){
+  const days = {'30d':30,'90d':90,'12m':365}[AX.period];
+  if(!days) return null;
+  return new Date((NOW - days*86400)*1000).toISOString().slice(0,7);
+}
+function sinceEpoch(){ const m = sinceMonth(); return m ? Date.parse(m + '-01T00:00:00Z')/1000 : 0; }
+const chOk = c => active(c) && (AX.token === 'all' || (AN.tokens[c] || 'USDT') === AX.token);
+
+function anSum(chainFilter){
+  const idx = AN.idx, since = sinceMonth(), tot = Object.fromEntries(idx.map(k => [k, 0]));
+  for(const [c, months] of Object.entries(AN.monthly)){
+    if(!chOk(c) || (chainFilter && c !== chainFilter)) continue;
+    for(const [mo, v] of Object.entries(months)){
+      if(since && mo < since) continue;
+      idx.forEach((k, i) => tot[k] += v[i]);
+    }
+  }
+  return tot;
+}
+const usdS = x => x >= 1e9 ? '$' + (x/1e9).toFixed(2) + 'B' : x >= 1e6 ? '$' + (x/1e6).toFixed(1) + 'M' : usd(x);
+
+function renderAnalytics(){
+  if(!AN){ $('akpis').innerHTML = '<div class="empty">Loading analytics…</div>'; loadAnalytics().then(() => { if(AN && TAB === 'analytics') renderAnalytics(); else if(!AN) $('akpis').innerHTML = '<div class="empty">Analytics data unavailable.</div>'; }); return; }
+  document.querySelectorAll('#pseg button').forEach(b => b.classList.toggle('on', b.dataset.v === AX.period));
+  document.querySelectorAll('#tseg button').forEach(b => b.classList.toggle('on', b.dataset.v === AX.token));
+  const s = anSum();
+  const pct = s.burned_usd ? Math.round(s.reiss_usd / s.burned_usd * 100) : 0;
+  const unfS = s.unfrozen_usd > 0 ? usdS(s.unfrozen_usd) + ' <span class="mut" style="font-size:13px">· ' + s.unfrozen_n + ' addr.</span>' : s.unfrozen_n + ' <span class="mut" style="font-size:13px">addresses</span>';
+  $('akpis').innerHTML = [
+    ['🧊 Frozen', usdS(s.frozen_usd), s.frozen_n.toLocaleString('en-US') + ' addresses' + (s.frozen_unk ? ' · +' + s.frozen_unk.toLocaleString('en-US') + ' unknown' : ''), APX('Burned amount if later destroyed, else current balance of the frozen address (frozen funds cannot move). Unknown = balance not read yet.')],
+    ['🔥 Burned', usdS(s.burned_usd), s.burned_n.toLocaleString('en-US') + ' destroys' + (s.burned_unk ? ' · ' + s.burned_unk + ' amount unknown' : ''), ''],
+    ['♻️ Reissued', usdS(s.reiss_usd), pct + '% of burned · ' + s.reiss_n + ' matches', APX('issue/mint proposals matched 1:1 to an earlier destroy on the same chain: same amount (+-1%), within 30 days.')],
+    ['🟢 Unfrozen', unfS, s.unfrozen_unk && s.unfrozen_usd > 0 ? s.unfrozen_unk + ' without known balance' : 'balance when unfrozen is rarely known', APX('Balance last observed while the address was frozen; the exact amount at unfreeze is not recorded on chain.')],
+  ].map(([l,v,sub,tag]) => `<div class="kpi"><div class="l">${l} ${tag}</div><div class="v">${v}</div><div class="s">${sub}</div></div>`).join('');
+
+  const cov = AN.coverage;
+  $('acov').textContent = cov.checked < cov.total ? 'Balances checked for ' + cov.checked.toLocaleString('en-US') + ' of ' + cov.total.toLocaleString('en-US') + ' frozen addresses - "still frozen" and "frozen $" are partial until the check completes.' : 'Balances checked for all ' + cov.total.toLocaleString('en-US') + ' frozen addresses.';
+
+  // funnel
+  const step = (n, l, v, sub) => `<div class="fstep"><div class="fn">${n}</div><div class="fl">${l}</div>${v ? '<div class="fv">' + v + '</div>' : ''}${sub ? '<div class="fs">' + sub + '</div>' : ''}</div>`;
+  $('funnel').innerHTML = step(s.proposed_n.toLocaleString('en-US'), 'Proposed', '', 'queue chains + executed-only freezes') + '<span class="farr">→</span>' +
+    step(s.frozen_n.toLocaleString('en-US'), 'Frozen', usdS(s.frozen_usd), '') + '<span class="farr">→</span>' +
+    step(s.still_n.toLocaleString('en-US'), 'Still frozen', usdS(s.still_usd), 'balance now') + '<span class="farr">→</span>' +
+    `<div class="fsplit">${step(s.burned_n.toLocaleString('en-US'), 'Burned', usdS(s.burned_usd), '')}${step(s.unfrozen_n.toLocaleString('en-US'), 'Unfrozen', s.unfrozen_usd > 0 ? usdS(s.unfrozen_usd) : '', '')}</div>`;
+  $('never').textContent = s.never_n.toLocaleString('en-US') + ' proposals never executed (stale / revoked / failed) · ' + usd(s.never_usd) + ' still on those addresses';
+
+  renderAnChart(); renderAnTable(); renderAnTop(); renderAnShare();
+}
+
+function renderAnChart(){
+  const since = sinceMonth(), mset = new Set(), agg = {};
+  for(const [c, months] of Object.entries(AN.monthly)){
+    if(!chOk(c)) continue;
+    for(const [mo, v] of Object.entries(months)){
+      if(since && mo < since) continue;
+      mset.add(mo);
+      const a = agg[mo] = agg[mo] || [0,0,0];
+      a[0] += v[1]; a[1] += v[4]; a[2] += v[7];
+    }
+  }
+  let months = [...mset].sort(); let cut = '';
+  if(months.length > 48){ months = months.slice(-48); cut = ' (last 48 months shown)'; }
+  $('alegend').innerHTML = [['#2a78d6','Frozen $'],['#eb6834','Burned $'],['#1baf7a','Unfrozen $ (known only)']].map(([c,l]) => `<span><i style="background:${c}"></i>${l}</span>`).join('') + '<span class="mut">' + cut + '</span>';
+  if(typeof Chart === 'undefined') return;
+  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  Chart.defaults.color = css('--mut'); Chart.defaults.borderColor = css('--hair');
+  if(anChart) anChart.destroy();
+  anChart = new Chart($('amonthly'), {type:'bar', data:{labels:months, datasets:[
+    {label:'Frozen $', data:months.map(m => agg[m][0]), backgroundColor:'#2a78d6'},
+    {label:'Burned $', data:months.map(m => agg[m][1]), backgroundColor:'#eb6834'},
+    {label:'Unfrozen $', data:months.map(m => agg[m][2]), backgroundColor:'#1baf7a'}]},
+    options:{plugins:{legend:{display:false}, tooltip:{callbacks:{label:c => c.dataset.label + ': ' + usd(c.parsed.y)}}}, scales:{y:{beginAtZero:true, ticks:{callback:v => usdS(v)}}, x:{ticks:{maxRotation:60, autoSkip:true}}}}});
+}
+
+const ACOLS = [['chain','Chain'],['frozen_n','Frozen #'],['frozen_usd','Frozen $'],['burned_usd','Burned $'],['unfrozen_usd','Unfrozen $'],['still_usd','Still frozen $'],['reiss_usd','Reissued $ approx.'],['median','Median delay']];
+function renderAnTable(){
+  const since = sinceEpoch(), rows = [];
+  for(const c of Object.keys(AN.monthly)){
+    if(!chOk(c)) continue;
+    const s = anSum(c);
+    if(!s.frozen_n && !s.burned_n && !s.unfrozen_n) continue;
+    const d = D.ex.filter(e => e[0] === c && e[2] >= 0 && e[1] >= since && !NO_DELAY.includes(c)).map(e => e[2]);
+    rows.push({chain:c, ...s, median: d.length ? med(d) : null});
+  }
+  const k = AX.sortKey, dir = AX.sortDir;
+  rows.sort((a, b) => k === 'chain' ? dir * cshort(a.chain).localeCompare(cshort(b.chain)) : dir * ((a[k] ?? -1) - (b[k] ?? -1)));
+  let h = '<tr>' + ACOLS.map(([key, l]) => `<th class="sortable" data-k="${key}">${l}${AX.sortKey === key ? (AX.sortDir < 0 ? ' ▼' : ' ▲') : ''}</th>`).join('') + '</tr>';
+  for(const r of rows){
+    h += `<tr><td class="ch">${esc(cshort(r.chain))}</td><td>${r.frozen_n.toLocaleString('en-US')}</td><td>${usdS(r.frozen_usd)}${r.frozen_unk ? ' <span class="mut">+' + r.frozen_unk + '?</span>' : ''}</td><td>${r.burned_usd ? usdS(r.burned_usd) : '-'}</td><td>${r.unfrozen_usd ? usdS(r.unfrozen_usd) : '<span class="mut">' + r.unfrozen_n + ' addr.</span>'}</td><td>${usdS(r.still_usd)}</td><td>${r.reiss_usd ? usdS(r.reiss_usd) : '-'}</td><td>${r.median == null ? '<span class="mut">n/a</span>' : dur(r.median)}</td></tr>`;
+  }
+  $('achain').innerHTML = rows.length ? h : '<tr><td class="empty">No data for this selection.</td></tr>';
+  $('achain').querySelectorAll('th.sortable').forEach(th => th.onclick = () => {
+    const key = th.dataset.k; if(AX.sortKey === key) AX.sortDir *= -1; else { AX.sortKey = key; AX.sortDir = key === 'chain' ? 1 : -1; }
+    renderAnTable();
+  });
+}
+
+function renderAnTop(){
+  const since = sinceEpoch();
+  const rows = AN.top.filter(r => chOk(r[0]) && r[3] >= since).sort((a, b) => b[2] - a[2]).slice(0, 20);
+  let h = '<tr><th>Chain</th><th>Address</th><th>Frozen now</th><th>Since</th></tr>';
+  for(const [c, a, v, ts] of rows) h += `<tr><td class="ch">${esc(cshort(c))}</td><td class="m addr">${addrL(c, a)}</td><td>${usd(v)}</td><td class="m">${new Date(ts*1000).toISOString().slice(0,10)}</td></tr>`;
+  $('atop').innerHTML = rows.length ? h : '<tr><td class="empty">No balances known yet for this selection.</td></tr>';
+}
+
+function renderAnShare(){
+  const per = {}; let tot = 0;
+  for(const c of Object.keys(AN.monthly)){ if(!chOk(c)) continue; const n = anSum(c).frozen_n; if(n){ per[c] = n; tot += n; } }
+  const ents = Object.entries(per).sort((a, b) => b[1] - a[1]);
+  const col = c => { const k = ORDER.indexOf(c); return COLORS[(k >= 0 ? k : 7) % COLORS.length]; };
+  $('ashare').innerHTML = ents.map(([c, n]) => `<span style="flex:${n};background:${col(c)}" title="${esc(cshort(c))}: ${n.toLocaleString('en-US')}"></span>`).join('') || '';
+  $('ashareLegend').innerHTML = ents.slice(0, 12).map(([c, n]) => `<span><i style="background:${col(c)}"></i>${esc(cshort(c))} ${Math.round(n / tot * 100)}% <span class="mut">(${n.toLocaleString('en-US')})</span></span>`).join('');
+}
+
+(function(){
+  const mk = (id, items, get, set) => {
+    const box = $(id);
+    for(const [v, l] of items){ const b = document.createElement('button'); b.type = 'button'; b.dataset.v = v; b.textContent = l; b.onclick = () => { set(v); renderAnalytics(); }; box.appendChild(b); }
+  };
+  mk('pseg', [['30d','30d'],['90d','90d'],['12m','12m'],['all','All']], null, v => { AX.period = v; try { localStorage.setItem('ufa.period', v); } catch(e) {} });
+  mk('tseg', [['all','All'],['USDT','USDT'],['USDT0','USDT0'],['USDC','USDC']], null, v => { AX.token = v; try { localStorage.setItem('ufa.token', v); } catch(e) {} });
+})();
+
+function render(){
+  if(TAB === 'live'){
+    renderKpis(); renderPending(); renderRecent(); renderHero(); renderHist(); renderWeekly(); renderStory();
+    renderBadges(); renderCross();
+  } else if(TAB === 'analytics'){ renderAnalytics(); }
+  else { renderSigners(); }
+}
+window.addEventListener('hashchange', () => { const h = location.hash.replace('#', ''); if(TABS.includes(h) && h !== TAB) showTab(h, false); });
+(function(){
+  let t = location.hash.replace('#', '');
+  if(!TABS.includes(t)){ try { t = localStorage.getItem('ufa.tab') || 'live'; } catch(e) { t = 'live'; } }
+  showTab(TABS.includes(t) ? t : 'live', false);
+})();
 (function(){
   const btn = $('themeBtn'), root = document.documentElement;
   const MODES = ['auto','light','dark'], LBL = {auto:'🌓 Auto', light:'☀️ Light', dark:'🌙 Dark'};
   let mode = root.getAttribute('data-theme') || 'auto';
-  const repaint = () => { renderHist(); renderWeekly(); };
+  const repaint = () => { if(TAB === 'live'){ renderHist(); renderWeekly(); } else if(TAB === 'analytics' && AN){ renderAnChart(); } };
   const apply = () => {
     if(mode === 'auto') root.removeAttribute('data-theme'); else root.setAttribute('data-theme', mode);
     btn.textContent = LBL[mode]; btn.setAttribute('aria-label', 'Theme: ' + mode + '. Click to switch');
