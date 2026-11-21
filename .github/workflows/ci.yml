@@ -16,5 +16,5 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install requests pytest eth_utils
+      - run: pip install requests pytest eth_utils "eth-hash[pycryptodome]"
       - run: python -m pytest -q
