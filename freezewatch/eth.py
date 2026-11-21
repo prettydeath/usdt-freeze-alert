@@ -85,7 +85,7 @@ def _es(params, chainid=1):
     for attempt in range(6 + 3 * len(pool)):
         key = pool.next()
         try:
-            o = http_json("GET", ETHERSCAN, params={"chainid": chainid, "apikey": key, **params}, interval=0.25 / len(pool),
+            o = http_json("GET", ETHERSCAN, params={"chainid": chainid, "apikey": key, **params}, interval=0.5 / len(pool),
                           retries=1)
         except HttpError as ex:
             last = str(ex)
@@ -96,8 +96,9 @@ def _es(params, chainid=1):
         if o.get("status") == "1" or o.get("message") == "No records found":
             return o
         if looks_rate_limited(o.get("result")) or looks_rate_limited(o.get("message")):
-            pool.mark_bad(key, 60)
-            log.info("Etherscan %s rate-limited/invalid, cooling", pool.label(key))
+            invalid = "invalid" in str(o.get("result")).lower()
+            pool.mark_bad(key, 600 if invalid else 2)  # per-second limit: a short pause is enough
+            log.info("Etherscan %s %s, cooling", pool.label(key), "invalid" if invalid else "rate-limited")
             time.sleep(1.0 if pool.cooling() >= len(pool) else 0.1)
             last = str(o)[:100]
             continue
