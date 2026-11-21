@@ -13,6 +13,6 @@
   <text x="290" y="145" font-family="Georgia,'Times New Roman',serif" font-size="76" font-weight="600" fill="#f2f5f9">USDT Freeze Alert</text>
   <text x="294" y="203" font-family="system-ui,-apple-system,'Segoe UI',Roboto,sans-serif" font-size="30" fill="#9db3cc">See USDT freezes before they happen</text>
   <g font-family="ui-monospace,Menlo,Consolas,monospace" font-size="19" fill="#6da6ee">
-    <text x="294" y="250">ETH · TRON · AVAX · NEAR · APT · TON · 12× USDT0 · USDC · SOL</text>
+    <text x="294" y="250">ETH · TRON · AVAX · CELO · KAIA · KAVA · NEAR · APT · TON · USDT0 · USDC · SOL</text>
   </g>
 </svg>
