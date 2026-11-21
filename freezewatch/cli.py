@@ -42,7 +42,7 @@ def chains_of(arg):
 
 
 def refresh_balances(conn):
-    """Баланс USDT цілі для відкритих addBlackList/destroyBlackFunds (stale - лише якщо ще немає)."""
+    """Target USDT balance for open addBlackList/destroyBlackFunds (stale - only if none yet)."""
     q = ("SELECT chain,tx_id,target,status,balance_now,balance_at_detect FROM proposals "
          "WHERE status IN ('pending','stale') AND target IS NOT NULL AND function IN (%s)" % ",".join("?" * len(BALANCE_FUNCS)))
     for r in conn.execute(q, BALANCE_FUNCS).fetchall():
@@ -58,7 +58,7 @@ def refresh_balances(conn):
             else:
                 continue
         except Exception as e:  # noqa: BLE001
-            log.warning("баланс %s %s: %s", r["chain"], r["target"], e)
+            log.warning("balance %s %s: %s", r["chain"], r["target"], e)
             continue
         vals = {}
         if bal != r["balance_now"]:
@@ -70,7 +70,7 @@ def refresh_balances(conn):
 
 
 def do_sync(conn, chain, since, budget):
-    """Синхронізація одного ланцюга; помилка не зупиняє інший."""
+    """Sync a single chain; a failure does not stop the others."""
     try:
         if chain == "eth":
             eth.sync(conn, since, stale_days())
@@ -92,7 +92,7 @@ def do_sync(conn, chain, since, budget):
         return True
     except Exception as e:  # noqa: BLE001
         conn.commit()
-        log.error("%s: синхронізація не вдалась: %s", chain.upper(), e, exc_info=log.isEnabledFor(logging.DEBUG))
+        log.error("%s: sync failed: %s", chain.upper(), e, exc_info=log.isEnabledFor(logging.DEBUG))
         return False
 
 
@@ -112,18 +112,29 @@ def cmd_update(args, conn=None):
     before = alerts.snapshot(conn)
     before_pairs = crosschain.pairs(conn)
     max_fr = conn.execute("SELECT COALESCE(MAX(rowid),0) FROM freezes").fetchone()[0]
-    ok = True
-    for c in chains_of(getattr(args, "chain", "all")):
-        ok &= do_sync(conn, c, None, args.budget)
+    results = [do_sync(conn, c, None, args.budget) for c in chains_of(getattr(args, "chain", "all"))]
+    ok = any(results)  # one failing source must not fail the whole run (rate limits, missing optional keys)
     refresh_balances(conn)
     rebuild_blacklist(conn)
     conn.commit()
-    n = alerts.process(conn, before)
-    n += alerts.process_freezes(conn, max_fr, AUTH_CHANGES)
-    n += alerts.process_crosschain(conn, before_pairs)
+    n = alerts.run_alerts(conn, before, max_fr, before_pairs, AUTH_CHANGES)
     if n:
-        log.info("надіслано сповіщень: %s", n)
+        log.info("alerts sent: %s", n)
     return 0 if ok else 1
+
+
+def cmd_alert_test(args):
+    msgs = alerts.sample_messages()
+    for m in msgs:
+        print(m)
+        print("-" * 60)
+    if args.send:
+        if not alerts.configured():
+            print("TG_BOT_TOKEN / TG_CHAT_ID not set; nothing sent")
+            return 1
+        alerts.send_message(msgs[0])
+        print("sent 1 test message")
+    return 0
 
 
 def cmd_stats(args, conn=None):
@@ -141,7 +152,7 @@ def cmd_render(args, conn=None):
 
 def cmd_run(args):
     conn = connect()
-    # якщо історії ще нема - перший прогін = backfill (з бюджетом часу; продовжиться наступним запуском)
+    # if there is no history yet - first run = backfill (time-budgeted; continues on the next run)
     rc = cmd_update(args, conn)
     cmd_render(args, conn)
     return rc
@@ -158,6 +169,8 @@ def main(argv=None):
     u = sub.add_parser("update", help="incremental update")
     u.add_argument("--chain", choices=CHOICES, default="all")
     u.add_argument("--budget", type=int, default=int(env("FREEZEWATCH_BUDGET_SEC", "1200")))
+    at = sub.add_parser("alert-test", help="print sample Telegram alerts (no sending unless --send)")
+    at.add_argument("--send", action="store_true", help="send ONE test message (manual only)")
     sub.add_parser("stats", help="recompute data/stats.json")
     sub.add_parser("render", help="stats + site/index.html + badges")
     r = sub.add_parser("run", help="update + stats + render")
@@ -168,13 +181,14 @@ def main(argv=None):
     args = ap.parse_args(argv)
     logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO,
                         format="%(asctime)s %(levelname)s %(name)s: %(message)s", datefmt="%H:%M:%S")
-    fn = {"backfill": cmd_backfill, "update": cmd_update, "stats": cmd_stats, "render": cmd_render, "run": cmd_run}[args.cmd]
+    fn = {"backfill": cmd_backfill, "update": cmd_update, "stats": cmd_stats, "render": cmd_render, "run": cmd_run,
+          "alert-test": cmd_alert_test}[args.cmd]
     if args.cmd == "run" and args.loop:
         while True:
             try:
                 fn(args)
             except Exception:  # noqa: BLE001
-                log.exception("цикл не вдався")
+                log.exception("loop iteration failed")
             time.sleep(args.interval)
     return fn(args)
 

@@ -1,4 +1,4 @@
-"""Ethereum: події мультисига через Etherscan V2, стан через публічний RPC (eth_call)."""
+"""Ethereum: multisig events via Etherscan V2, state via a public RPC (eth_call)."""
 import logging
 
 from . import abi
@@ -18,13 +18,13 @@ def rpc_url():
     return env("ETH_RPC_URL", "https://ethereum-rpc.publicnode.com")
 
 
-def rpc_batch(calls, chunk=50, url=None):
-    """calls: [(method, params)] -> [result]. JSON-RPC batching з перевіркою id."""
+def rpc_batch(calls, chunk=50, url=None, retries=6):
+    """calls: [(method, params)] -> [result]. JSON-RPC batching with id verification."""
     out = []
     for i in range(0, len(calls), chunk):
         part = calls[i:i + chunk]
         payload = [{"jsonrpc": "2.0", "id": j, "method": m, "params": p} for j, (m, p) in enumerate(part)]
-        resp = http_json("POST", url or rpc_url(), json=payload, interval=0.1,
+        resp = http_json("POST", url or rpc_url(), json=payload, interval=0.1, retries=retries,
                          validate=lambda o: isinstance(o, list) and len(o) == len(payload))
         by_id = {x["id"]: x for x in resp}
         for j in range(len(part)):
@@ -75,24 +75,24 @@ def balance_of(addr):
 
 
 # ---------- Etherscan ----------
-def _es(params):
+def _es(params, chainid=1):
     key = env("ETHERSCAN_API_KEY")
     if not key:
-        raise HttpError("ETHERSCAN_API_KEY не задано (потрібен для історії ETH)")
-    p = {"chainid": 1, "apikey": key, **params}
+        raise HttpError("ETHERSCAN_API_KEY is not set (required for ETH history)")
+    p = {"chainid": chainid, "apikey": key, **params}
     return http_json("GET", ETHERSCAN, params=p, interval=0.25,
                      validate=lambda o: o.get("status") == "1" or o.get("message") == "No records found")
 
 
-def get_logs(frm, to, address=ETH_MULTISIG, topic0=None):
-    """Усі логи мультисига у [frm,to]; при переповненні ліміту 10000 ділить діапазон навпіл."""
+def get_logs(frm, to, address=ETH_MULTISIG, topic0=None, chainid=1):
+    """All multisig logs in [frm,to]; if the 10000 limit overflows, splits the range in half."""
     rows = []
     for page in range(1, 11):
         params = {"module": "logs", "action": "getLogs", "address": address, "fromBlock": frm,
                   "toBlock": to, "page": page, "offset": 1000, "sort": "asc"}
         if topic0:
             params["topic0"] = topic0
-        o = _es(params)
+        o = _es(params, chainid)
         res = o["result"] if o.get("status") == "1" else []
         rows += res
         if len(res) < 1000:
@@ -100,8 +100,8 @@ def get_logs(frm, to, address=ETH_MULTISIG, topic0=None):
     if to <= frm:
         return rows
     mid = (frm + to) // 2
-    log.info("діапазон %s-%s переповнений, ділю", frm, to)
-    return get_logs(frm, mid, address, topic0) + get_logs(mid + 1, to, address, topic0)
+    log.info("range %s-%s overflowed, splitting", frm, to)
+    return get_logs(frm, mid, address, topic0, chainid) + get_logs(mid + 1, to, address, topic0, chainid)
 
 
 def block_by_time(ts):
@@ -127,7 +127,7 @@ def _h(x):
 
 
 def ingest_logs(conn, logs, chain=CHAIN):
-    """Логи -> confirmations. Confirmation у тій же tx, що й Submission => kind=submit."""
+    """Logs -> confirmations. A Confirmation in the same tx as a Submission => kind=submit."""
     by_tx = {}
     for lg in logs:
         by_tx.setdefault(lg["transactionHash"], []).append(lg)
@@ -164,7 +164,7 @@ def ingest_logs(conn, logs, chain=CHAIN):
             else:
                 tid = int(t[1], 16)
             touched.add(tid)
-        for tid in subs - used_sub:  # Submission без Confirmation у tx (теоретично)
+        for tid in subs - used_sub:  # Submission without a Confirmation in the tx (theoretically)
             ts = iso(_h(group[0]["timeStamp"]))
             ensure_proposal(conn, chain, tid)
             add_event(conn, chain, tid, "", "submit", ts, txh)
@@ -173,39 +173,42 @@ def ingest_logs(conn, logs, chain=CHAIN):
 
 
 def sync_logs(conn, since_ts=None, step=500_000):
-    """Тягне логи від курсора до поточного блоку; курсор зберігається після кожного вікна."""
+    """Pulls logs from the cursor to the current block; the cursor is saved after each window."""
     latest = latest_block()
     cur = meta_get(conn, "eth_next_block")
     if cur is None:
         cur = block_by_time(since_ts) if since_ts else first_block()
-        log.info("ETH: початок з блоку %s", cur)
+        log.info("ETH: starting from block %s", cur)
     else:
-        cur = max(0, int(cur) - 10)  # невеликий відступ на реорги; вставки ідемпотентні
+        cur = max(0, int(cur) - 10)  # small step back for reorgs; inserts are idempotent
     cur = int(cur)
     touched = set()
     while cur <= latest:
         to = min(cur + step - 1, latest)
         logs = get_logs(cur, to)
         touched |= ingest_logs(conn, logs)
-        if logs:  # курсор рухаємо лише коли є нові події (щоб БД не змінювалась щоразу)
+        if logs:  # advance the cursor only when there are new events (so the DB does not change every time)
             meta_set(conn, "eth_next_block", int(logs[-1]["blockNumber"], 16) + 1)
         elif to < latest:
             meta_set(conn, "eth_next_block", to + 1)
         conn.commit()
-        log.info("ETH логи %s-%s: %s шт.", cur, to, len(logs))
+        log.info("ETH logs %s-%s: %s", cur, to, len(logs))
         cur = to + 1
     return touched
 
 
 def sync(conn, since_ts=None, stale_days=7):
-    """Повний цикл ETH: логи -> нові id з RPC -> pending refresh -> derive."""
+    """Full ETH cycle: logs -> new ids from RPC -> pending refresh -> derive."""
+    if not env("ETHERSCAN_API_KEY"):
+        log.warning("ETHERSCAN_API_KEY is not set: skipping Ethereum (add the secret to enable it)")
+        return set()
     touched = sync_logs(conn, since_ts)
     required = read_required()
     meta_set(conn, "eth_required", required)
     meta_set(conn, "eth_tx_count", read_count())
     missing = [r["tx_id"] for r in conn.execute(
         "SELECT tx_id FROM proposals WHERE chain='eth' AND destination IS NULL ORDER BY tx_id")]
-    log.info("ETH: читаю on-chain %s пропозицій", len(missing))
+    log.info("ETH: reading %s proposals on-chain", len(missing))
     for i in range(0, len(missing), 200):
         part = missing[i:i + 200]
         data = read_transactions(part)
@@ -216,12 +219,12 @@ def sync(conn, since_ts=None, stale_days=7):
                             target=dec["target"], amount=dec["amount"], raw_data="0x" + d["data"],
                             executed=int(d["executed"]), required=required, chain_verified=1)
         conn.commit()
-    # відкрити (не виконані) - оновити лічильник підтверджень і прапор executed з ланцюга
+    # open (not executed) - refresh the confirmation counter and executed flag from the chain
     open_ids = [r["tx_id"] for r in conn.execute(
         "SELECT tx_id FROM proposals WHERE chain='eth' AND executed=0 AND destination IS NOT NULL")]
     override = {}
     if open_ids:
-        # одна пачка: transactions() + getConfirmationCount()
+        # one batch: transactions() + getConfirmationCount()
         for i in range(0, len(open_ids), 100):
             part = open_ids[i:i + 100]
             tx = read_transactions(part)

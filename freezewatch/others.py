@@ -1,8 +1,9 @@
-"""Виконані заморожування БЕЗ on-chain черги: USDC (Ethereum) та USDC/USDT (Solana).
-Затримку подання->виконання тут виміряти неможливо (N/A): рішення ухвалюється поза ланцюгом."""
+"""Executed freezes WITHOUT an on-chain queue: USDC (Ethereum) and USDC/USDT (Solana).
+The submission->execution delay cannot be measured here (N/A): the decision is made off-chain."""
 import base64
 import json
 import logging
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 
@@ -10,7 +11,7 @@ from . import eth
 from .constants import (SOLANA_SOURCES, SEL_BALANCE_OF, TOPIC_USDC_BLACKLISTED, TOPIC_USDC_UNBLACKLISTED, USDC_ETH,
                         USDT_DECIMALS)
 from .db import meta_get, meta_set
-from .util import b58encode, env, http_json, iso, now_ts
+from .util import _session, b58encode, env, iso, now_ts
 
 log = logging.getLogger("freezewatch.others")
 FREEZE_TYPES = {"freezeAccount": "freeze", "thawAccount": "unfreeze"}
@@ -25,13 +26,16 @@ def add_freeze(conn, source, subject, owner, action, ts_iso, tx_hash, block=None
     return bool(cur.rowcount)
 
 
-# ======================= USDC на Ethereum =======================
+# ======================= USDC on Ethereum =======================
 def sync_usdc_eth(conn, since_ts=None, step=2_000_000):
+    if not env("ETHERSCAN_API_KEY"):
+        log.warning("ETHERSCAN_API_KEY is not set: skipping USDC Ethereum")
+        return
     latest = eth.latest_block()
     cur = meta_get(conn, "usdc_eth_next_block")
     if cur is None:
         cur = eth.block_by_time(since_ts) if since_ts else eth.first_block(USDC_ETH, TOPIC_USDC_BLACKLISTED)
-        log.info("USDC/ETH: початок з блоку %s", cur)
+        log.info("USDC/ETH: starting from block %s", cur)
     else:
         cur = max(0, int(cur) - 10)
     cur = int(cur)
@@ -45,14 +49,14 @@ def sync_usdc_eth(conn, since_ts=None, step=2_000_000):
                 bn = int(lg["blockNumber"], 16)
                 add_freeze(conn, "usdc_eth", addr, addr, action, iso(eth._h(lg["timeStamp"])), lg["transactionHash"], bn)
                 last_block = max(last_block or 0, bn)
-            log.info("USDC/ETH %s %s-%s: %s шт.", action, cur, to, len(logs))
+            log.info("USDC/ETH %s %s-%s: %s entries", action, cur, to, len(logs))
         if last_block:
             meta_set(conn, "usdc_eth_next_block", last_block + 1)
         elif to < latest:
             meta_set(conn, "usdc_eth_next_block", to + 1)
         conn.commit()
         cur = to + 1
-    # баланси (поточні; для заблокованої адреси переказ неможливий, тож це добре наближає суму під блокуванням)
+    # balances (current; a blocked address cannot transfer, so this closely approximates the amount under the block)
     rows = conn.execute("SELECT subject FROM freezes WHERE source='usdc_eth' AND action='freeze' AND amount IS NULL"
                         " GROUP BY subject").fetchall()
     subs = [r["subject"] for r in rows]
@@ -71,31 +75,56 @@ def sol_url():
     return env("SOLANA_RPC_URL", "https://api.mainnet-beta.solana.com")
 
 
-def _ok(o):
-    e = o.get("error")
-    return not (e and (e.get("code") in (429, -32005, -32004, -32603) or "rate" in str(e.get("message", "")).lower()))
+_sol_lock = threading.Lock()
+_sol_state = {"next": 0.0, "pause": 0.0}
 
 
-def sol_rpc(method, params):
-    o = http_json("POST", sol_url(), json={"jsonrpc": "2.0", "id": 1, "method": method, "params": params},
-                  interval=0.5, retries=12, validate=_ok)
-    if "error" in o:
-        raise RuntimeError(f"Solana RPC {method}: {o['error']}")
-    return o["result"]
+def sol_rpc(method, params, retries=40):
+    """JSON-RPC with a shared adaptive limiter: ~4 req/s; any 429 pauses ALL threads (growing 2..20 s) instead of
+    per-thread exponential backoff, which is much faster on the rate-limited public endpoint."""
+    body = {"jsonrpc": "2.0", "id": 1, "method": method, "params": params}
+    last = None
+    for _ in range(retries):
+        with _sol_lock:
+            now = time.monotonic()
+            slot = max(now, _sol_state["next"])
+            _sol_state["next"] = slot + 0.25
+        if slot > now:
+            time.sleep(slot - now)
+        try:
+            r = _session.post(sol_url(), json=body, timeout=40)
+            o = r.json() if r.status_code != 429 else {"error": {"code": 429}}
+        except Exception as e:  # noqa: BLE001
+            last = repr(e)
+            time.sleep(2)
+            continue
+        e = o.get("error")
+        if e and (e.get("code") in (429, -32005, -32004, -32603) or "rate" in str(e.get("message", "")).lower()):
+            with _sol_lock:
+                _sol_state["pause"] = min(20.0, max(2.0, _sol_state["pause"] * 1.5))
+                _sol_state["next"] = max(_sol_state["next"], time.monotonic() + _sol_state["pause"])
+            last = str(e)[:80]
+            continue
+        with _sol_lock:
+            _sol_state["pause"] = max(0.0, _sol_state["pause"] * 0.8)
+        if e:
+            raise RuntimeError(f"Solana RPC {method}: {e}")
+        return o["result"]
+    raise RuntimeError(f"Solana RPC {method}: retries exhausted ({last})")
 
 
 def parse_multisig(raw: bytes):
-    """SPL Multisig (355 байт): m u8, n u8, is_initialized u8, signers[11] x 32."""
+    """SPL Multisig (355 bytes): m u8, n u8, is_initialized u8, signers[11] x 32."""
     if len(raw) < 355:
-        raise ValueError("не схоже на SPL Multisig")
+        raise ValueError("does not look like an SPL Multisig")
     m, n, init = raw[0], raw[1], raw[2]
     signers = [b58encode(raw[3 + i * 32:3 + (i + 1) * 32]) for i in range(n)]
     return {"m": m, "n": n, "initialized": bool(init), "signers": signers}
 
 
 def extract_freezes(tx, mint):
-    """Із розібраної (jsonParsed) транзакції -> список freeze/thaw інструкцій для потрібного mint.
-    Адреса-авторитет трапляється й у сторонніх транзакціях, тому фільтр за mint і типом обов'язковий."""
+    """From a parsed (jsonParsed) transaction -> list of freeze/thaw instructions for the required mint.
+    The authority address also appears in unrelated transactions, so filtering by mint and type is mandatory."""
     if not tx or (tx.get("meta") or {}).get("err") is not None:
         return []
     msg = tx["transaction"]["message"]
@@ -136,7 +165,7 @@ def _sigs(authority, before=None, until=None, limit=250):
 
 
 def _fetch_tx(sig):
-    """null від публічного RPC буває тимчасовим (відстає вузол) - кілька повторів, інакше None."""
+    """null from a public RPC can be transient (node lagging) - a few retries, otherwise None."""
     for attempt in range(4):
         tx = sol_rpc("getTransaction", [sig, {"encoding": "jsonParsed", "maxSupportedTransactionVersion": 0}])
         if tx is not None:
@@ -145,8 +174,8 @@ def _fetch_tx(sig):
     return None
 
 
-def _process_sigs(conn, source, cfg, sigs, since_ts=None, workers=6):
-    """Паралельне читання транзакцій (затримка публічного RPC ~2-3 с), запис у БД послідовно."""
+def _process_sigs(conn, source, cfg, sigs, since_ts=None, workers=8):
+    """Parallel transaction reads (public RPC latency ~2-3 s), sequential DB writes."""
     todo = [s for s in sigs if s.get("err") is None
             and not (since_ts and s.get("blockTime") and s["blockTime"] < since_ts)]
     n_new = 0
@@ -154,7 +183,7 @@ def _process_sigs(conn, source, cfg, sigs, since_ts=None, workers=6):
     with ThreadPoolExecutor(max_workers=workers) as ex:
         for s, tx in zip(todo, ex.map(lambda x: _fetch_tx(x["signature"]), todo)):
             if tx is None:
-                log.warning("%s: getTransaction=null для %s", source, s["signature"])
+                log.warning("%s: getTransaction=null for %s", source, s["signature"])
                 nulls.add(s["signature"])
                 continue
             for f in extract_freezes(tx, cfg["mint"]):
@@ -164,14 +193,14 @@ def _process_sigs(conn, source, cfg, sigs, since_ts=None, workers=6):
                     conn.commit()
     key = f"{source}_null_sigs"
     cur = set(json.loads(meta_get(conn, key) or "[]"))
-    cur = (cur - {s["signature"] for s in todo}) | nulls  # невдалі підписи повторюються при наступному запуску
+    cur = (cur - {s["signature"] for s in todo}) | nulls  # failed signatures are retried on the next run
     meta_set(conn, key, json.dumps(sorted(cur)))
     conn.commit()
     return n_new
 
 
 def check_authority(conn, source, cfg):
-    """Читає SPL Multisig авторитету; повертає опис зміни m/n/підписантів або None."""
+    """Reads the authority SPL Multisig; returns a description of the m/n/signers change or None."""
     v = sol_rpc("getAccountInfo", [cfg["authority"], {"encoding": "base64"}])["value"]
     if not v:
         return None
@@ -191,8 +220,8 @@ def check_authority(conn, source, cfg):
 
 
 def sync_solana(conn, source, since_ts=None, budget_sec=None):
-    """Інкрементально (until=newest) + назад до since_ts (before=oldest), курсори зберігаються по сторінках.
-    За замовчуванням історія - 180 днів назад; --since може заглибити."""
+    """Incrementally (until=newest) + backwards to since_ts (before=oldest), cursors saved per page.
+    By default history goes back 180 days; --since can go deeper."""
     cfg = SOLANA_SOURCES[source]
     t0 = time.time()
     auth = cfg["authority"]
@@ -202,14 +231,14 @@ def sync_solana(conn, source, since_ts=None, budget_sec=None):
         changes.append(ch)
     retry = json.loads(meta_get(conn, f"{source}_null_sigs") or "[]")
     if retry:
-        log.info("%s: повторюю %s підписів, що раніше повернули null", source, len(retry))
+        log.info("%s: retrying %s signatures that previously returned null", source, len(retry))
         _process_sigs(conn, source, cfg, [{"signature": s, "err": None} for s in retry])
     newest = meta_get(conn, f"{source}_newest_sig")
     oldest = meta_get(conn, f"{source}_oldest_sig")
     oldest_ts = meta_get(conn, f"{source}_oldest_ts")
     complete = meta_get(conn, f"{source}_complete") == "1"
     since_ts = since_ts or (now_ts() - 180 * 86400)
-    # A. нове (вперед)
+    # A. new (forward)
     if newest:
         collected, before = [], None
         while True:
@@ -222,12 +251,12 @@ def sync_solana(conn, source, since_ts=None, budget_sec=None):
             _process_sigs(conn, source, cfg, collected)
             meta_set(conn, f"{source}_newest_sig", collected[0]["signature"])
             conn.commit()
-    # B. історія назад
+    # B. history backward
     before = oldest
     first = newest is None
     while not complete and (oldest_ts is None or int(oldest_ts) > since_ts):
         if budget_sec and time.time() - t0 > budget_sec:
-            log.warning("%s: бюджет часу вичерпано, історія продовжиться наступним запуском", source)
+            log.warning("%s: time budget exhausted, history will continue on the next run", source)
             break
         page = _sigs(auth, before=before)
         if not page:
@@ -243,5 +272,5 @@ def sync_solana(conn, source, since_ts=None, budget_sec=None):
         meta_set(conn, f"{source}_oldest_sig", before)
         meta_set(conn, f"{source}_oldest_ts", oldest_ts)
         conn.commit()
-        log.info("%s: сторінка до %s, нових фризів %s", source, iso(oldest_ts), n)
+        log.info("%s: page up to %s, new freezes %s", source, iso(oldest_ts), n)
     return changes
