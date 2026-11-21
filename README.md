@@ -47,6 +47,18 @@ Ethereum executions land in the same block and cannot be seen coming.
 | **Safe API pending** (off-chain, not guaranteed) | USDT0 on Arbitrum, Polygon, Plasma, Mantle, Optimism, Monad, Unichain, Stable, Morph, Ink, HyperEVM, Berachain |
 | **Executed only** (no queue exists) | USDC on Ethereum, USDC and USDT on Solana |
 
+## Analytics
+
+<p align="center"><img src="assets/analytics-dark.png" alt="Analytics tab" width="80%"></p>
+
+The **Analytics** tab (period 30d / 90d / 12m / all, token filter) answers "how much money is behind the freezes":
+
+- **Frozen $**: burned amount if the address was later destroyed, otherwise its current balance (frozen funds cannot move).
+- **Burned $**: exact amount of the `DestroyedBlackFunds` / `DestroyedBlockedFunds` event.
+- **Sent after freeze**: transfers to an address *while it was blacklisted* (ETH, USDC, Celo, Avalanche, TRON), with the part **later burned**. Broader than "sent to a blacklisted address and burned at the next destroy" (e.g. BitOK's count), because we count every inflow during the frozen interval. The zero address and token contracts, which Tether blacklists to burn mistaken sends, are excluded.
+- **Unfrozen**: count, and $ only where a balance was observed while frozen.
+- Balances are filled gradually (`ANALYTICS_BUDGET_SEC` per run); the page shows "balances checked N of M" until complete. Reissue to victims happens off-chain / through treasury transfers and is not tracked.
+
 ## Quick start
 
 ```bash
@@ -106,7 +118,7 @@ Preview every template without sending: `python -m freezewatch alert-test` (`--s
 
 ## Data and attribution
 
-The dashboard has an **Analytics** tab (including **funds sent to already-frozen addresses**: Ethereum, USDC, Celo, Avalanche and TRON are scanned; Solana, NEAR, Aptos, TON, Kaia, Kava and the USDT0 chains are not covered yet) (frozen / burned / unfrozen / reissued $, still-frozen balances); its raw aggregates are published as `site/analytics.json` on the `data` branch. Burned amounts come from destroy events, still-frozen from current balances (filled gradually, `ANALYTICS_BUDGET_SEC` per run).
+Aggregates behind the **Analytics** tab are published as `site/analytics.json` on the `data` branch (see Analytics above).
 
 Everything is read from public chain data and APIs. Delays were cross-checked against
 [BitOK's tether-blacklist-research](https://github.com/BitOKorg/tether-blacklist-research) (bitok.org, CC BY 4.0):
