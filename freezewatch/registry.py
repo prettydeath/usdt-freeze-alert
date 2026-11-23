@@ -105,13 +105,18 @@ EVENT_SOURCES = {
     "arb1": [("v2", 42161)], "pol": [("v2", 137)], "hyper": [("v2", 999)], "plasma": [("v2", 9745)],
     "mantle": [("v2", 5000)], "unichain": [("v2", 130)], "berachain": [("v2", 80094)], "monad": [("v2", 143)],
     "stable": [("v2", 988)], "sei": [("v2", 1329)], "megaeth": [("v2", 4326)],
-    "oeth": [("blockscout", "https://optimism.blockscout.com/api")],
+    # Optimism: Blockscout times out, Etherscan V2 / Routescan are not free for this chain; the public RPC allows 10,000-block
+    # ranges and 10-call batches -> resumable scan (100,000 blocks per request)
+    "oeth": [("rpcscan", {"step": 10_000, "batch": 5, "parallel": 1, "pause": 1.0, "budget": 60}),
+             ("blockscout", "https://optimism.blockscout.com/api")],
     "ink": [("blockscout", "https://explorer.inkonchain.com/api")],
     "morph": [("blockscout", "https://explorer-api.morphl2.io/api")],
     "flare": [("blockscout", "https://flare-explorer.flare.network/api")],
     "rootstock": [("blockscout", "https://rootstock.blockscout.com/api")],
     "conflux": [("blockscout", "https://evmapi.confluxscan.io/api")],
-    "xlayer": [],  # no free log API (OKLink needs a key; the public RPC allows ~100-block ranges): not covered
+    # X Layer: no free log API (OKLink needs a key) and the public RPC allows 100-block ranges -> resumable scan,
+    # new blocks first, then history backwards from the head within a time budget on every run
+    "xlayer": [("rpcscan", {"step": 100, "batch": 5, "parallel": 1, "pause": 0.5, "budget": 120})],
 }
 
 

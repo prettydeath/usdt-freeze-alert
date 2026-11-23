@@ -7,6 +7,7 @@ emits BlockPlaced / BlockReleased / DestroyedBlockedFunds, so those events are c
 Event sources per chain (registry.EVENT_SOURCES): Etherscan V2, Blockscout / Etherscan-compatible APIs, or eth_getLogs
 in adaptive block chunks. Cursors are stored in `meta`; nothing is rewritten when no new events appear."""
 import logging
+import re
 import time
 
 from . import eth, evmmsw
@@ -66,6 +67,18 @@ def _blockscout(cfg, url, from_block):
     return rows
 
 
+def stamp(c, rows):
+    """Add the block timestamp (hex 'timeStamp', as Etherscan returns it) to raw RPC logs."""
+    blocks = sorted({eth._h(x["blockNumber"]) for x in rows})
+    ts = {}
+    for i in range(0, len(blocks), 25):
+        part = blocks[i:i + 25]
+        for b, r in zip(part, evmmsw._batch(c, [("eth_getBlockByNumber", [hex(b), False]) for b in part])):
+            ts[b] = int(r["timestamp"], 16)
+    for x in rows:
+        x["timeStamp"] = hex(ts[eth._h(x["blockNumber"])])
+
+
 def _rpc(cfg, spec, from_block):
     """eth_getLogs with a topic0 OR-filter in adaptive chunks, then block timestamps."""
     c = {"label": cfg["label"], "rpc": cfg["rpc"], "msw": cfg["token"], "logs": {}}
@@ -86,18 +99,102 @@ def _rpc(cfg, spec, from_block):
             continue
         rows += res
         cur = to + 1
-    blocks = sorted({eth._h(x["blockNumber"]) for x in rows})
-    ts = {}
-    for i in range(0, len(blocks), 25):
-        part = blocks[i:i + 25]
-        for b, r in zip(part, evmmsw._batch(c, [("eth_getBlockByNumber", [hex(b), False]) for b in part])):
-            ts[b] = int(r["timestamp"], 16)
-    for x in rows:
-        x["timeStamp"] = hex(ts[eth._h(x["blockNumber"])])
+    stamp(c, rows)
     return rows, latest
 
 
-def fetch(chain, from_block):
+def scan_state(conn, chain):
+    g = lambda k: meta_get(conn, f"{chain}_scan_{k}")  # noqa: E731
+    return {k: (int(g(k)) if g(k) not in (None, "") else None) for k in ("first", "lo", "hi", "latest")}
+
+
+def plan_windows(lo, first, step, n):
+    """Next `n` descending windows [(a, b)] below `lo` (exclusive), not going under `first`."""
+    out, cur = [], lo
+    while cur > first and len(out) < n:
+        a = max(first, cur - step)
+        out.append((a, cur - 1))
+        cur = a
+    return out
+
+
+def _rpcscan(conn, cfg, spec, chain, budget=None):
+    """Resumable eth_getLogs scan for chains whose RPC allows only small ranges (X Layer 100 blocks, Optimism 10,000).
+    Every run scans the new blocks (hi+1..latest) first, then back-fills below `lo` towards the token's deploy block until
+    the time budget is used. -> (rows, scanned_dict); the cursors are saved by the caller after the rows are stored."""
+    import os
+    import time
+    from concurrent.futures import ThreadPoolExecutor
+    budget = budget if budget is not None else float(os.environ.get("FREEZEWATCH_SCAN_SEC", spec.get("budget", 60)))
+    t0 = time.time()
+    url, step, nb, workers = cfg["rpc"], spec.get("step", 100), spec.get("batch", 10), spec.get("parallel", 1)
+    c = {"label": cfg["label"], "rpc": url, "msw": cfg["token"], "logs": {}}
+    latest = int(eth.rpc_batch([("eth_blockNumber", [])], url=url)[0], 16)
+    st = scan_state(conn, chain)
+    first = st["first"]
+    if first is None:
+        first = evmmsw.creation_block(c, latest)
+    lo, hi = (st["lo"], st["hi"]) if st["lo"] is not None else (latest + 1, latest)
+    rows, err = [], None
+
+    def run(windows):
+        calls = [("eth_getLogs", [{"fromBlock": hex(a), "toBlock": hex(b), "address": cfg["token"], "topics": [TOPICS]}])
+                 for a, b in windows]
+        for attempt in range(5):
+            try:
+                res = eth.rpc_batch(calls, chunk=nb, url=url, retries=3)
+                time.sleep(spec.get("pause", 0))
+                return res
+            except Exception as e:  # noqa: BLE001
+                if attempt == 4 or not re.search(r"rate limit|too many|429|exceeded|capacity", str(e), re.I):
+                    raise
+                time.sleep(1.5 * (attempt + 1))
+
+    def go(batches):
+        """batches: list of window-lists, processed in order (possibly in parallel); stops at the first failure and returns
+        the number of fully processed batches."""
+        nonlocal err
+        done = 0
+        with ThreadPoolExecutor(max_workers=workers) as ex:
+            futs = [ex.submit(run, b) for b in batches]
+            for f in futs:
+                try:
+                    res = f.result()
+                except Exception as e:  # noqa: BLE001
+                    err = str(e)
+                    break
+                for part in res:
+                    rows.extend(part)
+                done += 1
+        return done
+
+    # A. new blocks above hi
+    cur = hi + 1
+    while cur <= latest and not err and time.time() - t0 < budget + 30:
+        wins = []
+        while cur <= latest and len(wins) < nb * workers:
+            wins.append((cur, min(cur + step - 1, latest)))
+            cur += step
+        batches = [wins[i:i + nb] for i in range(0, len(wins), nb)]
+        n = go(batches)
+        covered_to = batches[n - 1][-1][1] if n else hi
+        hi = max(hi, covered_to)
+        if n < len(batches):
+            break
+    # B. back-fill below lo (towards the token's deploy block)
+    while not err and lo > first and time.time() - t0 < budget:
+        wins = plan_windows(lo, first, step, nb * workers)
+        batches = [wins[i:i + nb] for i in range(0, len(wins), nb)]
+        n = go(batches)
+        if n:
+            lo = batches[n - 1][-1][0]
+        if n < len(batches):
+            break
+    stamp(c, rows)
+    return rows, {"first": first, "lo": lo, "hi": hi, "latest": latest, "error": err}
+
+
+def fetch(chain, from_block, conn=None):
     """Try the configured sources in order; the first that answers (even with zero events) wins."""
     cfg = evm_cfg(chain)
     last = None
@@ -111,6 +208,9 @@ def fetch(chain, from_block):
             if kind == "rpc":
                 rows, scanned = _rpc(cfg, arg, from_block)
                 return rows, kind, scanned
+            if kind == "rpcscan":
+                rows, state = _rpcscan(conn, cfg, arg, chain)
+                return rows, kind, state
         except Exception as e:  # noqa: BLE001
             last = e
             log.info("%s: source %s failed (%s)", chain, kind, str(e)[:80])
@@ -209,15 +309,35 @@ def relink(conn, chain):
     return fixed
 
 
+def save_scan(conn, chain, state):
+    """Persist the scan cursors; returns True if they moved."""
+    old = scan_state(conn, chain)
+    moved = (old["lo"], old["hi"]) != (state["lo"], state["hi"])
+    for k in ("first", "lo", "hi", "latest"):
+        meta_set(conn, f"{chain}_scan_{k}", state[k])
+    return moved
+
+
 def sync_chain(conn, chain, stale_days=7):
     if not EVENT_SOURCES.get(chain):
         log.info("%s: no free event source configured, skipped", chain)
         return
     cur = int(meta_get(conn, f"{chain}_ev_next", 0) or 0)
-    raw, kind, scanned = fetch(chain, max(0, cur - 5))
+    raw, kind, scanned = fetch(chain, max(0, cur - 5), conn)
     events = [e for e in (parse_log(x) for x in raw) if e]
     n = store(conn, chain, events)
-    if events:
+    scan_err = None
+    if kind == "rpcscan":  # resumable scan: cursors, not ev_next, say where we are
+        moved = save_scan(conn, chain, scanned)
+        scan_err = scanned.get("error")
+        if scanned["lo"] > scanned["first"]:
+            log.info("%s: log scan covers blocks %s-%s of %s-%s", chain, scanned["lo"], scanned["hi"], scanned["first"],
+                     scanned["latest"])
+        if scanned["lo"] - 1 > scanned["first"]:
+            ts = _block_ts(chain, scanned["lo"])
+            if ts:
+                meta_set(conn, f"{chain}_scan_lo_ts", ts)
+    elif events:
         meta_set(conn, f"{chain}_ev_next", max(e["block"] for e in events) + 1)
     elif scanned and scanned - cur > 500_000:  # long quiet scan: remember it, but rarely (keeps the DB file stable)
         meta_set(conn, f"{chain}_ev_next", scanned - 100_000)
@@ -234,3 +354,16 @@ def sync_chain(conn, chain, stale_days=7):
     conn.commit()
     log.info("%s: %s events via %s (%s new), linked to Safe %s, event-only %s, merged %s", chain, len(events), kind, n,
              linked, created, fixed)
+    if scan_err:
+        if not moved:
+            raise RuntimeError("log scan made no progress: " + scan_err)
+        log.warning("%s: scan stopped early: %s", chain, scan_err[:100])
+
+
+def _block_ts(chain, block):
+    try:
+        cfg = evm_cfg(chain)
+        r = eth.rpc_batch([("eth_getBlockByNumber", [hex(block), False])], url=cfg["rpc"], retries=2)[0]
+        return int(r["timestamp"], 16)
+    except Exception:  # noqa: BLE001
+        return None

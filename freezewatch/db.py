@@ -151,6 +151,16 @@ CREATE TABLE IF NOT EXISTS alerts (
     PRIMARY KEY (chain, tx_id, kind)
 );
 
+CREATE TABLE IF NOT EXISTS source_health (
+    source TEXT PRIMARY KEY,
+    last_ok TEXT,
+    last_error TEXT,
+    last_error_at TEXT,
+    consec_fail INTEGER NOT NULL DEFAULT 0,
+    rows_added INTEGER NOT NULL DEFAULT 0,
+    updated_at TEXT
+);
+
 CREATE TABLE IF NOT EXISTS meta (
     key TEXT PRIMARY KEY,
     value TEXT

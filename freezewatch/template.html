@@ -150,6 +150,10 @@ details.provd summary{cursor:pointer}details.provd>div{margin-top:4px}
 
 .tag[data-tip],.tipw[data-tip]{cursor:help}
 .tag:focus-visible,.tipw:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+.statpill{text-decoration:none}.statpill.amber{background:var(--warnbg,#fff3cd);border-color:#c99a1b;color:#7a5a00}.statpill.red{background:#fde8e6;border-color:#d64545;color:#9b1c1c}
+:root[data-theme=dark] .statpill.amber{background:#3a2f0b;color:#f0cd6a}:root[data-theme=dark] .statpill.red{background:#3b1614;color:#ff9b94}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]) .statpill.amber{background:#3a2f0b;color:#f0cd6a}:root:not([data-theme=light]) .statpill.red{background:#3b1614;color:#ff9b94}}
+.sbadge{white-space:nowrap;font-weight:600}.sbadge.ok{color:var(--add,#2a9d8f)}.sbadge.degraded{color:#c99a1b}.sbadge.failing{color:#d64545}
 .t-sup{background:var(--grybg);color:var(--gry)}
 .tipw{border-bottom:1px dotted var(--mut)}
 #tipbox{position:absolute;z-index:50;max-width:min(320px,calc(100vw - 24px));background:var(--fg);color:var(--bg);font-size:12px;line-height:1.35;padding:6px 9px;border-radius:6px;pointer-events:none}
@@ -165,6 +169,7 @@ footer{margin:30px 0 18px;color:var(--mut);font-size:12px;border-top:1px solid v
   <span class="pill live" id="live">live</span>
   <span class="pill" id="nch"></span>
   <span class="pill stalepill" id="hstale" hidden></span>
+  <a class="pill statpill" id="hstat" href="#status" hidden></a>
   <input class="qbox" id="q" type="search" placeholder="Search an address…" aria-label="Search an address" autocomplete="off" spellcheck="false">
   <div class="filters" id="filters"></div>
   <button type="button" class="pill themebtn" id="themeBtn" title="Theme: auto / light / dark" aria-label="Switch theme">🌓 Auto</button>
@@ -297,6 +302,13 @@ footer{margin:30px 0 18px;color:var(--mut);font-size:12px;border-top:1px solid v
   <div class="tw"><table id="signers"></table></div>
 </div>
 
+  <div id="tab-status" hidden>
+  <h2>Status of data sources</h2>
+  <p class="mut" id="stNote"></p>
+  <div class="tw"><table id="srcStatus"></table></div>
+  <p class="mut" style="margin-top:10px">Raw data: <a href="health.json">health.json</a>. A source is <b>failing</b> after 3 failed runs in a row, <b>degraded</b> after 1-2 or when the on-chain count is ahead of our data by more than 3. "Back-filling" only means older history is still being collected.</p>
+</div>
+
   <footer id="foot"></footer>
 </main>
 
@@ -391,6 +403,10 @@ const exA = () => D.ex.filter(e => active(e[0]));
   $('nch').textContent = Object.keys(CH).length + ' chains & tokens';
   const bad = Object.entries(D.health || {}).filter(([c, h]) => h && h.stale).map(([c]) => c.toUpperCase());
   if(bad.length){ const hs = $('hstale'); hs.hidden = false; hs.textContent = '⚠ ' + bad.join(', ') + ' data stale'; hs.title = 'On-chain transaction count is ahead of our data; ingestion is behind.'; }
+  const S = D.status;
+  if(S && S.overall !== 'ok'){ const hs = $('hstat'); hs.hidden = false; hs.className = 'pill statpill ' + (S.overall === 'failing' ? 'red' : 'amber');
+    hs.textContent = (S.overall === 'failing' ? '❌ ' : '⚠ ') + S.bad.length + ' source' + (S.bad.length > 1 ? 's' : '') + ' ' + (S.overall === 'failing' ? 'failing' : 'degraded');
+    hs.title = 'Sources with problems: ' + S.bad.join(', ') + '. Click for details.'; }
   const f = $('filters');
   const all = document.createElement('span'); all.className='pill fp on'; all.textContent='All'; f.appendChild(all);
   all.onclick = () => { sel.clear(); window.sync(); render(); };
@@ -567,6 +583,22 @@ function renderBadges(){
   }).join('');
 }
 
+function renderStatus(){
+  const S = D.status || {sources: []};
+  const ICON = {ok: '✅ ok', degraded: '⚠ degraded', failing: '❌ failing'};
+  const when = x => x ? esc(dt(x)) : '-';
+  let h = '<tr><th>Source</th><th>Status</th><th>Last success</th><th>Last error</th><th>Coverage</th></tr>';
+  for(const s of S.sources){
+    const note = s.note ? `<div class="mut" style="font-size:12px;margin-top:3px">${esc(s.note)}</div>` : '';
+    const err = s.last_error ? esc(s.last_error) + `<div class="mut" style="font-size:12px">${esc(dt(s.last_error_at))}${s.fails ? ' · ' + s.fails + ' failed run' + (s.fails > 1 ? 's' : '') + ' in a row' : ''}</div>` : '<span class="mut">none</span>';
+    h += `<tr><td><b>${esc(s.label)}</b><div class="mut" style="font-size:12px">${esc(s.source)}</div></td>` +
+         `<td><span class="sbadge ${s.status}">${ICON[s.status] || esc(s.status)}</span></td><td class="m">${when(s.last_ok)}</td><td>${err}</td>` +
+         `<td>${esc(s.coverage)}${s.partial ? ' <span class="tag" title="Older history is still being collected, a little more on every run.">back-filling</span>' : ''}${s.rows_added ? `<div class="mut" style="font-size:12px">+${s.rows_added} rows last run</div>` : ''}${note}</td></tr>`;
+  }
+  $('srcStatus').innerHTML = S.sources.length ? h : '<tr><td class="empty">No run recorded yet.</td></tr>';
+  const bad = S.sources.filter(s => s.status !== 'ok').length;
+  $('stNote').textContent = S.sources.length + ' sources · ' + (bad ? bad + ' not fully healthy' : 'all healthy');
+}
 function renderSigners(){
   let h = '<tr><th>Chain</th><th>Signer</th><th>Proposed</th><th>Confirmed</th><th>Revoked</th><th>Avg confirm latency</th></tr>';
   let n = 0;
@@ -590,7 +622,7 @@ function renderCross(){
 
 // ================= tabs =================
 let TAB = 'live';
-const TABS = ['live','analytics','watchlist','signers'];
+const TABS = ['live','analytics','watchlist','signers','status'];
 function showTab(t, push){
   if(!TABS.includes(t)) t = 'live';
   TAB = t;
@@ -602,7 +634,7 @@ function showTab(t, push){
 }
 (function(){
   const nav = $('tabs');
-  const names = {live:'Live', analytics:'Analytics', watchlist:'Watchlist', signers:'Signers'};
+  const names = {live:'Live', analytics:'Analytics', watchlist:'Watchlist', signers:'Signers', status:'Status'};
   for(const t of TABS){
     const b = document.createElement('button'); b.type = 'button'; b.className = 'tab'; b.dataset.t = t; b.textContent = names[t];
     b.setAttribute('role', 'tab'); b.onclick = () => showTab(t); nav.appendChild(b);
@@ -918,6 +950,44 @@ async function liveSolana(owner){
   return out;
 }
 
+const nowIso = () => new Date().toISOString();
+const unav = (id, label, src) => ({id, chain: id, label, blocked: null, balance: null, checked_at: nowIso(), source: src, error: 'unavailable'});
+async function liveNear(acct){
+  const N = LV.near; if(!N) return null;
+  try {
+    const j = await postJson(N.endpoint, {jsonrpc: '2.0', id: 1, method: 'query', params: {request_type: 'call_function', finality: 'final', account_id: N.contract, method_name: N.method, args_base64: btoa(JSON.stringify({account_id: acct}))}});
+    const raw = j.result && j.result.result; if(!raw) throw new Error('empty');
+    const s = JSON.parse(String.fromCharCode(...raw));
+    const blocked = s === 'Banned' ? true : s === 'Allowable' ? false : null;
+    if(blocked === null) throw new Error('unknown status');
+    return {id: 'near', chain: 'near', label: N.label, blocked, balance: null, checked_at: nowIso(), source: hostOf(N.endpoint)};
+  } catch(e) { return unav('near', N.label, hostOf(N.endpoint)); }
+}
+async function liveAptos(addr){
+  const A = LV.aptos; if(!A) return null;
+  try {
+    const c = new AbortController(), tm = setTimeout(() => c.abort(), LV.timeout);
+    let j; try { const r = await fetch(A.endpoint, {method: 'POST', headers: {'content-type': 'application/json'}, body: JSON.stringify({function: A.function, type_arguments: [], arguments: [addr]}), signal: c.signal}); j = await r.json(); } finally { clearTimeout(tm); }
+    if(!Array.isArray(j) || !j.length || !j.every(x => typeof x === 'boolean')) throw new Error('bad result');
+    return {id: 'aptos', chain: 'aptos', label: A.label, blocked: j.some(Boolean), balance: null, checked_at: nowIso(), source: hostOf(A.endpoint)};
+  } catch(e) { return unav('aptos', A.label, hostOf(A.endpoint)); }
+}
+async function getJson(url, ms){
+  const c = new AbortController(), tm = setTimeout(() => c.abort(), ms || LV.timeout);
+  try { const r = await fetch(url, {signal: c.signal}); if(!r.ok) throw new Error('HTTP ' + r.status); return await r.json(); } finally { clearTimeout(tm); }
+}
+async function liveTon(owner){
+  const T = LV.ton; if(!T) return null;
+  try {
+    const jw = await getJson(T.endpoint + '/accounts/' + encodeURIComponent(owner) + '/jettons/' + T.master, LV.timeout + 3000);
+    const w = jw.wallet_address && jw.wallet_address.address; if(!w) throw new Error('no jetton wallet');
+    const st = await getJson(T.endpoint + '/blockchain/accounts/' + encodeURIComponent(w) + '/methods/get_status', LV.timeout + 3000);
+    const s = st.decoded && st.decoded.status;
+    if(s !== 0 && s !== 1) throw new Error('unknown status');
+    return {id: 'ton', chain: 'ton', label: T.label, blocked: s === 1, balance: jw.balance != null ? Number(jw.balance) / 1e6 : null, checked_at: nowIso(), source: hostOf(T.endpoint)};
+  } catch(e) { return unav('ton', T.label, hostOf(T.endpoint)); }
+}
+
 // find the freeze event of a freshly blocked address (events with the address indexed): bounded eth_getLogs since the data was generated
 async function scanFreeze(res, h20){
   if(res.id === 'eth_usdt' || res.id === 'tron' || !res.url) return {skipped: true};
@@ -951,10 +1021,17 @@ async function runLive(r, other){
     const nativeTron = /^T/.test(r.input), tasks = [];
     if(!nativeTron || other) LV.evm.forEach(t => tasks.push(liveEvm(t, k.slice(2))));
     if(nativeTron || other) tasks.push(liveTron(k.slice(2)));
+    if(other) tasks.push(liveNear(k));  // 0x + 40 hex is also a valid NEAR (eth-implicit) account
     res.results = (await Promise.all(tasks)).filter(Boolean);
   } else if(/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(k)){
     res.results = await liveSolana(k);
-  } else { res.note = 'Live check is available for EVM, TRON and Solana addresses only.'; }
+  } else if(/^0x[0-9a-f]{64}$/.test(k)){
+    res.results = [await liveAptos(k)].filter(Boolean);
+  } else if(/^0:[0-9a-f]{64}$/.test(k)){
+    res.results = [await liveTon(k)].filter(Boolean);
+  } else if(/^[0-9a-f]{64}$/.test(k) || /^[a-z0-9][a-z0-9._-]{1,63}$/.test(k)){
+    res.results = [await liveNear(k)].filter(Boolean);
+  } else { res.note = 'Live check is available for EVM, TRON, Solana, NEAR, Aptos and TON addresses.'; }
   const hex = isEvmKey(k) ? k.slice(2) : null;
   await Promise.all(res.results.filter(x => x.blocked === true).map(async x => {
     const have = r.rec && (r.rec.e || []).some(e => e[0] === x.chain && e[1] === 'f');
@@ -1208,6 +1285,7 @@ function render(){
     renderBadges(); renderCross();
   } else if(TAB === 'analytics'){ renderAnalytics(); }
   else if(TAB === 'watchlist'){ if(!WL.results.length && $('wlText').value.trim()) runWatch(parseAddrs($('wlText').value), false); }
+  else if(TAB === 'status'){ renderStatus(); }
   else { renderSigners(); }
 }
 window.addEventListener('hashchange', () => { if(openWatchFromHash()) return; const h = location.hash.replace('#', ''); if(TABS.includes(h) && h !== TAB) showTab(h, false); });
@@ -1232,7 +1310,7 @@ window.addEventListener('hashchange', () => { if(openWatchFromHash()) return; co
   btn.onclick = () => { mode = MODES[(MODES.indexOf(mode) + 1) % MODES.length]; apply(); };
   try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if(mode === 'auto') repaint(); }); } catch(e) {}
 })();
-$('foot').innerHTML = '<div><button type="button" class="sublink" id="glosslink">Glossary</button></div>' + (Object.entries(D.health || {}).filter(([c, h]) => h && h.stale).map(([c, h]) => '<div class="warn">⚠ ' + c.toUpperCase() + ' data stale: on-chain transaction count ' + h.onchain_count + ', newest id in our data ' + h.max_id + '.</div>').join('')) + '<div class="datalinks" style="margin-bottom:6px"><b>Data:</b> ' + [['data/proposals.csv','proposals.csv'],['data/blacklist.csv','blacklist.csv'],['data/inflows.csv','inflows.csv'],['site/analytics.json','analytics.json'],['site/addresses.json','addresses.json'],['data/freezewatch.sqlite','freezewatch.sqlite']].map(([p, n]) => '<a href="' + RAW + p + '" target="_blank" rel="noopener">' + n + '</a>').join('') + '</div>Sources: ' + D.sources.map(esc).join(', ') + '. Data changed: ' + dt(D.generated_at) + '. ' +
+$('foot').innerHTML = '<div><button type="button" class="sublink" id="glosslink">Glossary</button> · <a href="#status">Source status</a></div>' + (Object.entries(D.health || {}).filter(([c, h]) => h && h.stale).map(([c, h]) => '<div class="warn">⚠ ' + c.toUpperCase() + ' data stale: on-chain transaction count ' + h.onchain_count + ', newest id in our data ' + h.max_id + '.</div>').join('')) + '<div class="datalinks" style="margin-bottom:6px"><b>Data:</b> ' + [['data/proposals.csv','proposals.csv'],['data/blacklist.csv','blacklist.csv'],['data/inflows.csv','inflows.csv'],['site/analytics.json','analytics.json'],['site/addresses.json','addresses.json'],['data/freezewatch.sqlite','freezewatch.sqlite']].map(([p, n]) => '<a href="' + RAW + p + '" target="_blank" rel="noopener">' + n + '</a>').join('') + '</div>Sources: ' + D.sources.map(esc).join(', ') + '. Data changed: ' + dt(D.generated_at) + '. ' +
   'Freezing actions = addBlackList / addToBlockedList; destroy*; remove*. ' +
   'TRON execution time is inferred from confirmations; Safe queues live off-chain; USDC and Solana have no queue (delay n/a). ' +
   'Not financial advice.';

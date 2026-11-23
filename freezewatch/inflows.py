@@ -201,8 +201,8 @@ def refresh(conn, budget_sec=120):
 
     evm = [c for c in todo if c[0] != "tron"]
     for chain, addr, ivs, start in evm:
-        if time.time() - t0 > budget_sec:
-            break
+        if time.time() - t0 > budget_sec * (0.5 if any(c[0] == "tron" for c in todo) else 1):
+            break  # TRON (the slow part) always gets the second half of the budget, so its scan keeps progressing
         cursor = cur.get((chain, addr), (None, None))[0]
         try:
             if chain not in latest:

@@ -5,7 +5,7 @@ import sys
 import time
 from datetime import datetime, timezone
 
-from . import alerts, analytics, crosschain, eth, evmmsw, health, inflows, others, safe, tokenevents, tron
+from . import alerts, analytics, crosschain, eth, evmmsw, health, inflows, others, safe, status, tokenevents, tron
 from .constants import BALANCE_FUNCS
 from .db import connect, meta_get, meta_set, update_proposal
 from .derive import derive_all, rebuild_blacklist
@@ -70,8 +70,28 @@ def refresh_balances(conn):
     conn.commit()
 
 
+def _row_count(conn, chain):
+    q = ("SELECT (SELECT COUNT(*) FROM proposals WHERE chain=?1) + (SELECT COUNT(*) FROM token_events WHERE chain=?1) "
+         "+ (SELECT COUNT(*) FROM freezes WHERE source=?1)")
+    return conn.execute(q, (chain,)).fetchone()[0]
+
+
 def do_sync(conn, chain, since, budget):
-    """Sync a single chain; a failure does not stop the others."""
+    """Sync a single chain; a failure does not stop the others. Every run is recorded in source_health."""
+    before = _row_count(conn, chain)
+    soft = []
+    ok = _do_sync(conn, chain, since, budget, soft)
+    try:
+        status.record(conn, chain, ok is True, error=ok if ok is not True else None,
+                      rows_added=max(0, _row_count(conn, chain) - before), soft_error="; ".join(soft) or None)
+        conn.commit()
+    except Exception as e:  # noqa: BLE001
+        log.warning("health record %s: %s", chain, str(e)[:80])
+    return ok is True
+
+
+def _do_sync(conn, chain, since, budget, soft):
+    """-> True or the error text."""
     try:
         if chain == "eth":
             eth.sync(conn, since, stale_days())
@@ -88,6 +108,7 @@ def do_sync(conn, chain, since, budget):
                 tokenevents.sync_chain(conn, chain, stale_days())
             except Exception as e:  # noqa: BLE001
                 log.warning("%s: token events failed: %s", chain, str(e)[:100])
+                soft.append("token events: " + str(e))
         elif chain in EVENT_CHAINS:
             tokenevents.sync_chain(conn, chain, stale_days())
         elif chain in NON_EVM:
@@ -101,7 +122,7 @@ def do_sync(conn, chain, since, budget):
     except Exception as e:  # noqa: BLE001
         conn.commit()
         log.error("%s: sync failed: %s", chain.upper(), e, exc_info=log.isEnabledFor(logging.DEBUG))
-        return False
+        return str(e) or type(e).__name__
 
 
 def cmd_backfill(args):

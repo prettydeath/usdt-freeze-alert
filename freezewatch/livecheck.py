@@ -15,6 +15,13 @@ SEL_BALANCE_OF = "70a08231"
 TIMEOUT_MS = 6000
 TRONGRID = "https://api.trongrid.io"
 SOLANA_RPC = "https://api.mainnet-beta.solana.com"
+NEAR_RPC = "https://rpc.mainnet.near.org"          # CORS: *
+NEAR_TOKEN = "usdt.tether-token.near"
+NEAR_METHOD = "get_blacklist_status"               # view {account_id} -> "Banned" | "Allowable"
+APTOS_VIEW = "https://api.mainnet.aptoslabs.com/v1/view"  # CORS: echoes the origin
+APTOS_FN = "0xf73e887a8754f540ee6e1a93bdc6dde2af69fc7ca5de32013e89dd44244473cb::usdt::is_frozen"  # (address) -> [bool, bool]
+TONAPI = "https://tonapi.io/v2"                    # CORS: echoes the origin; jetton wallet -> get_status (1 = frozen)
+TON_MASTER = "0:b113a994b5024a16719f69139328eb759596c38a25f59028b146fecdc3621dfe"
 
 # browser-safe (CORS-enabled) public RPCs, primary first; verified headlessly
 BROWSER_RPCS = {
@@ -63,6 +70,23 @@ def decode_units(result, decimals=6):
     return int(result, 16) / 10 ** decimals
 
 
+def near_status_blocked(result):
+    """NEAR get_blacklist_status result -> True (Banned) / False (Allowable) / None (anything else)."""
+    return {"Banned": True, "Allowable": False}.get(result)
+
+
+def aptos_blocked(result):
+    """Aptos usdt::is_frozen returns two flags (deposit / withdraw frozen); frozen if either is set."""
+    if isinstance(result, list) and result and all(isinstance(x, bool) for x in result):
+        return any(result)
+    return None
+
+
+def ton_status_blocked(status):
+    """TON jetton wallet get_status: 1 = frozen, 0 = active; anything else is unknown."""
+    return {1: True, 0: False}.get(status)
+
+
 def targets():
     """The live checks the dashboard offers: EVM eth_call targets, TRON and Solana."""
     out = [
@@ -82,7 +106,10 @@ def targets():
                  "sel": "isBlackListed(address)", "balance": "balanceOf(address)"},
         "solana": {"endpoint": SOLANA_RPC, "mints": {"sol_usdc": SOLANA_SOURCES["sol_usdc"]["mint"],
                                                     "sol_usdt": SOLANA_SOURCES["sol_usdt"]["mint"]}},
+        "near": {"endpoint": NEAR_RPC, "contract": NEAR_TOKEN, "method": NEAR_METHOD, "label": "NEAR USDt"},
+        "aptos": {"endpoint": APTOS_VIEW, "function": APTOS_FN, "label": "Aptos USDt"},
+        "ton": {"endpoint": TONAPI, "master": TON_MASTER, "label": "TON USDT"},
         "timeout": TIMEOUT_MS,
         "providers": sorted({u.split("//")[1].split("/")[0] for t in out for u in t["rpcs"]} |
-                            {TRONGRID.split("//")[1], SOLANA_RPC.split("//")[1]}),
+                            {u.split("//")[1].split("/")[0] for u in (TRONGRID, SOLANA_RPC, NEAR_RPC, APTOS_VIEW, TONAPI)}),
     }

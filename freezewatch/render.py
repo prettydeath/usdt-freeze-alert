@@ -130,8 +130,14 @@ def build_payload(conn, stats, stale_days):
     write_if_changed(SITE_DIR / "analytics.json", an_json)
     xt, xn = crosschain.table(conn, 150)
     auth = [dict(r) for r in conn.execute("SELECT * FROM authority_state")]
-    from . import livecheck
-    return {"generated_at": iso(now), "stale_days": stale_days, "live": livecheck.targets(), "stale_total": stale_total, "chains": chains,
+    from . import livecheck, status
+    from .registry import chain_meta
+    labels = {k: v["label"] for k, v in chain_meta().items()}
+    labels.update(SOURCE_LABELS)
+    labels.update({"inflows": "Transfers to frozen addresses", "balances": "Balances of frozen addresses"})
+    src_status = status.build(conn, stats.get("health"), labels)
+    write_if_changed(SITE_DIR / "health.json", json.dumps(src_status, ensure_ascii=False, indent=1, sort_keys=True))
+    return {"status": src_status, "generated_at": iso(now), "stale_days": stale_days, "live": livecheck.targets(), "stale_total": stale_total, "chains": chains,
             "pending": kept, "supply": supply, "stale": stale, "stale_by_chain": stale_by_chain, "ex": ex, "recent": recent[:200], "signers": signers, "coverage": stats.get("coverage", {}),
             "others": stats.get("others", {}), "health": stats.get("health"), "authority": auth, "cross": xt, "cross_total": xn,
             "analytics": an if len(an_json) < 1_200_000 else None, "analytics_url": "analytics.json",
