@@ -131,17 +131,22 @@ def analyze(conn, labels, curated=None, now=None):
         usd[(c, a)] = max(usd.get((c, a)) or 0, v or 0)
     cats, known, unknown = {}, [0, 0.0], [0, 0.0]
     ofac, sanc_other = {"n": 0, "usd": 0.0, "top": []}, 0
+    uniq_all, uniq_known, uniq_ofac = set(), set(), set()   # the same address frozen on several chains counts once
     for (chain, addr), v in usd.items():
         net = NETWORK_OF.get(chain)
         nk = (net, key_of(net, addr)) if net else None
-        r = reason_of(labels, curated, chain, canon_for(chain, addr), nk)
+        ck = canon_for(chain, addr)
+        uniq_all.add(ck)
+        r = reason_of(labels, curated, chain, ck, nk)
         if r:
+            uniq_known.add(ck)
             known[0] += 1
             known[1] += v
             d = cats.setdefault(r["category"], {"n": 0, "usd": 0.0})
             d["n"] += 1
             d["usd"] += v
             if r.get("ofac"):
+                uniq_ofac.add(ck)
                 ofac["n"] += 1
                 ofac["usd"] += v
                 ofac["top"].append({"chain": chain, "address": addr, "usd": round(v, 2), "entity": r["title"], "url": r["url"]})
@@ -153,9 +158,10 @@ def analyze(conn, labels, curated=None, now=None):
     ofac["top"].sort(key=lambda x: -x["usd"])
     ofac["top"] = ofac["top"][:15]
     ofac["usd"] = round(ofac["usd"], 2)
+    ofac["unique"] = len(uniq_ofac)
     total = known[0] + unknown[0]
     return {"freezes": total, "known": known[0], "unknown": unknown[0], "known_usd": round(known[1], 2),
-            "unknown_usd": round(unknown[1], 2), "curated": len(curated),
+            "unknown_usd": round(unknown[1], 2), "curated": len(curated), "unique": len(uniq_all), "known_unique": len(uniq_known),
             "known_pct": round(100 * known[0] / total, 1) if total else None,
             "by_category": {k: {"n": v["n"], "usd": round(v["usd"], 2)} for k, v in sorted(cats.items(), key=lambda kv: -kv[1]["n"])},
             "ofac": ofac, "sanctioned_other": sanc_other}

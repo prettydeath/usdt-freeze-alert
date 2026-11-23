@@ -111,7 +111,7 @@ def build_payload(conn, stats, stale_days, extras=None):
                        "at": r["ts"], "delay": None, "tx": r["tx_hash"], "amount": r["amount"]})
     recent.sort(key=lambda x: x["at"], reverse=True)
     chains = {}
-    for c in {r["chain"] for r in rows}:
+    for c in {r["chain"] for r in rows} | set(meta):  # every tracked chain, also those without a proposal yet
         chains[c] = meta.get(c, {"label": c, "mech": "onchain"})
     for src in SOURCE_LABELS:
         chains[src] = {"label": SOURCE_LABELS[src], "mech": "executed_only",
@@ -192,6 +192,8 @@ def write_badges(payload):
         "median": ("median delay 30d", _dur(statistics.median(d30)) if d30 else "n/a", "blue"),
         "freezes7d": ("freezes 7d", str(f7), "orange"),
         "chains": ("chains", str(len(payload["chains"])), "informational"),
+        "signals": ("cross-chain signals open", str(((payload.get("signals") or {}).get("stats") or {}).get("open", 0)), "yellow"),
+        "ofac": ("OFAC-listed frozen", f"{((payload.get('reasons') or {}).get('ofac') or {}).get('unique', 0)} addresses", "red"),
         "updated": ("last update", iso(now)[:16].replace("T", " ") + " UTC", "lightgrey"),
     }
     out = SITE_DIR / "badges"
