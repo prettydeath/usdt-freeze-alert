@@ -1,0 +1,8 @@
+# config/reasons.yaml - curated reasons, ONLY with a public source (leave empty when unsure).
+# - title: Short description of the incident
+#   category: hack            # hack | sanctions | scam | ransomware | law-enforcement | other
+#   date: 2025-01-31
+#   source_url: https://...   # required, public https
+#   chain: eth                # optional: restrict to one chain key
+#   addresses:
+#     - 0x0000000000000000000000000000000000000000

@@ -157,6 +157,15 @@ def _add_insights(idx, rec, extras):
                         [[x["to"], round(x["usd"], 2), round(x["w"], 2), _label_arr(x["label"]), int(x["internal"])]
                          for x in f["recipients"][:8]], round(f["internal"], 2), int(f["truncated"]), int(f["service"])])
         rec(key).setdefault("o", {})[chain] = lst
+    from . import reasons as _r
+    cur = extras.get("curated") or {}
+    for key, r in list(idx.items()):
+        chains = {e[0] for e in r.get("e", [])} | {p[0] for p in r.get("p", [])}
+        for ch in chains:
+            net = NETWORK_OF.get(ch)
+            x = _r.reason_of(lab, cur, ch, key, (net, key_of(net, key)) if net else (None, key))
+            if x:  # reason: category, title, source url, origin (curated | wallet-attribution), OFAC SDN flag
+                r.setdefault("r", {})[ch] = [x["category"], x["title"], x["url"], x["origin"], int(bool(x.get("ofac")))]
     big = {c["id"] for c in extras.get("cluster_list", []) if c["size"] >= 3 or c["kind"] != "batch"}
     for (chain, addr), ids in extras.get("cluster_index", {}).items():
         ids = [i for i in ids if i in big][:4]
