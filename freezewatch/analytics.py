@@ -30,18 +30,25 @@ TRON_ZERO = "T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb"
 EVM_ZERO = "0x" + "0" * 40
 
 
+def all_token_hex20():
+    """20-byte hex of every tracked token contract (ETH USDT/USDC, all USDT0 / MSW tokens, TRON USDT)."""
+    from .constants import ETH_USDT
+    from .util import tron_to_hex20
+    toks = {ETH_USDT.lower().removeprefix("0x"), USDC_ETH.lower().removeprefix("0x"), tron_to_hex20(TRON_USDT)}
+    for cfg in (*MSW_CHAINS.values(), *SAFE_CHAINS.values(), *EVENT_CHAINS.values()):
+        toks.add(cfg["token"].lower().removeprefix("0x"))
+    return toks
+
+
 def special_sinks(chain):
-    """Addresses Tether blacklists to burn mistaken sends: zero address and the token contract itself."""
+    """Addresses Tether/Circle blacklist to burn mistaken sends: the zero address and the token contract addresses of ANY
+    chain (e.g. Ethereum's USDT contract was blocked on Arbitrum). TRON uses base58 forms of the same hex."""
+    from .util import tron_from_hex20
+    toks = all_token_hex20()
     if chain == "tron":
-        return {TRON_ZERO, TRON_USDT}
-    if chain == "usdc_eth":
-        return {EVM_ZERO, USDC_ETH.lower()}
-    try:
-        token = crosschain.rpc_and_token(chain)[1]
-    except Exception:  # noqa: BLE001
-        token = None
-    if token or chain in ("eth", "avax", "celo", "kaia", "kava") or chain in SAFE_CHAINS or chain in EVENT_CHAINS:
-        return {EVM_ZERO} | ({token.lower()} if token else set())
+        return {TRON_ZERO} | {tron_from_hex20(h) for h in toks}
+    if chain in ("eth", "usdc_eth", "avax", "celo", "kaia", "kava") or chain in SAFE_CHAINS or chain in EVENT_CHAINS:
+        return {EVM_ZERO} | {"0x" + h for h in toks}
     return set()
 
 

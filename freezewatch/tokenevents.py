@@ -12,12 +12,13 @@ import time
 from . import eth, evmmsw
 from .constants import (TOPIC_BLOCK_PLACED, TOPIC_BLOCK_RELEASED, TOPIC_DESTROYED_BLOCKED, USDT_DECIMALS)
 from .db import ensure_proposal, meta_get, meta_set, update_proposal
-from .registry import EVENT_SOURCES, evm_cfg
+from .registry import ERA_SPLIT, EVENT_SOURCES, evm_cfg
 from .util import http_json, iso, parse_iso
 
 log = logging.getLogger("freezewatch.tokenevents")
 KIND_OF = {TOPIC_BLOCK_PLACED: "placed", TOPIC_BLOCK_RELEASED: "released", TOPIC_DESTROYED_BLOCKED: "destroyed"}
 FUNC_OF = {"placed": "addToBlockedList", "released": "removeFromBlockedList", "destroyed": "destroyBlockedFunds"}
+TOPIC_OWNERSHIP = "0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0"  # OwnershipTransferred
 TOPICS = list(KIND_OF)
 EVENT_SOURCES_KEYS = list(EVENT_SOURCES)  # chains with a configured event source
 EVENT_ID_BASE = 10 ** 12  # tx_id of event-only rows: EVENT_ID_BASE + block * 1000 + log index
@@ -126,25 +127,60 @@ def store(conn, chain, events):
     return n
 
 
-def apply_events(conn, chain):
-    """Link events to Safe proposals (same tx hash + target) or create event-only rows. Idempotent."""
+def era_cutoff(conn, chain):
+    """Epoch time when the token passed to the current (USDT0) owner; earlier events belong to the previous owner's era.
+    Read once from OwnershipTransferred logs (Etherscan V2) and cached; None = no split for this chain."""
+    cfg = ERA_SPLIT.get(chain)
+    if not cfg:
+        return None
+    cached = meta_get(conn, f"{chain}_era_cutoff")
+    if cached:
+        return int(cached)
+    v2 = next((s[1] for s in EVENT_SOURCES[chain] if s[0] == "v2"), None)
+    if v2 is None:
+        return None
+    pad = "0x" + "0" * 24 + cfg["new_owner"].lower().removeprefix("0x")
+    for lg in eth.get_logs(0, "latest", evm_cfg(chain)["token"], TOPIC_OWNERSHIP, v2):
+        if len(lg.get("topics", [])) > 2 and lg["topics"][2].lower() == pad:
+            ts = eth._h(lg["timeStamp"])
+            meta_set(conn, f"{chain}_era_cutoff", ts)
+            return ts
+    return None
+
+
+def reattribute(conn, chain, cutoff):
+    """Event-only rows created under `chain` before the cutoff were attributed to the wrong era: drop them and let
+    apply_events re-attribute (idempotent)."""
+    if not cutoff:
+        return 0
+    c = iso(cutoff)
+    n = conn.execute("DELETE FROM proposals WHERE chain=? AND public_proposal=0 AND executed_at<?", (chain, c)).rowcount
+    conn.execute("UPDATE token_events SET linked=NULL WHERE chain=? AND ts<? AND linked=0", (chain, c))
+    return n
+
+
+def apply_events(conn, chain, cutoff=None):
+    """Link events to proposals (same tx hash + target) or create event-only rows. Events older than `cutoff` are attributed
+    to the legacy chain entry (previous owner, e.g. Tether's Gnosis MSW on Arbitrum). Idempotent."""
     cfg = evm_cfg(chain)
+    legacy = (ERA_SPLIT.get(chain) or {}).get("legacy")
     created = linked = 0
     for ev in conn.execute("SELECT * FROM token_events WHERE chain=? AND linked IS NULL ORDER BY ts", (chain,)).fetchall():
         fn = FUNC_OF[ev["kind"]]
+        target = legacy if (cutoff and legacy and parse_iso(ev["ts"]) < cutoff) else chain
         row = conn.execute(
             "SELECT tx_id, amount FROM proposals WHERE chain=? AND lower(exec_tx)=? AND lower(target)=? AND function=? "
-            "AND public_proposal=1", (chain, ev["tx_hash"], ev["address"].lower(), fn)).fetchone()
+            "AND public_proposal=1", (target, ev["tx_hash"], ev["address"].lower(), fn)).fetchone()
         if row:
             if ev["kind"] == "destroyed" and ev["amount"] is not None:
-                update_proposal(conn, chain, row["tx_id"], amount=ev["amount"])
+                update_proposal(conn, target, row["tx_id"], amount=ev["amount"])
             conn.execute("UPDATE token_events SET linked=1 WHERE chain=? AND tx_hash=? AND log_index=?",
                          (chain, ev["tx_hash"], ev["log_index"]))
             linked += 1
             continue
         tid = event_tx_id(ev["block"], ev["log_index"])
-        ensure_proposal(conn, chain, tid)
-        update_proposal(conn, chain, tid, destination=cfg["token"].lower(), function=fn, target=ev["address"],
+        ensure_proposal(conn, target, tid)
+        update_proposal(conn, target, tid, destination=cfg["token"].lower(), function=fn, target=ev["address"],
                         amount=ev["amount"], executed=1, executed_at=ev["ts"], exec_tx=ev["tx_hash"], status="executed",
                         confirmations=0, required=None, chain_verified=1, public_proposal=0)
         conn.execute("UPDATE token_events SET linked=0 WHERE chain=? AND tx_hash=? AND log_index=?",
@@ -186,8 +222,15 @@ def sync_chain(conn, chain, stale_days=7):
     elif scanned and scanned - cur > 500_000:  # long quiet scan: remember it, but rarely (keeps the DB file stable)
         meta_set(conn, f"{chain}_ev_next", scanned - 100_000)
     meta_set(conn, f"{chain}_ev_source", kind)
-    created, linked = apply_events(conn, chain)
+    cutoff = era_cutoff(conn, chain)
+    dropped = reattribute(conn, chain, cutoff)
+    created, linked = apply_events(conn, chain, cutoff)
     fixed = relink(conn, chain)
+    legacy = (ERA_SPLIT.get(chain) or {}).get("legacy")
+    if legacy:
+        fixed += relink(conn, legacy)
+    if dropped:
+        log.info("%s: re-attributed %s pre-USDT0 event rows to %s", chain, dropped, legacy)
     conn.commit()
     log.info("%s: %s events via %s (%s new), linked to Safe %s, event-only %s, merged %s", chain, len(events), kind, n,
              linked, created, fixed)

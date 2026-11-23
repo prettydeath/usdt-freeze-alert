@@ -33,7 +33,9 @@ def test_targets_cover_registry_and_are_https():
     t = LC.targets()
     ids = {x["id"] for x in t["evm"]}
     assert {"eth_usdt", "eth_usdc"} <= ids
-    assert ids >= set(MSW_CHAINS) | set(SAFE_CHAINS) | set(EVENT_CHAINS)
+    from freezewatch.registry import ALIAS_CHAINS
+    assert ids >= (set(MSW_CHAINS) | set(SAFE_CHAINS) | set(EVENT_CHAINS)) - ALIAS_CHAINS
+    assert not (ids & ALIAS_CHAINS)  # arb_usdt shares arb1's token: one live check
     for x in t["evm"]:
         assert x["rpcs"] and all(u.startswith("https://") for u in x["rpcs"]), x["id"]
         assert re.fullmatch(r"0x[0-9a-fA-F]{40}", x["contract"]) and x["sel"] in (LC.SEL_IS_BLACKLISTED, LC.SEL_IS_BLACKLISTED_USDC, LC.SEL_IS_BLOCKED)

@@ -70,7 +70,7 @@ def meta_of(chain):
 
 
 TAGS = {"arb1": "ARB", "pol": "POL", "oeth": "OP", "usdc_eth": "USDC-ETH", "sol_usdc": "USDC-SOL",
-        "sol_usdt": "USDT-SOL", "hyper": "HYPER", "berachain": "BERA"}
+        "sol_usdt": "USDT-SOL", "hyper": "HYPER", "berachain": "BERA", "arb_usdt": "ARB-USDT"}
 
 
 def short(chain):

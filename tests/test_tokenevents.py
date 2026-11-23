@@ -83,3 +83,36 @@ def test_frozen_alert_says_no_public_proposal(tmp_path):
     txt = alerts.fmt_frozen(r)
     assert txt.startswith("🧊 <b>FROZEN</b> · ARB") and "⚡ <b>no public proposal</b>" in txt
     assert "signed" not in txt and "no advance notice" not in txt and f"tx {'0x' + 'ab' * 32}" in txt
+
+
+def test_era_split_attributes_pre_usdt0_events_to_the_tether_msw(tmp_path):
+    """Arbitrum: events before the 2025-01-28 hand-over to the USDT0 Safe were done by Tether's Gnosis MSW (chain arb_usdt)."""
+    from freezewatch.db import meta_set
+    conn = connect(tmp_path / "a.sqlite")
+    CUT = 1_738_077_312  # OwnershipTransferred to the USDT0 Safe (2025-01-28T15:15:12Z)
+    meta_set(conn, "arb1_era_cutoff", CUT)
+    assert TE.era_cutoff(conn, "arb1") == CUT and TE.era_cutoff(conn, "pol") is None  # Polygon has no pre-USDT0 events
+    # an MSW execution (Tether era) that already produced a proposal row with real times
+    ensure_proposal(conn, "arb_usdt", 40)
+    update_proposal(conn, "arb_usdt", 40, destination=TOKEN.lower(), function="addToBlockedList", target=A1, executed=1,
+                    executed_at="2023-05-01T10:05:00Z", submitted_at="2023-05-01T09:00:00Z", exec_tx="0xold1",
+                    status="executed", delay_seconds=3900, confirmations=3, required=3)
+    # a wrongly attributed event-only row from before the fix
+    ensure_proposal(conn, "arb1", TE.event_tx_id(1, 1))
+    update_proposal(conn, "arb1", TE.event_tx_id(1, 1), function="addToBlockedList", target=A2, executed=1,
+                    executed_at="2022-10-07T09:00:56Z", exec_tx="0xold2", status="executed", public_proposal=0)
+    evs = [TE.parse_log(lg(C.TOPIC_BLOCK_PLACED, A1, "0xold1", 10, 0, 1_682_935_500)),            # Tether era, linked to the MSW row
+           TE.parse_log(lg(C.TOPIC_BLOCK_PLACED, A2, "0xold2", 1, 1, 1_665_133_256)),             # Tether era, no MSW row found
+           TE.parse_log(lg(C.TOPIC_DESTROYED_BLOCKED, A2, "0xold3", 11, 0, 1_730_833_731, 9 * 10 ** 6)),
+           TE.parse_log(lg(C.TOPIC_BLOCK_PLACED, A3, "0xnew1", 99, 0, CUT + 86400))]             # USDT0 era
+    TE.store(conn, "arb1", evs)
+    conn.execute("UPDATE token_events SET linked=0 WHERE tx_hash='0xold2'")  # as left by the old attribution
+    assert TE.reattribute(conn, "arb1", CUT) == 1                                                 # wrong arb1 row dropped
+    created, linked = TE.apply_events(conn, "arb1", CUT)
+    assert (created, linked) == (3, 1)
+    rows = {(r["chain"], r["exec_tx"]): r for r in conn.execute("SELECT * FROM proposals")}
+    assert rows[("arb_usdt", "0xold1")]["public_proposal"] == 1 and rows[("arb_usdt", "0xold1")]["delay_seconds"] == 3900  # linked
+    assert rows[("arb_usdt", "0xold2")]["public_proposal"] == 0 and rows[("arb_usdt", "0xold3")]["amount"] == 9.0
+    assert rows[("arb1", "0xnew1")]["public_proposal"] == 0
+    assert not [k for k in rows if k[0] == "arb1" and k[1] in ("0xold1", "0xold2", "0xold3")]   # nothing pre-USDT0 under arb1
+    assert chain_meta()["arb_usdt"]["mech"] == "onchain" and "family" not in chain_meta()["arb_usdt"]

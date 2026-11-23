@@ -86,13 +86,14 @@ def rpc_and_token(chain):
 
 def balances_elsewhere(addr, exclude):
     """USDT balances (>0) of the address on all EVM networks with an RPC, excluding those already involved. Network errors are ignored."""
-    res = {}
+    res, seen = {}, set()
     for ch in ["eth", *MSW_CHAINS, *SAFE_CHAINS, *EVENT_CHAINS]:
         if ch in exclude:
             continue
         url, token = rpc_and_token(ch)
-        if not url:
+        if not url or (url, (token or "").lower()) in seen:  # aliases (arb_usdt vs arb1) share one token
             continue
+        seen.add((url, (token or "").lower()))
         try:
             v = eth.rpc_batch([("eth_call", [{"to": token, "data": "0x" + SEL_BALANCE_OF + "0" * 24 + addr[2:]},
                                              "latest"])], url=url)[0]

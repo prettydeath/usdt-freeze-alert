@@ -6,7 +6,7 @@ providers listed below - the index lookup does not. Every RPC listed was tested 
 would simply be left out (none at the time of writing). The Python helpers mirror the JS builders so both sides are
 unit-tested against each other (tests/test_livecheck.py)."""
 from .constants import ETH_USDT, SOLANA_SOURCES, TRON_USDT, USDC_ETH
-from .registry import EVENT_CHAINS, MSW_CHAINS, SAFE_CHAINS
+from .registry import ALIAS_CHAINS, EVENT_CHAINS, MSW_CHAINS, SAFE_CHAINS
 
 SEL_IS_BLACKLISTED = "e47d6060"   # legacy USDT: isBlackListed(address)
 SEL_IS_BLACKLISTED_USDC = "fe575a87"  # USDC: isBlacklisted(address)
@@ -72,6 +72,8 @@ def targets():
          "sel": SEL_IS_BLACKLISTED_USDC, "rpcs": BROWSER_RPCS["eth"]},
     ]
     for chain, cfg in {**MSW_CHAINS, **SAFE_CHAINS, **EVENT_CHAINS}.items():
+        if chain in ALIAS_CHAINS:
+            continue
         out.append({"id": chain, "chain": chain, "label": cfg["label"].replace(" - ", " "), "contract": cfg["token"],
                     "sel": SEL_IS_BLOCKED, "rpcs": BROWSER_RPCS[chain]})
     return {

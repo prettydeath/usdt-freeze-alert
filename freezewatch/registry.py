@@ -24,12 +24,24 @@ MSW_CHAINS = {
              "msw": "0xba2a995bd4ab9e605454ccef88169352cd5f75a6",
              "logs": {"kind": "rpc", "chunk": 2_000_000},
              "addr": "https://kaiascan.io/account/", "tx": "https://kaiascan.io/tx/", "threshold": "3 of 6"},
+    # Arbitrum USDT before the 2025-01-28 hand-over to the USDT0 Safe: owned by Tether's Gnosis MultiSigWallet 3/6 (same 6 owners
+    # as Ethereum). Same token contract as USDT0 on Arbitrum ("arb1"); events are attributed to this era by ownership time.
+    "arb_usdt": {"label": "USDT - Arbitrum (Tether, pre-USDT0)", "rpc": "https://arb1.arbitrum.io/rpc",
+                 "token": "0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9",
+                 "msw": "0x4a9196b06f339ad9f3ee752c987b401f2e1e2718",
+                 "logs": {"kind": "etherscan_v2", "chainid": 42161},
+                 "addr": "https://arbiscan.io/address/", "tx": "https://arbiscan.io/tx/", "threshold": "3 of 6"},
     "kava": {"label": "USDT - Kava EVM", "rpc": "https://kava-evm-rpc.publicnode.com",
              "token": "0x919c1c267bc06a7039e03fcc2ef738525769109c",
              "msw": "0x10b4af8e4efb44a953081c36a3f6ea2c0e9b4e8a",
              "logs": {"kind": "rpc", "url": "https://rpc.ankr.com/kava_evm", "chunk": 10_000, "parallel": 4},
              "addr": "https://kavascan.com/address/", "tx": "https://kavascan.com/tx/", "threshold": "3 of 6"},
 }
+
+# chains that share their token contract with another chain entry (no own live check / balance scan duplicates)
+ALIAS_CHAINS = {"arb_usdt"}
+# token events before the owner change belong to the previous owner's chain entry: {chain: {legacy chain, new owner}}
+ERA_SPLIT = {"arb1": {"legacy": "arb_usdt", "new_owner": "0x4dff9b5b0143e642a3f63a5bcf2d1c328e600bf8"}}
 
 # Safe 3/5 (Tier B, USDT0): net -> (safe, token, explorer)
 MAIN_SAFE = "0x4DFF9b5b0143E642a3F63a5bcf2d1C328e600bf8"

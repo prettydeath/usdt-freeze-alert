@@ -41,10 +41,17 @@ def test_parse_destroy_logs_legacy_and_new_and_tron():
 
 
 def test_token_map_and_special_sinks():
+    from freezewatch.util import tron_from_hex20
     assert A.token_of("arb1") == "USDT0" and A.token_of("usdc_eth") == "USDC" and A.token_of("tron") == "USDT"
-    assert A.special_sinks("eth") == {A.EVM_ZERO, "0xdac17f958d2ee523a2206206994597c13d831ec7"}
-    assert A.special_sinks("tron") == {"T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb", "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t"}
-    assert "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48" in A.special_sinks("usdc_eth")
+    assert A.token_of("arb_usdt") == "USDT"  # pre-USDT0 Arbitrum counts under USDT
+    eth_usdt, usdc = "0xdac17f958d2ee523a2206206994597c13d831ec7", "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
+    arb_token = "0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9"
+    for chain in ("eth", "arb1", "pol", "usdc_eth", "avax"):  # token contracts of ANY chain are sinks on every EVM chain
+        s = A.special_sinks(chain)
+        assert {A.EVM_ZERO, eth_usdt, usdc, arb_token, "0x" + "a614f803b6fd780986a42c78ec9c7f77e6ded13c"} <= s, chain
+    t = A.special_sinks("tron")
+    assert {"T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb", "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t", tron_from_hex20(eth_usdt[2:])} <= t
+    assert A.special_sinks("sol_usdc") == set() and A.special_sinks("near") == set()
 
 
 def test_compute_and_period_filtering(tmp_path):
