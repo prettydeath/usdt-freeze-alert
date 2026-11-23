@@ -243,6 +243,17 @@ details.provd summary{cursor:pointer}details.provd>div{margin-top:4px}
   #tipbox{max-width:calc(100vw - 24px)}
 }
 .t-sup{background:var(--grybg);color:var(--gry)}
+.repbar{justify-content:flex-start;flex-wrap:wrap;align-items:center;margin:14px 0 6px}
+.repbar button{font-size:12px;padding:3px 11px;color:var(--fg)}
+.heat{display:grid;grid-template-columns:34px repeat(24,1fr);gap:2px;font-size:10px;align-items:center}
+.heat .hc{height:18px;border-radius:2px;background:var(--grybg)}
+.heat .hl{color:var(--mut);text-align:right;padding-right:4px}.heat .hh{color:var(--mut);text-align:center}
+.spark{font-family:var(--mono);letter-spacing:-1px;color:var(--acc)}
+@media print{
+  header.bar,#filtersRow,#menuSheet,footer,.repbar,.livebtn,.xbar,.iconbtn,#tipbox,.sheet{display:none!important}
+  body{background:#fff;color:#000}.box,.wlcard{border-color:#999!important;break-inside:avoid}
+  a{color:#000;text-decoration:underline}
+}
 .tipw{border-bottom:1px dotted var(--mut)}
 #tipbox{position:absolute;z-index:50;max-width:min(320px,calc(100vw - 24px));background:var(--fg);color:var(--bg);font-size:12px;line-height:1.35;padding:6px 9px;border-radius:6px;pointer-events:none}
 details.gloss dt{font-weight:700;margin-top:8px}details.gloss dd{margin:2px 0 0 0;color:var(--mut)}
@@ -357,6 +368,14 @@ footer{margin:30px 0 18px;color:var(--mut);font-size:12px;border-top:1px solid v
     <div class="box"><h3>Frozen addresses still receiving funds</h3><div class="tw" style="border:0"><table id="arecv"></table></div></div>
   </div>
 
+  <h2>Freezes by reason</h2>
+  <div class="mut" id="rnote"></div>
+  <div class="kpis" id="rkpis"></div>
+  <div class="cols" style="margin-top:12px">
+    <div class="box"><h3>By reason category</h3><div class="tw" style="border:0"><table id="rtable"></table></div></div>
+    <div class="box"><h3>⚖ OFAC SDN: largest frozen addresses</h3><div class="tw" style="border:0"><table id="ofac"></table></div></div>
+  </div>
+
   <h2>Moved out before the freeze</h2>
   <div class="mut" id="onote"></div>
   <div class="kpis" id="okpis"></div>
@@ -368,6 +387,17 @@ footer{margin:30px 0 18px;color:var(--mut);font-size:12px;border-top:1px solid v
   <h2>Cross-chain lag</h2>
   <div class="kpis" id="xkpis"></div>
   <div class="tw" style="margin-top:10px"><table id="xhist"></table></div>
+
+  <h2>Pulse</h2>
+  <div class="mut" id="pnote">Executions by hour of day and weekday (UTC), signer behaviour, speed trend and queue length.</div>
+  <div class="ctl"><span class="mut">Heatmap</span><span class="seg" id="pgseg"></span></div>
+  <div class="box" style="margin-top:8px"><div class="heat" id="pheat"></div><div class="mut" id="pheatn" style="margin-top:6px"></div></div>
+  <div class="cols" style="margin-top:12px">
+    <div class="box"><h3>Monthly median delay (proposal to execution)</h3><canvas id="pspeed"></canvas></div>
+    <div class="box"><h3>Open proposals over time</h3><canvas id="pqueue"></canvas></div>
+  </div>
+  <div class="ctl"><span class="mut">Signers on</span><select id="psel" aria-label="Chain for signer statistics"></select></div>
+  <div class="tw" style="margin-top:8px"><table id="psign"></table></div>
 
   <h2>Clusters</h2>
   <div class="mut" id="clnote"></div>
@@ -390,6 +420,10 @@ footer{margin:30px 0 18px;color:var(--mut);font-size:12px;border-top:1px solid v
       <dt>Cross-chain signal</dt><dd>An address frozen (or proposed for freezing) on one chain that still holds at least $1,000 on another chain where it is not blocked. The lag is the time until the second chain blocks it; "moved before" means its balance there dropped by more than 10% first.</dd>
       <dt>Moved out before the freeze</dt><dd>Token transfers from the address in the 72 hours before the freeze executed. "In-window" = between the proposal being submitted and executed. Recipients are labelled from wallet-attribution where known.</dd>
       <dt>Cluster</dt><dd>Batch: freezes on one chain within 10 minutes of each other. Cross-chain: one address frozen on several chains. Counterparty: frozen addresses sharing senders or recipients (labelled exchanges, bridges, protocols and busy hubs are ignored as connectors). A cluster is a lead, not proof of a common owner.</dd>
+      <dt>Reason</dt><dd>Why an address was frozen is rarely public. A reason is shown only from a curated entry with a public source (config/reasons.yaml) or as a hint from a wallet-attribution label (hack, scam, ransomware, sanctions ...), always with its source link. "Unknown" means no public reason is known to this tool.</dd>
+      <dt>OFAC SDN</dt><dd>The address is on the current OFAC SDN list of digital-currency addresses, according to a wallet-attribution label whose sources include ofac-sdn. Other "sanctioned" labels without that source are shown as hints only.</dd>
+      <dt>Pulse</dt><dd>Executions by hour and weekday (UTC), how long each signer takes to confirm, how often a signer gives the last signature, the monthly median delay per chain, and the number of open proposals over time.</dd>
+      <dt>Address page</dt><dd>#addr=&lt;address&gt; opens a shareable full page for one address with a copyable Markdown report (.md / .json download, or Print to PDF).</dd>
       <dt>Labels</dt><dd>Entity labels come from the public wallet-attribution dataset (MIT) and its upstream sources (DefiLlama CEX lists, GraphSense, OFAC SDN and others). They are shown as "label from wallet-attribution", never as our own claim.</dd>
       <dt>Sinks (excluded)</dt><dd>Zero address and token-contract addresses are blacklisted to burn mistaken sends; they are excluded from totals and lists.</dd>
       <dt>USDT, USDT0, pre-USDT0 Arbitrum</dt><dd>USDT is Tether's own token; USDT0 is its omnichain version controlled by a different Safe wallet. On Arbitrum the token changed hands on 2025-01-28: earlier actions were done by Tether's multisig (shown as "Arbitrum USDT"), later ones by the USDT0 Safe.</dd>
@@ -419,6 +453,18 @@ footer{margin:30px 0 18px;color:var(--mut);font-size:12px;border-top:1px solid v
   <div class="xbar" id="wlExp" hidden style="margin-top:10px"><span class="mut" style="align-self:center">Results:</span><button type="button" id="wlCsv">⬇ CSV</button><button type="button" id="wlJson">⬇ JSON</button></div>
   <div class="wlsum" id="wlSummary" aria-live="polite"></div>
   <div id="wlOut"></div>
+</div>
+
+<div id="tab-addr" hidden>
+  <div class="repbar xbar" id="repbar">
+    <a href="#watchlist" class="sublink" id="addrBack">← back</a>
+    <button type="button" id="repCopy">Copy report</button>
+    <button type="button" id="repMd">⬇ .md</button>
+    <button type="button" id="repJson">⬇ .json</button>
+    <button type="button" id="repPrint">Print / PDF</button>
+    <button type="button" id="repLink">Copy link</button>
+  </div>
+  <div id="addrBody"></div>
 </div>
 
 <div id="tab-signers" hidden>
@@ -582,7 +628,7 @@ function pendRows(rows, withAge){
   for(const r of rows){
     const tgt = r.target ? addrL(r.chain, r.target) : (r.amount!=null ? 'amount ' + usd(r.amount) : '<span class="mut">-</span>');
     h += `<tr><td class="ch">${esc(cshort(r.chain))}</td><td class="m">${r.tx_id}</td><td>${fnTag(r)}</td>
-      <td class="m addr">${tgt}</td><td>${r.confirmations}/${r.required ?? '?'}</td><td>${age(r.submitted_at)}</td><td>${usd(r.balance_now)}</td></tr>`;
+      <td class="m addr">${tgt}${r.target ? hintChip(r.chain, r.target) : ''}</td><td>${r.confirmations}/${r.required ?? '?'}</td><td>${age(r.submitted_at)}</td><td>${usd(r.balance_now)}</td></tr>`;
   }
   return h;
 }
@@ -616,7 +662,7 @@ function renderRecent(){
   for(const r of rows){
     const hasD = r.delay != null && !NO_DELAY.includes(r.chain);
     const dl = !hasD ? '<span class="mut">n/a</span>' : r.delay === 0 ? '<span class="warn">no warning</span>' : dur(r.delay);
-    h += `<tr><td class="ch">${esc(cshort(r.chain))}</td><td class="m addr">${addrL(r.chain, r.target)}${r.amount!=null?' <span class="mut">'+usd(r.amount)+'</span>':''}</td>
+    h += `<tr><td class="ch">${esc(cshort(r.chain))}</td><td class="m addr">${addrL(r.chain, r.target)}${hintChip(r.chain, r.target)}${r.amount!=null?' <span class="mut">'+usd(r.amount)+'</span>':''}</td>
       <td>${fnTag({function:r.function})}</td><td class="m">${dt(r.at).replace(' UTC','')}</td><td>${dl}</td><td class="m">${txL(r.chain, r.tx)}</td></tr>`;
   }
   $('recent').innerHTML = rows.length ? h : '<tr><td class="empty">No data.</td></tr>';
@@ -746,7 +792,7 @@ function renderCross(){
 
 // ================= tabs =================
 let TAB = 'live';
-const TABS = ['live','analytics','watchlist','signers','status'];
+const TABS = ['live','analytics','watchlist','signers','status','addr'];
 function showTab(t, push){
   if(!TABS.includes(t)) t = 'live';
   TAB = t;
@@ -760,6 +806,7 @@ function showTab(t, push){
   const nav = $('tabs');
   const names = {live:'Live', analytics:'Analytics', watchlist:'Watchlist', signers:'Signers', status:'Status'};
   for(const t of TABS){
+    if(t === 'addr') continue;  // the address page has no tab: it opens from #addr=<address>
     const b = document.createElement('button'); b.type = 'button'; b.className = 'tab'; b.dataset.t = t; b.textContent = names[t];
     b.setAttribute('role', 'tab'); b.onclick = () => showTab(t); nav.appendChild(b);
   }
@@ -952,7 +999,7 @@ function exportTable(id, name, fmt){
   else { const [h, ...b] = rows; download(name, 'application/json', JSON.stringify(b.map(r => Object.fromEntries(h.map((k, i) => [k, r[i]]))), null, 1)); }
 }
 (function(){
-  const EXPORTS = [['pending','pending'],['signals','cross_chain_signals'],['oent','top_recipient_entities'],['ofront','front_run'],['xhist','cross_chain_lag'],['aclusters','clusters'],['supply','treasury_supply_ops'],['stale','stale'],['recent','recently_executed'],['achain','analytics_by_chain'],['atop','top_frozen'],['asend','inflow_senders'],['arecv','frozen_addresses_receiving'],['signers','signers'],['cross','cross_chain']];
+  const EXPORTS = [['rtable','freezes_by_reason'],['ofac','ofac_frozen_top'],['psign','signer_activity'],['pending','pending'],['signals','cross_chain_signals'],['oent','top_recipient_entities'],['ofront','front_run'],['xhist','cross_chain_lag'],['aclusters','clusters'],['supply','treasury_supply_ops'],['stale','stale'],['recent','recently_executed'],['achain','analytics_by_chain'],['atop','top_frozen'],['asend','inflow_senders'],['arecv','frozen_addresses_receiving'],['signers','signers'],['cross','cross_chain']];
   for(const [id, name] of EXPORTS){
     const t = $(id); if(!t) continue;
     const wrap = t.closest('.tw') || t.parentElement;
@@ -1233,6 +1280,187 @@ document.addEventListener('click', ev => {
   setTimeout(() => { const row = document.getElementById('cl-' + a.dataset.cl); if(row){ const d = row.querySelector('details'); if(d) d.open = true; row.scrollIntoView({block: 'center'}); row.style.outline = '2px solid var(--acc)'; } }, 150);
 });
 
+
+// ================= reasons, sanctions, address page, report =================
+const REASON_ICON = {hack: '🕳', sanctions: '⚖', scam: '🎣', ransomware: '🔒', 'law-enforcement': '👮', other: '🧾'};
+function reasonChip(x, withUrl){
+  if(!x) return '';
+  const [cat, title, url, origin, ofac] = x;
+  const how = origin === 'curated' ? 'curated, public source' : 'label from wallet-attribution';
+  const link = withUrl && url ? ` <a href="${esc(url)}" target="_blank" rel="noopener" title="source">source ↗</a>` : '';
+  if(ofac) return `<span class="tag t-add" title="OFAC SDN digital-currency address (label from wallet-attribution)">⚖ OFAC SDN</span>${link}`;
+  return `<span class="tag ${cat === 'sanctions' || cat === 'hack' ? 't-des' : ''}" title="reason hint: ${esc(title)} (${how})">${REASON_ICON[cat] || '🧾'} ${esc(cat)}</span>${link}`;
+}
+const hintOf = (c, a) => (D.hints || {})[c + ':' + canonKey(a)];
+const hintChip = (c, a) => { const h = hintOf(c, a); return h ? ' ' + reasonChip(h, false) : ''; };
+
+// REPORT-BEGIN
+function mdEsc(s){ return String(s == null ? '' : s).replace(/\|/g, '\\|').replace(/\n/g, ' '); }
+function buildReport(r, nowIso){
+  const rec = r.rec, st = statusOf(r), L = [];
+  const explorer = (c, h) => { const b = (CH[c] || {}).tx; return b && h ? b + h : null; };
+  const addrUrl = (c, a) => { const b = (CH[c] || {}).addr; return b ? b + a : null; };
+  L.push('# Address report: ' + r.input);
+  L.push('');
+  L.push('- Address: `' + r.input + '`' + (r.key && r.key !== r.input ? ' (index key `' + r.key + '`)' : ''));
+  L.push('- Generated: ' + nowIso + ' (UTC)');
+  L.push('- Data as of: ' + D.generated_at + ' (UTC)');
+  L.push('- Source: USDT Freeze Alert, https://prettydeath.github.io/usdt-freeze-alert/#addr=' + encodeURIComponent(r.input));
+  L.push('');
+  L.push('## Status');
+  L.push('');
+  L.push('**' + st.word + '** - ' + st.summary + (st.amount ? ' (' + st.amount + ')' : '') + (st.also ? '; also: ' + st.also : ''));
+  if(r.live) L.push('- Live on-chain check at ' + r.live.at + ' (UTC): ' + r.live.results.map(x => (CH[x.chain] || {}).label + ': ' + (x.blocked === true ? 'BLOCKED' : x.blocked === false ? 'not blocked' : 'unavailable') + (x.balance != null ? ' (balance ' + usd(x.balance) + ')' : '') + ' via ' + x.source).join('; '));
+  const labels = rec && rec.l ? Object.entries(rec.l) : [], reasons = rec && rec.r ? Object.entries(rec.r) : [];
+  if(labels.length || reasons.length){
+    L.push('');
+    L.push('## Labels, reasons and sanctions');
+    L.push('');
+    for(const [c, l] of labels) L.push('- Label from wallet-attribution (' + c + '): ' + [l[0], l[1], l[2]].filter(Boolean).join(' / ') + ' - sources: ' + l[3] + (l[4] ? ' - ' + l[4] : ''));
+    for(const [c, x] of reasons) L.push('- ' + (x[4] ? 'OFAC SDN listed' : 'Reason hint: ' + x[0] + ' (' + x[1] + ')') + ' [' + c + '; ' + (x[3] === 'curated' ? 'curated, public source' : 'label from wallet-attribution') + ']' + (x[2] ? ' - ' + x[2] : ''));
+    L.push('- Labels are third-party hints (wallet-attribution, MIT, and its upstream sources), not findings of this tool.');
+  }
+  const tl = timelineOf(r);
+  if(tl.length){
+    L.push('');
+    L.push('## Timeline (UTC)');
+    L.push('');
+    for(const i of tl){ const u = explorer(i.chain, i.tx); L.push('- ' + dstr(i.ts) + ' - ' + (CH[i.chain] || {}).label + ' - ' + i.label + (i.tx ? ' - tx `' + i.tx + '`' + (u ? ' ' + u : '') : '')); }
+  }
+  if(rec && (rec.e || []).length){
+    L.push('');
+    L.push('## Executed actions');
+    L.push('');
+    L.push('| Chain | Action | Executed (UTC) | Delay | Amount | Tx |');
+    L.push('|---|---|---|---|---|---|');
+    for(const x of rec.e) L.push('| ' + mdEsc((CH[x[0]] || {}).label) + ' | ' + ({f: 'frozen', u: 'unfrozen', b: 'burned'}[x[1]] || x[1]) + ' | ' + dstr(x[2]) + ' | ' + (x[11] === 0 ? 'no public proposal' : x[5] == null ? 'n/a' : x[5] === 0 ? 'no advance notice' : dur(x[5])) + ' | ' + (x[4] != null ? usd(x[4]) : '-') + ' | `' + (x[3] || '') + '` |');
+  }
+  const bal = rec ? Object.entries(rec.b || {}).filter(([c, v]) => v > 0) : [];
+  if(bal.length){ L.push(''); L.push('## Current balances'); L.push(''); for(const [c, v] of bal) L.push('- ' + (CH[c] || {}).label + ': ' + usd(v)); }
+  if(rec && rec.o){
+    L.push('');
+    L.push('## Funds moved before the freeze (72 h window)');
+    L.push('');
+    for(const [c, fl] of Object.entries(rec.o)) for(const f of fl){
+      L.push('- ' + (CH[c] || {}).label + ', frozen ' + dstr(f[0]) + ': escaped ' + usd(f[1]) + ' (' + usd(f[2]) + ' between proposal and execution)' + (f[4] > 0 ? '; ' + usd(f[4]) + ' moved between addresses that were also frozen (not counted)' : '') + (f[5] ? '; TRUNCATED (lower bound)' : '') + (f[6] ? '; labelled service wallet, not counted' : ''));
+      for(const x of f[3]) L.push('  - to `' + x[0] + '` ' + usd(x[1]) + (x[2] > 0 ? ' (in-window ' + usd(x[2]) + ')' : '') + (x[4] ? ' [also frozen]' : '') + (x[3] ? ' [label from wallet-attribution: ' + [x[3][0], x[3][1], x[3][2]].filter(Boolean).join(' / ') + ']' : ''));
+    }
+  }
+  const inf = rec ? Object.entries(rec.i || {}) : [];
+  if(inf.length){
+    L.push('');
+    L.push('## Funds sent after the freeze');
+    L.push('');
+    for(const [c, v] of inf) L.push('- ' + (CH[c] || {}).label + ': ' + v[0] + ' transfer(s), ' + usd(v[1]) + '; top senders: ' + v[2].map(s => '`' + s[0] + '` (' + s[1] + ', ' + usd(s[2]) + ')').join(', '));
+  }
+  if(rec && (rec.x || []).length){ L.push(''); L.push('## Cross-chain signals'); L.push(''); for(const x of rec.x) L.push('- ' + (x[1] === 'proposed' ? 'freeze proposed' : 'frozen') + ' on ' + (CH[x[0]] || {}).label + ' ' + dstr(x[2]) + ', still unblocked: ' + x[3].map(e => usd(e[3]) + ' on ' + (CH[e[0]] || {}).label).join(', ')); }
+  if(rec && (rec.c || []).length){ L.push(''); L.push('## Clusters'); L.push(''); L.push('Cluster ids (leads, not proof of a common owner): ' + rec.c.map(i => '`' + i + '`').join(', ')); }
+  if(rec && (rec.p || []).length){ L.push(''); L.push('## Pending / stale proposals'); L.push(''); for(const p of rec.p) L.push('- ' + (CH[p[0]] || {}).label + ' ' + (p[6] === 'stale' ? 'stale' : 'pending') + ' proposal ' + p[1] + ' (' + p[2] + '), ' + p[3] + '/' + (p[4] ?? '?') + ' signatures' + (p[5] ? ', submitted ' + dstr(p[5]) : '')); }
+  L.push('');
+  L.push('## Sources');
+  L.push('');
+  L.push('- Freeze data: Tether multisig contracts and token events via Etherscan V2, public RPCs, TronGrid/Tronscan, Safe Transaction Service, nearblocks, Aptos Indexer, tonapi and the Solana RPC (see the project README).');
+  L.push('- Labels: wallet-attribution (MIT) and its upstream sources.');
+  L.push('- Times are UTC. Not financial or legal advice.');
+  return L.join('\n') + '\n';
+}
+// REPORT-END
+function reportJson(r){
+  return JSON.stringify({address: r.input, key: r.key, generated_utc: new Date().toISOString(), data_as_of_utc: D.generated_at, status: statusOf(r),
+    index_record: r.rec, live_check: r.live ? r.live.results : null,
+    timeline: timelineOf(r).map(i => ({when_utc: new Date(i.ts * 1000).toISOString(), chain: i.chain, event: i.label, tx: i.tx || null})),
+    labels_source: 'wallet-attribution (MIT) and its upstream sources'}, null, 1);
+}
+const AP = {r: null};
+function openAddrFromHash(){
+  const m = location.hash.match(/^#addr=(.*)$/);
+  if(!m) return false;
+  let a = ''; try { a = decodeURIComponent(m[1]); } catch(e) { a = m[1]; }
+  AP.input = a.trim(); AP.r = null;
+  showTab('addr', false);
+  return true;
+}
+async function renderAddrPage(){
+  const body = $('addrBody'); if(!AP.input){ body.innerHTML = '<div class="empty">No address.</div>'; return; }
+  if(!AP.r || AP.r.input !== AP.input){
+    body.innerHTML = '<div class="empty">Loading address index…</div>';
+    const key = canonKey(AP.input);
+    AP.r = key ? {input: AP.input, key, rec: await getRecord(key), live: WL.liveCache[key] || null} : {input: AP.input, key: null, invalid: true, rec: null};
+  }
+  const r = AP.r;
+  body.innerHTML = renderCard(r, 'ap').replace(/<details class="sec">/g, '<details class="sec" open>');
+  body.querySelectorAll('.livebtn').forEach(b => b.onclick = async () => { b.disabled = true; b.textContent = 'Checking…'; await liveOne(r); renderAddrPage(); });
+  document.title = 'USDT Freeze Alert - ' + r.input.slice(0, 12) + '…';
+  const dis = !!r.invalid; ['repCopy', 'repMd', 'repJson'].forEach(id => $(id).disabled = dis);
+}
+function dl(name, mime, text){ const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], {type: mime})); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); }
+(function(){
+  const flash = (b, t) => { const o = b.dataset.o || b.textContent; b.dataset.o = o; b.textContent = t; setTimeout(() => { b.textContent = o; }, 1500); };
+  $('repCopy').onclick = async () => { if(!AP.r) return; const md = buildReport(AP.r, new Date().toISOString().slice(0, 19) + 'Z'); try { await navigator.clipboard.writeText(md); flash($('repCopy'), 'Copied'); } catch(e) { dl('report.md', 'text/markdown', md); flash($('repCopy'), 'Downloaded'); } };
+  $('repMd').onclick = () => { if(AP.r) dl('report-' + AP.r.input.slice(0, 14) + '.md', 'text/markdown', buildReport(AP.r, new Date().toISOString().slice(0, 19) + 'Z')); };
+  $('repJson').onclick = () => { if(AP.r) dl('report-' + AP.r.input.slice(0, 14) + '.json', 'application/json', reportJson(AP.r)); };
+  $('repPrint').onclick = () => { document.querySelectorAll('#addrBody details').forEach(d => d.open = true); window.print(); };
+  $('repLink').onclick = async () => { const u = location.href.split('#')[0] + '#addr=' + encodeURIComponent(AP.input); try { await navigator.clipboard.writeText(u); flash($('repLink'), 'Copied'); } catch(e) { prompt('Link', u); } };
+  $('addrBack').onclick = ev => { ev.preventDefault(); history.back(); };
+})();
+
+
+// ================= reasons + pulse (Analytics) =================
+const PX = {group: 'all', chain: null};
+let speedChart = null, queueChart = null;
+function renderReasons(){
+  const R = D.reasons; if(!R) return;
+  $('rnote').textContent = 'A reason is known only from a curated entry with a public source or from a wallet-attribution label (hack / scam / ransomware / sanctions ...). Everything else is "unknown": most freezes are never explained publicly.' + (R.curated ? '' : ' No curated entries yet (config/reasons.yaml).');
+  const unk = R.unknown, tot = R.freezes;
+  $('rkpis').innerHTML = [
+    ['🧾 Known reason', R.known_pct == null ? 'n/a' : R.known_pct + '%', R.known.toLocaleString('en-US') + ' of ' + tot.toLocaleString('en-US') + ' frozen addresses · ' + usdS(R.known_usd)],
+    ['❔ Unknown', unk.toLocaleString('en-US'), usdS(R.unknown_usd) + ' frozen without a public reason'],
+    ['⚖ OFAC SDN', R.ofac.n.toLocaleString('en-US'), usdS(R.ofac.usd) + ' frozen on OFAC-listed addresses' + (R.sanctioned_other ? ' · +' + R.sanctioned_other + ' other "sanctioned" labels' : '')],
+  ].map(([l, v, s]) => `<div class="kpi"><div class="l">${l}</div><div class="v">${v}</div><div class="s">${s}</div></div>`).join('');
+  const cats = Object.entries(R.by_category);
+  $('rtable').innerHTML = '<tr><th>Reason</th><th>Addresses</th><th>Frozen</th></tr>' + cats.map(([c, v]) => `<tr><td>${REASON_ICON[c] || ''} ${esc(c)}</td><td>${v.n.toLocaleString('en-US')}</td><td>${usd(v.usd)}</td></tr>`).join('') + `<tr><td>❔ unknown</td><td>${unk.toLocaleString('en-US')}</td><td>${usd(R.unknown_usd)}</td></tr>`;
+  $('ofac').innerHTML = R.ofac.top.length ? '<tr><th>Chain</th><th>Address</th><th>Frozen</th><th>Source</th></tr>' + R.ofac.top.map(x => `<tr><td class="ch">${esc(cshort(x.chain))}</td><td class="m addr">${addrL(x.chain, x.address)} <a href="#addr=${encodeURIComponent(x.address)}">page</a></td><td>${usd(x.usd)}</td><td>${x.url ? '<a href="' + esc(x.url) + '" target="_blank" rel="noopener">source ↗</a>' : ''}</td></tr>`).join('') : '<tr><td class="empty">None.</td></tr>';
+}
+const groupOf = c => c === 'eth' ? 'ETH' : c === 'tron' ? 'TRON' : (CH[c] && CH[c].family === 'usdt0') ? 'USDT0' : 'Other';
+function renderPulse(){
+  const P = D.pulse; if(!P) return;
+  // heatmap: hour x weekday of executions (UTC), from the compact ex list, honouring the chain filter
+  const sg = $('pgseg'); if(!sg.children.length){
+    for(const [v, l] of [['all', 'All'], ['ETH', 'ETH'], ['TRON', 'TRON'], ['USDT0', 'USDT0'], ['Other', 'Other']]){ const b = document.createElement('button'); b.type = 'button'; b.dataset.v = v; b.textContent = l; b.onclick = () => { PX.group = v; renderPulse(); }; sg.appendChild(b); }
+  }
+  sg.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.v === PX.group));
+  const grid = Array.from({length: 7}, () => Array(24).fill(0)); let total = 0, mx = 0;
+  for(const e of D.ex){ if(!active(e[0]) || (PX.group !== 'all' && groupOf(e[0]) !== PX.group)) continue; const d = new Date(e[1] * 1000); grid[(d.getUTCDay() + 6) % 7][d.getUTCHours()]++; total++; }
+  grid.forEach(r => r.forEach(v => { mx = Math.max(mx, v); }));
+  const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  let h = '<span></span>' + Array.from({length: 24}, (_, i) => `<span class="hh">${i % 3 === 0 ? i : ''}</span>`).join('');
+  grid.forEach((row, di) => { h += `<span class="hl">${DAYS[di]}</span>` + row.map((v, hi) => `<span class="hc" title="${DAYS[di]} ${String(hi).padStart(2, '0')}:00 UTC: ${v} execution${v === 1 ? '' : 's'}" style="${v ? 'background:color-mix(in srgb,var(--acc) ' + Math.round(12 + 88 * v / mx) + '%,transparent)' : ''}"></span>`).join(''); });
+  $('pheat').innerHTML = h;
+  const hours = Array(24).fill(0), wd = Array(7).fill(0); grid.forEach((r, di) => r.forEach((v, hi) => { hours[hi] += v; wd[di] += v; }));
+  const topH = hours.indexOf(Math.max(...hours)), topD = wd.indexOf(Math.max(...wd));
+  $('pheatn').textContent = total ? total.toLocaleString('en-US') + ' executions (about the last 16 months) · busiest hour ' + String(topH).padStart(2, '0') + ':00 UTC · busiest day ' + DAYS[topD] + ' · weekend share ' + Math.round(100 * (wd[5] + wd[6]) / total) + '%' : 'No executions for this selection.';
+  // speed trend and queue length
+  if(window.Chart){
+    const cv = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+    Chart.defaults.color = cv('--mut'); Chart.defaults.borderColor = cv('--hair');
+    if(speedChart) speedChart.destroy(); if(queueChart) queueChart.destroy();
+    const chains = Object.keys(P.speed).filter(c => active(c)).sort((a, b) => Object.keys(P.speed[b]).length - Object.keys(P.speed[a]).length).slice(0, 5);
+    const months = [...new Set(chains.flatMap(c => Object.keys(P.speed[c])))].sort();
+    speedChart = new Chart($('pspeed'), {type: 'line', data: {labels: months, datasets: chains.map((c, i) => ({label: cshort(c), data: months.map(m => P.speed[c][m] != null ? P.speed[c][m] / 60 : null), borderColor: COLORS[i % COLORS.length], backgroundColor: COLORS[i % COLORS.length], spanGaps: true, tension: .2, pointRadius: 2}))},
+      options: {plugins: {legend: {display: true, position: 'bottom', labels: {boxWidth: 10}}, tooltip: {callbacks: {label: c => c.dataset.label + ': ' + dur(c.parsed.y * 60)}}}, scales: {y: {type: 'logarithmic', ticks: {callback: v => dur(v * 60)}}}}});
+    queueChart = new Chart($('pqueue'), {type: 'line', data: {labels: P.queue.map(q => new Date(q[0] * 1000).toISOString().slice(5, 10)), datasets: [{label: 'open proposals', data: P.queue.map(q => q[1]), borderColor: COLORS[1], backgroundColor: COLORS[1], pointRadius: 0, tension: .2, fill: false}]},
+      options: {plugins: {legend: {display: false}}, scales: {y: {beginAtZero: true, ticks: {precision: 0}}, x: {ticks: {maxTicksLimit: 8}}}}});
+  }
+  // signers
+  const sel = $('psel'), sc = Object.keys(P.signers).sort((a, b) => ORDER.indexOf(a) - ORDER.indexOf(b));
+  if(!sel.options.length){ sc.forEach(c => sel.add(new Option(cname(c), c))); sel.onchange = () => { PX.chain = sel.value; renderPulse(); }; }
+  PX.chain = PX.chain && P.signers[PX.chain] ? PX.chain : (sc.includes('eth') ? 'eth' : sc[0]); sel.value = PX.chain;
+  const rows = P.signers[PX.chain] || [];
+  const mlist = []; const now = new Date(); for(let i = 11; i >= 0; i--){ const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1)); mlist.push(d.toISOString().slice(0, 7)); }
+  const spark = months => { const v = mlist.map(m => months[m] || 0), mxv = Math.max(1, ...v); return v.map(x => '▁▂▃▄▅▆▇█'[Math.min(7, Math.round(7 * x / mxv))]).join(''); };
+  $('psign').innerHTML = rows.length ? '<tr><th>Signer</th><th>Confirmations</th><th>Last 12 months</th><th>Median time to confirm</th><th>Gave the last signature</th></tr>' + rows.map(s => `<tr><td class="m addr">${addrL(PX.chain, s.signer)}</td><td>${s.n.toLocaleString('en-US')}</td><td class="spark" title="monthly confirmations, oldest to newest">${spark(s.months)}</td><td>${s.median_confirm_s == null ? '<span class="mut">n/a</span>' : dur(s.median_confirm_s)}</td><td>${s.last_share == null ? '-' : Math.round(100 * s.last_share) + '% (' + s.last_n + ')'}</td></tr>`).join('') : '<tr><td class="empty">No signer data.</td></tr>';
+}
+
 // ================= merged per-chain details and timeline =================
 const isSafeChain = c => (CH[c] || {}).mech === 'safe_api';
 function chainDetail(r, x){
@@ -1287,6 +1515,7 @@ function renderTimeline(r){
 }
 function renderVerdict(r){
   const L = r.live; if(!L) return '';
+  const ofacFlag = r.rec && r.rec.r && Object.values(r.rec.r).some(x => x[4]) ? '<div class="verdict" style="background:var(--st-red-bg);color:var(--st-red-fg)">⚖ <b>OFAC SDN listed</b> (label from wallet-attribution)</div>' : '';
   if(L.note) return '<div class="verdict">' + esc(L.note) + '</div>';
   const b = L.results.filter(x => x.blocked === true), n = L.results.filter(x => x.blocked === false), u = L.results.filter(x => x.blocked === null);
   const nm = x => esc(cshort(x.chain)) + (x.id === 'eth_usdt' ? ' (USDT)' : x.id === 'eth_usdc' ? ' (USDC)' : '');
@@ -1294,7 +1523,7 @@ function renderVerdict(r){
     (n.length && b.length ? ' · Not blocked on: ' + n.map(nm).join(', ') : '') + (u.length ? ' · <span class="mut">Unavailable: ' + u.map(nm).join(', ') + '</span>' : '') +
     ' <span class="mut">(live, ' + esc(L.at.slice(11, 19)) + ' UTC)</span></div>';
   const det = L.results.filter(x => x.blocked === true || (x.blocked === false && r.rec && r.rec.s && ['frozen', 'burned'].includes(r.rec.s[x.chain])));
-  return h + det.map(x => chainDetail(r, x)).join('');
+  return ofacFlag + h + det.map(x => chainDetail(r, x)).join('');
 }
 
 // ================= status banner model =================
@@ -1351,10 +1580,15 @@ function renderCard(r, i){
   if(r.invalid){ return h + `<div class="m addr wladdr">${esc(r.input)}</div></div>`; }
   // chips row + live button
   let chips = st.blocked.map(c => `<span class="chip red">⛔ ${esc(cshort(c))}</span>`).join('') + st.proposed.map(c => `<span class="chip amb">⏳ ${esc(cshort(c))}</span>`).join('') + st.unfrozen.map(c => `<span class="chip gry">🔓 ${esc(cshort(c))}</span>`).join('');
+  if(rec && rec.r){
+    const rs = Object.values(rec.r);
+    if(rs.some(x => x[4])) chips += '<span class="chip red" title="OFAC SDN digital-currency address (label from wallet-attribution)">⚖ OFAC SDN</span>';
+    for(const x of rs.filter(x => !x[4]).slice(0, 2)) chips += '<span class="chip amb" title="' + esc(x[1]) + ' (' + (x[3] === 'curated' ? 'curated, public source' : 'label from wallet-attribution') + ')">' + (REASON_ICON[x[0]] || '🧾') + ' ' + esc(x[0]) + '</span>';
+  }
   if(st.clean.length) chips += `<span class="chip" title="${esc(st.clean.map(cshort).join(', '))}">+${st.clean.length} clean</span>`;
   if(r.live) chips += `<span class="chip lv">live check ${esc(r.live.at.slice(11, 16))} UTC ✓</span>`;
   h += `<div class="chiprow"><div class="chips">${chips}</div><button type="button" class="livebtn" data-i="${i}" title="Sends this address to public RPC providers">${r.live ? 'Re-check live' : 'Check live on-chain'}</button></div>`;
-  h += `<div class="m addr wladdr">${esc(r.input)}</div>`;
+  h += `<div class="m addr wladdr">${esc(r.input)}${i === 'ap' ? '' : ' <a href="#addr=' + encodeURIComponent(r.input) + '" class="chip" title="Shareable full page with a report">Open page ↗</a>'}</div>`;
   if(r.input.toLowerCase() !== k && /^T/.test(r.input)) h += `<div class="mut m">EVM-style key ${esc(k)}</div>`;
   if(r.rec === undefined) return h + '<div class="empty">Address index could not be loaded.</div></div>';
   if(rec){
@@ -1364,6 +1598,7 @@ function renderCard(r, i){
   } else h += `<div class="mut" style="margin-top:6px">Not in our freeze index (as of ${esc(dt(D.generated_at))}). Only addresses with a proposal, freeze, unfreeze or burn are indexed.</div>`;
   if(rec){
     const lbs = Object.entries(rec.l || {});
+    if(rec.r) h += Object.entries(rec.r).map(([c, x]) => `<div class="keyl">${x[4] ? '⚖' : '🧾'} <b>${x[4] ? 'OFAC SDN listed' : 'Reason hint'}</b> (${esc(cshort(c))}): ${reasonChip(x, true)} ${x[4] ? '' : '<span class="mut">' + esc(x[1]) + (x[3] === 'curated' ? ' - curated, public source' : ' - label from wallet-attribution') + '</span>'}</div>`).join('');
     if(lbs.length) h += lbs.map(([c, l]) => `<div class="keyl" style="font-size:14px">🏷 <b>frozen address labeled:</b> ${labelHtml(l, true)} <span class="mut">(${esc(cshort(c))}, label from wallet-attribution)</span></div>`).join('');
     if((rec.x || []).length) h += rec.x.map(x => `<div class="keyl">🔗 ${x[1] === 'proposed' ? 'freeze proposed' : 'frozen'} on ${esc(cshort(x[0]))}, still unblocked: ${x[3].map(e => '<b>' + usd(e[3]) + '</b> on ' + esc(cshort(e[0]))).join(', ')}</div>`).join('');
     if((rec.c || []).length){
@@ -1487,16 +1722,17 @@ function render(){
   if(TAB === 'live'){
     renderKpis(); renderPending(); renderSignals(); renderSupply(); renderRecent(); renderHero(); renderHist(); renderWeekly(); renderStory();
     renderBadges(); renderCross();
-  } else if(TAB === 'analytics'){ renderAnalytics(); renderInsights(); }
+  } else if(TAB === 'analytics'){ renderAnalytics(); renderInsights(); renderReasons(); renderPulse(); }
   else if(TAB === 'watchlist'){ if(!WL.results.length && $('wlText').value.trim()) runWatch(parseAddrs($('wlText').value), false); }
   else if(TAB === 'status'){ renderStatus(); }
+  else if(TAB === 'addr'){ renderAddrPage(); }
   else { renderSigners(); }
 }
-window.addEventListener('hashchange', () => { if(openWatchFromHash()) return; const h = location.hash.replace('#', ''); if(TABS.includes(h) && h !== TAB) showTab(h, false); });
+window.addEventListener('hashchange', () => { if(openWatchFromHash() || openAddrFromHash()) return; const h = location.hash.replace('#', ''); if(TABS.includes(h) && h !== TAB) showTab(h, false); });
 (function(){
-  if(openWatchFromHash()) return;
+  if(openWatchFromHash() || openAddrFromHash()) return;
   let t = location.hash.replace('#', '');
-  if(!TABS.includes(t)){ try { t = localStorage.getItem('ufa.tab') || 'live'; } catch(e) { t = 'live'; } }
+  if(!TABS.includes(t) || t === 'addr'){ try { t = localStorage.getItem('ufa.tab') || 'live'; } catch(e) { t = 'live'; } }
   showTab(TABS.includes(t) ? t : 'live', false);
 })();
 (function(){
@@ -1580,6 +1816,7 @@ $('foot').innerHTML = '<div><button type="button" class="sublink" id="glosslink"
   const run = () => { if(busy) return; busy = true; try { document.querySelectorAll('.tw table').forEach(cardify); } finally { busy = false; } };
   const mo = new MutationObserver(() => { if(MQ.matches) requestAnimationFrame(run); });
   document.querySelectorAll('.tw table').forEach(tb => mo.observe(tb, {childList: true}));
+  ['addrBody', 'wlOut'].forEach(id => { const el = $(id); if(el) mo.observe(el, {childList: true, subtree: true}); });  // tables inside cards are created later
   MQ.addEventListener && MQ.addEventListener('change', () => { if(MQ.matches) run(); });
   if(MQ.matches) run();
   document.addEventListener('click', async ev => {
