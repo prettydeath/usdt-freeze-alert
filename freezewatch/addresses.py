@@ -70,7 +70,7 @@ def build(conn):
         return addr in sinks.setdefault(chain, analytics.special_sinks(chain))
 
     for r in conn.execute("SELECT chain, tx_id, function, target, confirmations, required, status, submitted_at, executed, "
-                          "executed_at, exec_tx, amount, delay_seconds FROM proposals WHERE target IS NOT NULL"):
+                          "executed_at, exec_tx, amount, delay_seconds, public_proposal FROM proposals WHERE target IS NOT NULL"):
         k = _kind(r["function"])
         if not k or skip(r["chain"], analytics.norm(r["chain"], r["target"])):
             continue
@@ -78,8 +78,10 @@ def build(conn):
         if not key:
             continue
         if r["executed"] and r["executed_at"]:
-            rec(key).setdefault("e", []).append([r["chain"], k, parse_iso(r["executed_at"]), r["exec_tx"],
-                                                 r["amount"], r["delay_seconds"]])
+            # chain, kind, executed ts, tx, amount, delay, token account, proposal id, signers, required, submitted ts, public
+            rec(key).setdefault("e", []).append([r["chain"], k, parse_iso(r["executed_at"]), r["exec_tx"], r["amount"],
+                                                 r["delay_seconds"], None, r["tx_id"], r["confirmations"], r["required"],
+                                                 parse_iso(r["submitted_at"]), r["public_proposal"]])
         elif r["status"] in ("pending", "stale"):
             rec(key).setdefault("p", []).append([r["chain"], r["tx_id"], r["function"], r["confirmations"], r["required"],
                                                  parse_iso(r["submitted_at"]), r["status"]])
@@ -87,28 +89,33 @@ def build(conn):
         k = "f" if f["action"] == "freeze" else "u"
         ts = parse_iso(f["ts"])
         rec(canon_for(f["source"], f["subject"]))["e"] = rec(canon_for(f["source"], f["subject"])).get("e", []) + [
-            [f["source"], k, ts, f["tx_hash"], f["amount"], None]]
+            [f["source"], k, ts, f["tx_hash"], f["amount"], None, None, None, None, None, None, 0]]
         if f["owner"] and f["owner"] != f["subject"] and canon_for(f["source"], f["owner"]):
             o = rec(canon_for(f["source"], f["owner"]))
-            o["e"] = o.get("e", []) + [[f["source"], k, ts, f["tx_hash"], f["amount"], None, f["subject"]]]
+            o["e"] = o.get("e", []) + [[f["source"], k, ts, f["tx_hash"], f["amount"], None, f["subject"], None, None, None, None, 0]]
     for r in conn.execute("SELECT chain, address, balance FROM balances WHERE balance IS NOT NULL"):
         if skip(r["chain"], r["address"]):
             continue
         key = canon_for(r["chain"], r["address"])
         rec(key).setdefault("b", {})[r["chain"]] = round(r["balance"], 2)
     senders = {}
-    for r in conn.execute("SELECT chain, frozen_address, sender, amount FROM inflows_after_freeze"):
+    spans = {}
+    for r in conn.execute("SELECT chain, frozen_address, sender, amount, ts FROM inflows_after_freeze"):
         if skip(r["chain"], r["frozen_address"]):
             continue
         d = senders.setdefault((r["chain"], r["frozen_address"]), {})
         e = d.setdefault(r["sender"], [0, 0.0])
         e[0] += 1
         e[1] += r["amount"]
+        ts = parse_iso(r["ts"])
+        sp = spans.setdefault((r["chain"], r["frozen_address"]), [ts, ts])
+        sp[0], sp[1] = min(sp[0], ts), max(sp[1], ts)
     for (chain, addr), d in senders.items():
         top = sorted(d.items(), key=lambda kv: -kv[1][1])[:3]
         key = canon_for(chain, addr)
+        first, last = spans[(chain, addr)]
         rec(key).setdefault("i", {})[chain] = [sum(v[0] for v in d.values()), round(sum(v[1] for v in d.values()), 2),
-                                               [[s, v[0], round(v[1], 2)] for s, v in top]]
+                                               [[s, v[0], round(v[1], 2)] for s, v in top], first, last]
     # current state per chain: last freeze-type event decides
     for key, r in idx.items():
         st = {}

@@ -3,7 +3,7 @@ import json
 
 from freezewatch import addresses as AD, render
 from freezewatch.db import connect, ensure_proposal, update_proposal
-from freezewatch.util import iso, tron_from_hex20
+from freezewatch.util import iso, parse_iso, tron_from_hex20
 
 HEX = "bca5d8e9fc4e31c72631a144e7f1563736f09061"
 TRON = tron_from_hex20(HEX)
@@ -56,6 +56,11 @@ def test_build_merges_tron_and_evm_and_excludes_sinks(tmp_path):
     assert r["b"] == {"eth": 12.35} or r["b"] == {"eth": 12.34}
     assert r["i"]["eth"][0] == 1 and r["i"]["eth"][1] == 40.0 and r["i"]["eth"][2][0][0] == "0x" + "11" * 20
     assert r["s"] == {"eth": "burned"}
+    e0 = r["e"][0]  # chain, kind, ts, tx, amount, delay, token account, proposal id, signers, required, submitted ts, public
+    assert len(e0) == 12 and e0[7] == 5 and e0[8] == 1 and e0[9] == 2 and e0[10] == parse_iso("2026-11-20T00:00:00Z")
+    assert e0[11] == 1 and r["e"][0][3] == "0xaa"
+    assert r["i"]["eth"][3] == r["i"]["eth"][4] == 1_790_000_000  # first / last inflow timestamps
+    assert len(idx["TokAcc"]["e"][0]) == 12 and idx["TokAcc"]["e"][0][11] == 0
     assert idx["OwnerWallet"]["e"][0][6] == "TokAcc"  # Solana owner wallet finds the frozen token account
 
 
