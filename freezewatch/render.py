@@ -9,7 +9,7 @@ from .util import iso, now_ts, parse_iso
 
 NO_DELAY: set = set()  # chains without reliable submit/execute timestamps (none right now)
 MARK_A, MARK_B = "<!-- STATS:START -->", "<!-- STATS:END -->"
-COLS = ["chain", "tx_id", "destination", "function", "target", "amount", "raw_data", "submitted_at", "submit_tx",
+COLS = ["chain", "tx_id", "category", "destination", "function", "target", "amount", "raw_data", "submitted_at", "submit_tx",
         "submitter", "executed", "executed_at", "exec_tx", "executor", "confirmations", "required", "status",
         "delay_seconds", "balance_at_detect", "balance_now", "first_seen_at", "updated_at"]
 
@@ -26,7 +26,10 @@ def write_if_changed(path, text):
 
 def export_files(conn):
     DATA_DIR.mkdir(parents=True, exist_ok=True)
+    from .constants import category_of
     rows = [dict(r) for r in conn.execute("SELECT * FROM proposals ORDER BY chain, tx_id")]
+    for r in rows:
+        r["category"] = category_of(r["function"])
     with open(DATA_DIR / "proposals.csv", "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=COLS, extrasaction="ignore")
         w.writeheader()
@@ -64,9 +67,17 @@ def build_payload(conn, stats, stale_days):
     rows = [dict(r) for r in conn.execute("SELECT * FROM proposals WHERE destination IS NOT NULL")]
     keep = ["chain", "tx_id", "function", "target", "amount", "submitted_at", "executed_at", "exec_tx",
             "confirmations", "required", "status", "delay_seconds", "balance_now"]
-    pend = [{k: r[k] for k in keep} for r in rows if r["status"] == "pending"]
+    from .constants import category_of
+    freezish = ("freeze", "unfreeze", "destroy")
+    pend = [{k: r[k] for k in keep} for r in rows if r["status"] == "pending" and category_of(r["function"]) in freezish]
     pend.sort(key=lambda r: -(r["tx_id"]))
-    stale_all = [{k: r[k] for k in keep} for r in rows if r["status"] == "stale"]
+    # treasury / supply and other admin operations are kept out of the freeze queue
+    supply = [{**{k: r[k] for k in keep}, "category": category_of(r["function"])} for r in rows
+              if r["status"] == "pending" and category_of(r["function"]) in ("supply", "admin")]
+    supply += sorted(({**{k: r[k] for k in keep}, "category": "supply"} for r in rows
+                      if r["executed"] and r["executed_at"] and category_of(r["function"]) == "supply"),
+                     key=lambda r: r["executed_at"], reverse=True)[:80]
+    stale_all = [{k: r[k] for k in keep} for r in rows if r["status"] == "stale" and category_of(r["function"]) in freezish]
     stale_all.sort(key=lambda r: (-(r["balance_now"] or 0), -(r["tx_id"])))
     stale_by_chain = {}
     for r in stale_all:
@@ -121,7 +132,7 @@ def build_payload(conn, stats, stale_days):
     auth = [dict(r) for r in conn.execute("SELECT * FROM authority_state")]
     from . import livecheck
     return {"generated_at": iso(now), "stale_days": stale_days, "live": livecheck.targets(), "stale_total": stale_total, "chains": chains,
-            "pending": kept, "stale": stale, "stale_by_chain": stale_by_chain, "ex": ex, "recent": recent[:200], "signers": signers, "coverage": stats.get("coverage", {}),
+            "pending": kept, "supply": supply, "stale": stale, "stale_by_chain": stale_by_chain, "ex": ex, "recent": recent[:200], "signers": signers, "coverage": stats.get("coverage", {}),
             "others": stats.get("others", {}), "health": stats.get("health"), "authority": auth, "cross": xt, "cross_total": xn,
             "analytics": an if len(an_json) < 1_200_000 else None, "analytics_url": "analytics.json",
             "sources": ["Etherscan V2", "public RPCs", "TronGrid/Tronscan", "Safe Transaction Service", "nearblocks",

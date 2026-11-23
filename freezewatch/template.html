@@ -147,6 +147,15 @@ details.sec>summary{cursor:pointer;font-size:12px;font-weight:600;text-transform
 details.sec[open]>summary{color:var(--fg)}.secb{padding-top:6px}
 .wlsum{margin:12px 0 0;font-size:14px;font-weight:600}
 details.provd summary{cursor:pointer}details.provd>div{margin-top:4px}
+
+.tag[data-tip],.tipw[data-tip]{cursor:help}
+.tag:focus-visible,.tipw:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+.t-sup{background:var(--grybg);color:var(--gry)}
+.tipw{border-bottom:1px dotted var(--mut)}
+#tipbox{position:absolute;z-index:50;max-width:min(320px,calc(100vw - 24px));background:var(--fg);color:var(--bg);font-size:12px;line-height:1.35;padding:6px 9px;border-radius:6px;pointer-events:none}
+details.gloss dt{font-weight:700;margin-top:8px}details.gloss dd{margin:2px 0 0 0;color:var(--mut)}
+details.gloss>summary{cursor:pointer;font-size:14px;font-weight:700}
+.sublink{cursor:pointer;color:var(--acc);background:none;border:0;font:inherit;padding:0;text-decoration:underline}
 footer{margin:30px 0 18px;color:var(--mut);font-size:12px;border-top:1px solid var(--hair);padding-top:10px}
 </style>
 </head>
@@ -178,6 +187,15 @@ footer{margin:30px 0 18px;color:var(--mut);font-size:12px;border-top:1px solid v
     <div class="tw"><table id="stale"></table></div>
   </div>
 
+  <div class="stalehd">
+    <h2 id="supTitle">🏦 Treasury / supply operations</h2>
+    <label class="sw" title="Show treasury / supply operations"><input type="checkbox" id="supSw"><span></span></label>
+  </div>
+  <div id="supBox" hidden>
+    <div class="mut" style="margin-bottom:6px">Minting and burning of Tether's own supply (and other admin calls). Not freezes, so they are kept out of the queue, the KPIs and the alerts.</div>
+    <div class="tw"><table id="supply"></table></div>
+  </div>
+
   <h2>Recently executed</h2>
   <div class="tw"><table id="recent"></table></div>
 
@@ -206,6 +224,7 @@ footer{margin:30px 0 18px;color:var(--mut);font-size:12px;border-top:1px solid v
   <div class="kpis" id="akpis"></div>
   <div class="mut" id="anote" style="margin-top:6px"></div>
   <div class="mut" id="acov"></div>
+  <div class="mut" id="asupply"></div>
   <div class="mut" id="acov2"></div>
   <div class="mut" id="acov3"></div>
 
@@ -228,6 +247,25 @@ footer{margin:30px 0 18px;color:var(--mut);font-size:12px;border-top:1px solid v
     <div class="box"><h3>Top senders (often exchanges and bridges)</h3><div class="tw" style="border:0"><table id="asend"></table></div></div>
     <div class="box"><h3>Frozen addresses still receiving funds</h3><div class="tw" style="border:0"><table id="arecv"></table></div></div>
   </div>
+
+  <details class="gloss box" id="glossary" style="margin-top:18px">
+    <summary>Glossary</summary>
+    <dl>
+      <dt>Freeze / blacklist</dt><dd>Tether (or Circle) blocks an address: it can no longer send the token. Funds stay on the address.</dd>
+      <dt>Unfreeze</dt><dd>The block is lifted.</dd>
+      <dt>Destroy (confiscation)</dt><dd>The whole balance of an already-frozen address is burned. The funds are gone, which is why it is shown as "burned".</dd>
+      <dt>Issue / mint</dt><dd>New tokens are created to Tether's treasury (supply goes up). Not related to freezes.</dd>
+      <dt>Redeem / burn</dt><dd>Tokens are removed from Tether's treasury (supply goes down). Not related to freezes.</dd>
+      <dt>Proposal, multisig, signatures x/y</dt><dd>Tether's token owner is a multisig wallet: an action is first proposed by one signer, then needs x of y signatures before it executes. "1/2 signed" means one more signature is needed.</dd>
+      <dt>Safe API vs on-chain queue</dt><dd>Most chains show a pending proposal on-chain. USDT0 chains use a Safe wallet whose queue lives off-chain in the Safe service, and signers may skip it, so some freezes are never announced.</dd>
+      <dt>No public proposal</dt><dd>The freeze was found on-chain but no matching published Safe proposal exists, so its delay is unknown.</dd>
+      <dt>No advance notice</dt><dd>The action executed in the same moment it was proposed (delay 0), so nobody could see it coming.</dd>
+      <dt>Delay</dt><dd>Time from the proposal being submitted to the action being executed. On TRON the execution time is inferred from the confirmations.</dd>
+      <dt>Stale</dt><dd>A proposal older than 7 days that never executed. Funds may still be on the address.</dd>
+      <dt>Sinks (excluded)</dt><dd>Zero address and token-contract addresses are blacklisted to burn mistaken sends; they are excluded from totals and lists.</dd>
+      <dt>USDT, USDT0, pre-USDT0 Arbitrum</dt><dd>USDT is Tether's own token; USDT0 is its omnichain version controlled by a different Safe wallet. On Arbitrum the token changed hands on 2025-01-28: earlier actions were done by Tether's multisig (shown as "Arbitrum USDT"), later ones by the USDT0 Safe.</dd>
+    </dl>
+  </details>
   <p class="mut" style="margin-top:14px">Sent after freeze = token transfers whose recipient was blacklisted at the time; those funds are locked at once and are typically burned at the next destroy. Burned = amount in the DestroyedBlackFunds event. Still frozen = current balance of blacklisted addresses (frozen funds cannot move), refreshed incrementally. Frozen $ = burned amount if later destroyed, else current balance, else last balance seen while frozen. Raw aggregates: <a href="analytics.json">analytics.json</a>.</p>
 </div>
 
@@ -295,13 +333,55 @@ const age = s => { if(!s) return 'unknown'; return dur(NOW - Date.parse(s)/1000)
 const addrL = (c,a) => { if(!a) return '<span class="mut">-</span>'; const b=(CH[c]||{}).addr; return b ? `<a href="${b}${esc(a)}" target="_blank" rel="noopener">${esc(a)}</a>` : esc(a); };
 const txL = (c,h) => { if(!h) return '-'; const b=(CH[c]||{}).tx; return b && /^[0-9a-zA-Z]+$/.test(h) ? `<a href="${b}${esc(h)}" target="_blank" rel="noopener">${esc(h)}</a>` : esc(h); };
 const med = a => { if(!a.length) return null; a=[...a].sort((x,y)=>x-y); const k=(a.length-1)/2; return (a[Math.floor(k)]+a[Math.ceil(k)])/2; };
-const FREEZE = ['addBlackList','addToBlockedList','freeze_accounts','freeze_wallet','freeze'];
-const DESTROY = ['destroyBlackFunds','destroyBlockedFunds'];
-const REMOVE = ['removeBlackList','removeFromBlockedList','unfreeze_accounts','unfreeze_wallet','unfreeze'];
-function fnTag(r){
-  const f=r.function; const k = FREEZE.includes(f)?'t-add':DESTROY.includes(f)?'t-des':REMOVE.includes(f)?'t-rem':'';
-  return `<span class="tag ${k}">${esc(f)}</span>`;
+const FREEZE = ['addBlackList','addToBlockedList','freeze_accounts','freeze_wallet','freeze','freezeAccount'];
+const DESTROY = ['destroyBlackFunds','destroyBlockedFunds','burn_from'];
+const REMOVE = ['removeBlackList','removeFromBlockedList','unfreeze_accounts','unfreeze_wallet','unfreeze','thawAccount'];
+const SUPPLY = ['issue','mint','redeem','burn'];
+const catOf = f => FREEZE.includes(f) ? 'freeze' : REMOVE.includes(f) ? 'unfreeze' : DESTROY.includes(f) ? 'destroy' : SUPPLY.includes(f) ? 'supply' : 'admin';
+const INFO = {
+  freeze: 'Freezes the address: it can no longer send this token.',
+  unfreeze: 'Lifts the freeze.',
+  destroy: 'Burns the entire balance of an already-frozen address (confiscation).',
+  mint: "Mints new tokens to Tether's treasury (supply increase). Not related to freezes.",
+  redeem: "Burns tokens from Tether's treasury (supply decrease). Not related to freezes.",
+  setOFTContract: 'Admin: sets the LayerZero OFT contract that bridges USDT0 between chains.',
+  setTrusted: 'Admin: marks an address as trusted (for example a bridge or minter).',
+  transferOwnership: 'Admin: hands control of the token contract to another owner.',
+  pause: 'Admin: pauses all transfers of the token.', unpause: 'Admin: resumes transfers of the token.',
+  deprecate: 'Admin: redirects the token to a new contract (legacy migration).',
+  setParams: 'Admin: changes the fee parameters of the token.',
+  revoke: 'Admin: revokes an earlier action (Aptos multisig).',
+  other: 'Other admin call (raw data in CSV).'
+};
+function fnInfo(f){
+  const c = catOf(f);
+  if(c === 'freeze' || c === 'unfreeze' || c === 'destroy') return INFO[c];
+  if(f === 'issue' || f === 'mint') return INFO.mint;
+  if(f === 'redeem' || f === 'burn') return INFO.redeem;
+  return INFO[f] || INFO.other;
 }
+const KIND_INFO = {f: INFO.freeze, u: INFO.unfreeze, b: INFO.destroy};
+const tipAttrs = (label, info) => `data-tip="${esc(info)}" title="${esc(info)}" tabindex="0" role="button" aria-label="${esc(label + ': ' + info)}"`;
+function fnTag(r){
+  const f = r.function, c = catOf(f), k = c === 'freeze' ? 't-add' : c === 'destroy' ? 't-des' : c === 'unfreeze' ? 't-rem' : c === 'supply' ? 't-sup' : '';
+  return `<span class="tag ${k}" ${tipAttrs(f, fnInfo(f))}>${c === 'supply' ? '🏦 ' : ''}${esc(f)}</span>`;
+}
+const kindTip = (kind, text) => KIND_INFO[kind] ? `<span class="tipw" ${tipAttrs(text, KIND_INFO[kind])}>${esc(text)}</span>` : esc(text);
+// tap / keyboard tooltip (title alone does not work on touch screens)
+(function(){
+  let box = null, tm = null;
+  const hide = () => { if(box){ box.remove(); box = null; } clearTimeout(tm); };
+  const show = el => {
+    hide(); box = document.createElement('div'); box.id = 'tipbox'; box.setAttribute('role', 'tooltip'); box.textContent = el.dataset.tip;
+    document.body.appendChild(box);
+    const r = el.getBoundingClientRect();
+    box.style.left = Math.max(8, Math.min(window.scrollX + r.left, window.scrollX + document.documentElement.clientWidth - box.offsetWidth - 8)) + 'px';
+    box.style.top = (window.scrollY + r.bottom + 6) + 'px';
+    tm = setTimeout(hide, 6000);
+  };
+  document.addEventListener('click', ev => { const el = ev.target.closest('[data-tip]'); if(el){ show(el); } else hide(); });
+  document.addEventListener('keydown', ev => { if(ev.key === 'Escape') hide(); else if((ev.key === 'Enter' || ev.key === ' ') && ev.target.matches && ev.target.matches('[data-tip]')){ ev.preventDefault(); show(ev.target); } });
+})();
 const exA = () => D.ex.filter(e => active(e[0]));
 
 (function(){
@@ -379,6 +459,17 @@ function renderPending(){
   $('stale').innerHTML = st.length ? pendRows(st) : '<tr><td class="empty">None.</td></tr>';
 }
 
+function renderSupply(){
+  const rows = (D.supply || []).filter(r => active(r.chain));
+  const pend = rows.filter(r => r.status === 'pending');
+  $('supTitle').textContent = '🏦 Treasury / supply operations (' + pend.length + ' pending)';
+  const order = [...pend, ...rows.filter(r => r.status !== 'pending')];
+  let h = '<tr><th>Chain</th><th>ID</th><th>Operation</th><th>Category</th><th>Amount</th><th>Signatures</th><th>Status</th><th>When</th></tr>';
+  for(const r of order){
+    h += `<tr><td class="ch">${esc(cshort(r.chain))}</td><td class="m">${r.tx_id}</td><td>${fnTag(r)}</td><td>${esc(r.category)}</td><td>${r.amount != null ? usd(r.amount) : '-'}</td><td>${r.confirmations}/${r.required ?? '?'}</td><td>${esc(r.status)}</td><td class="m">${r.status === 'pending' ? 'age ' + age(r.submitted_at) : dt(r.executed_at).replace(' UTC', '')}</td></tr>`;
+  }
+  $('supply').innerHTML = order.length ? h : '<tr><td class="empty">None.</td></tr>';
+}
 function renderRecent(){
   const rows = D.recent.filter(r => active(r.chain)).slice(0, 60);
   let h = '<tr><th>Chain</th><th>Address</th><th>Action</th><th>Executed (UTC)</th><th>Delay</th><th>Tx</th></tr>';
@@ -490,7 +581,7 @@ function renderCross(){
   const rows = D.cross.filter(r => r.items.some(i => active(i.chain)));
   let h = '<tr><th>Address (EVM-normalized)</th><th>Chains</th><th>Where and when</th></tr>';
   for(const r of rows.slice(0, 60)){
-    const items = r.items.map(i => `<span class="tag ${i.class==='freeze'?'t-add':i.class==='destroy'?'t-des':'t-rem'}" title="${esc(i.status)}">${esc(cshort(i.chain))} ${esc((i.ts||'').slice(0,10))}</span>`).join(' ');
+    const items = r.items.map(i => `<span class="tag ${i.class==='freeze'?'t-add':i.class==='destroy'?'t-des':'t-rem'}" ${tipAttrs(i.class + ' (' + i.status + ')', INFO[i.class] || '')}>${esc(cshort(i.chain))} ${esc((i.ts||'').slice(0,10))}</span>`).join(' ');
     h += `<tr><td class="m addr">${esc(r.address)}</td><td>${r.n_chains}</td><td>${items}</td></tr>`;
   }
   $('cross').innerHTML = rows.length ? h : '<tr><td class="empty">No addresses on several chains.</td></tr>';
@@ -567,6 +658,9 @@ function renderAnalytics(){
   ].map(([l,v,sub,tag]) => `<div class="kpi"><div class="l">${l} ${tag}</div><div class="v">${v}</div><div class="s">${sub}</div></div>`).join('');
 
   $('anote').textContent = 'Reissue to victims happens off-chain / through treasury transfers and is not tracked.';
+  const sup = {i: 0, r: 0, ni: 0, nr: 0}, since = sinceMonth();
+  for(const [c, months] of Object.entries(AN.supply || {})){ if(!chOk(c)) continue; for(const [mo, v] of Object.entries(months)){ if(since && mo < since) continue; sup.i += v[0]; sup.r += v[1]; sup.ni += v[2]; sup.nr += v[3]; } }
+  $('asupply').textContent = '🏦 Treasury supply operations (separate from freezes): issued/minted ' + usdS(sup.i) + ' in ' + sup.ni + ' operations, redeemed/burned ' + usdS(sup.r) + ' in ' + sup.nr + '.';
   const cov = AN.coverage;
   const ic = AN.inflow && AN.inflow.coverage;
   const ex = AN.inflow && AN.inflow.excluded;
@@ -702,7 +796,7 @@ function exportTable(id, name, fmt){
   else { const [h, ...b] = rows; download(name, 'application/json', JSON.stringify(b.map(r => Object.fromEntries(h.map((k, i) => [k, r[i]]))), null, 1)); }
 }
 (function(){
-  const EXPORTS = [['pending','pending'],['stale','stale'],['recent','recently_executed'],['achain','analytics_by_chain'],['atop','top_frozen'],['asend','inflow_senders'],['arecv','frozen_addresses_receiving'],['signers','signers'],['cross','cross_chain']];
+  const EXPORTS = [['pending','pending'],['supply','treasury_supply_ops'],['stale','stale'],['recent','recently_executed'],['achain','analytics_by_chain'],['atop','top_frozen'],['asend','inflow_senders'],['arecv','frozen_addresses_receiving'],['signers','signers'],['cross','cross_chain']];
   for(const [id, name] of EXPORTS){
     const t = $(id); if(!t) continue;
     const wrap = t.closest('.tw') || t.parentElement;
@@ -756,6 +850,7 @@ async function getRecord(key){
 }
 const WL = {results: [], liveCache: {}};
 const ACTION = {f: 'frozen', u: 'unfrozen', b: 'burned (funds destroyed)'};
+const actHtml = (k, extra) => kindTip(k, ACTION[k] || k) + (extra || '');
 const dstr = ts => ts ? new Date(ts * 1000).toISOString().slice(0, 16).replace('T', ' ') + ' UTC' : '-';
 
 // ================= live on-chain check (opt-in; runs in the browser) =================
@@ -908,7 +1003,7 @@ function timelineOf(r){
   if(rec){
     for(const e of (rec.e || [])){
       if(e[10]) items.push({ts: e[10], chain: e[0], label: 'proposal submitted' + (e[7] != null && e[7] < 1e12 ? ' (' + (isSafeChain(e[0]) ? 'Safe nonce ' + Math.floor(e[7] / 100) : '#' + e[7]) + ')' : '')});
-      items.push({ts: e[2], chain: e[0], label: e[1] === 'f' ? 'frozen' + (e[11] === 0 ? ' (no public proposal)' : e[5] === 0 ? ' (no advance notice)' : e[5] != null ? ' (' + dur(e[5]) + ' after proposal)' : '') : e[1] === 'u' ? 'unfrozen' : 'funds burned' + (e[4] != null ? ' ' + usd(e[4]) : ''), tx: e[3]});
+      items.push({kind: e[1], ts: e[2], chain: e[0], label: e[1] === 'f' ? 'frozen' + (e[11] === 0 ? ' (no public proposal)' : e[5] === 0 ? ' (no advance notice)' : e[5] != null ? ' (' + dur(e[5]) + ' after proposal)' : '') : e[1] === 'u' ? 'unfrozen' : 'funds burned' + (e[4] != null ? ' ' + usd(e[4]) : ''), tx: e[3]});
     }
     for(const p of (rec.p || [])) if(p[5]) items.push({ts: p[5], chain: p[0], label: (p[6] === 'stale' ? 'stale' : 'pending') + ' proposal ' + p[2] + ' ' + p[3] + '/' + (p[4] ?? '?')});
     for(const [c, v] of Object.entries(rec.i || {})){ if(v[3]) items.push({ts: v[3], chain: c, label: 'first inflow after freeze (' + v[0] + ' transfers, ' + usd(v[1]) + ' in total)'}); if(v[4] && v[4] !== v[3]) items.push({ts: v[4], chain: c, label: 'latest inflow after freeze'}); }
@@ -918,7 +1013,7 @@ function timelineOf(r){
 }
 function renderTimeline(r){
   const tl = timelineOf(r); if(!tl.length) return '';
-  return '<div class="tl">' + tl.map(i => `<div><span class="m">${esc(dstr(i.ts))}</span> <b>${esc(cshort(i.chain))}</b> ${esc(i.label)}${i.tx ? ' · <span class="m">' + txL(i.chain, i.tx) + '</span>' : ''}</div>`).join('') + '</div>';
+  return '<div class="tl">' + tl.map(i => `<div><span class="m">${esc(dstr(i.ts))}</span> <b>${esc(cshort(i.chain))}</b> ${i.kind ? kindTip(i.kind, i.label) : esc(i.label)}${i.tx ? ' · <span class="m">' + txL(i.chain, i.tx) + '</span>' : ''}</div>`).join('') + '</div>';
 }
 function renderVerdict(r){
   const L = r.live; if(!L) return '';
@@ -1002,10 +1097,10 @@ function renderCard(r, i){
   sec.push(det('Timeline', renderTimeline(r)));
   if(rec){
     const live = (rec.p || []).filter(x => x[6] === 'pending'), stale = (rec.p || []).filter(x => x[6] === 'stale');
-    const prow = a => a.map(x => `<tr><td class="ch">${esc(cshort(x[0]))}</td><td class="m">${x[1]}</td><td>${esc(x[2])}</td><td>${x[3]}/${x[4] ?? '?'}</td><td>${x[5] ? dur(NOW - x[5]) : 'unknown'}</td></tr>`).join('');
+    const prow = a => a.map(x => `<tr><td class="ch">${esc(cshort(x[0]))}</td><td class="m">${x[1]}</td><td>${fnTag({function: x[2]})}</td><td>${x[3]}/${x[4] ?? '?'}</td><td>${x[5] ? dur(NOW - x[5]) : 'unknown'}</td></tr>`).join('');
     const phead = '<tr><th>Chain</th><th>ID</th><th>Action</th><th>Signatures</th><th>Age</th></tr>';
     if((rec.e || []).length) sec.push(det('Executed actions (' + rec.e.length + ')', '<div class="tw"><table><tr><th>Chain</th><th>Action</th><th>When (UTC)</th><th>Delay</th><th>Amount</th><th>Tx</th></tr>' +
-      rec.e.map(x => `<tr><td class="ch">${esc(cshort(x[0]))}</td><td>${esc(ACTION[x[1]] || x[1])}${x[6] ? ' <span class="mut">token account ' + esc(x[6]) + '</span>' : ''}</td><td class="m">${dstr(x[2])}</td><td>${x[5] == null ? '<span class="mut">n/a</span>' : x[5] === 0 ? '<span class="warn">no warning</span>' : dur(x[5])}</td><td>${x[4] != null ? usd(x[4]) : '-'}</td><td class="m">${txL(x[0], x[3])}</td></tr>`).join('') + '</table></div>'));
+      rec.e.map(x => `<tr><td class="ch">${esc(cshort(x[0]))}</td><td>${actHtml(x[1], x[6] ? ' <span class="mut">token account ' + esc(x[6]) + '</span>' : '')}</td><td class="m">${dstr(x[2])}</td><td>${x[5] == null ? '<span class="mut">n/a</span>' : x[5] === 0 ? '<span class="warn">no warning</span>' : dur(x[5])}</td><td>${x[4] != null ? usd(x[4]) : '-'}</td><td class="m">${txL(x[0], x[3])}</td></tr>`).join('') + '</table></div>'));
     const bal = Object.entries(rec.b || {}).filter(([c, v]) => v > 0);
     if(bal.length) sec.push(det('Current balances', '<div class="mut">Frozen funds cannot move.</div><div class="chips">' + bal.map(([c, v]) => '<span class="tag">' + esc(cshort(c)) + ' ' + usd(v) + '</span>').join(' ') + '</div>'));
     const inf = Object.entries(rec.i || {});
@@ -1101,9 +1196,15 @@ function openWatchFromHash(){
   return true;
 }
 
+(function(){
+  let on = false; try { on = localStorage.getItem('ufa.supply') === '1'; } catch(e) {}
+  const sw = $('supSw'); sw.checked = on; $('supBox').hidden = !on;
+  sw.onchange = () => { $('supBox').hidden = !sw.checked; try { localStorage.setItem('ufa.supply', sw.checked ? '1' : '0'); } catch(e) {} };
+  document.addEventListener('click', ev => { if(!ev.target.closest('#glosslink')) return; showTab('analytics'); const g = $('glossary'); g.open = true; g.scrollIntoView({behavior: 'smooth', block: 'start'}); });
+})();
 function render(){
   if(TAB === 'live'){
-    renderKpis(); renderPending(); renderRecent(); renderHero(); renderHist(); renderWeekly(); renderStory();
+    renderKpis(); renderPending(); renderSupply(); renderRecent(); renderHero(); renderHist(); renderWeekly(); renderStory();
     renderBadges(); renderCross();
   } else if(TAB === 'analytics'){ renderAnalytics(); }
   else if(TAB === 'watchlist'){ if(!WL.results.length && $('wlText').value.trim()) runWatch(parseAddrs($('wlText').value), false); }
@@ -1131,7 +1232,7 @@ window.addEventListener('hashchange', () => { if(openWatchFromHash()) return; co
   btn.onclick = () => { mode = MODES[(MODES.indexOf(mode) + 1) % MODES.length]; apply(); };
   try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if(mode === 'auto') repaint(); }); } catch(e) {}
 })();
-$('foot').innerHTML = (Object.entries(D.health || {}).filter(([c, h]) => h && h.stale).map(([c, h]) => '<div class="warn">⚠ ' + c.toUpperCase() + ' data stale: on-chain transaction count ' + h.onchain_count + ', newest id in our data ' + h.max_id + '.</div>').join('')) + '<div class="datalinks" style="margin-bottom:6px"><b>Data:</b> ' + [['data/proposals.csv','proposals.csv'],['data/blacklist.csv','blacklist.csv'],['data/inflows.csv','inflows.csv'],['site/analytics.json','analytics.json'],['site/addresses.json','addresses.json'],['data/freezewatch.sqlite','freezewatch.sqlite']].map(([p, n]) => '<a href="' + RAW + p + '" target="_blank" rel="noopener">' + n + '</a>').join('') + '</div>Sources: ' + D.sources.map(esc).join(', ') + '. Data changed: ' + dt(D.generated_at) + '. ' +
+$('foot').innerHTML = '<div><button type="button" class="sublink" id="glosslink">Glossary</button></div>' + (Object.entries(D.health || {}).filter(([c, h]) => h && h.stale).map(([c, h]) => '<div class="warn">⚠ ' + c.toUpperCase() + ' data stale: on-chain transaction count ' + h.onchain_count + ', newest id in our data ' + h.max_id + '.</div>').join('')) + '<div class="datalinks" style="margin-bottom:6px"><b>Data:</b> ' + [['data/proposals.csv','proposals.csv'],['data/blacklist.csv','blacklist.csv'],['data/inflows.csv','inflows.csv'],['site/analytics.json','analytics.json'],['site/addresses.json','addresses.json'],['data/freezewatch.sqlite','freezewatch.sqlite']].map(([p, n]) => '<a href="' + RAW + p + '" target="_blank" rel="noopener">' + n + '</a>').join('') + '</div>Sources: ' + D.sources.map(esc).join(', ') + '. Data changed: ' + dt(D.generated_at) + '. ' +
   'Freezing actions = addBlackList / addToBlockedList; destroy*; remove*. ' +
   'TRON execution time is inferred from confirmations; Safe queues live off-chain; USDC and Solana have no queue (delay n/a). ' +
   'Not financial advice.';

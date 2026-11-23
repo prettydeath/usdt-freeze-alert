@@ -106,6 +106,25 @@ def attribute(events, balances):
     return freezes, destroys, unfreezes
 
 
+def mint_amount(raw_data):
+    """mint(address,uint256) calldata -> amount (older rows were stored without it)."""
+    d = (raw_data or "").lower().removeprefix("0x")
+    return int(d[8 + 64:8 + 128], 16) / 10 ** USDT_DECIMALS if d.startswith("40c10f19") and len(d) >= 8 + 128 else None
+
+
+def supply_monthly(conn):
+    """{chain: {month: [issued $, redeemed $, issue ops, redeem ops]}} from executed supply proposals (kept apart from freezes)."""
+    out = {}
+    for r in conn.execute("SELECT chain, function, amount, raw_data, executed_at FROM proposals WHERE executed=1 "
+                          "AND executed_at IS NOT NULL AND function IN ('issue','mint','redeem','burn')"):
+        amt = r["amount"] if r["amount"] is not None else (mint_amount(r["raw_data"]) if r["function"] == "mint" else None)
+        c = out.setdefault(r["chain"], {}).setdefault(month_of(parse_iso(r["executed_at"])), [0.0, 0.0, 0, 0])
+        k = 0 if r["function"] in ("issue", "mint") else 1
+        c[2 + k] += 1
+        c[k] += amt or 0.0
+    return out
+
+
 def month_of(ts):
     return time.strftime("%Y-%m", time.gmtime(ts))
 
@@ -194,7 +213,7 @@ def compute(conn, now=None):
     return {"idx": IDX, "monthly": {ch: m for ch, m in monthly.items()},
             "tokens": {ch: token_of(ch) for ch in monthly}, "top": top,
             "coverage": {"checked": len([t for t in targets if t in bal]), "total": len(targets), "rows": checked},
-            "still_open": still_total, "inflow": inflow, "generated_at": iso(now)}
+            "still_open": still_total, "inflow": inflow, "supply": supply_monthly(conn), "generated_at": iso(now)}
 
 
 # ---------------- balances ----------------

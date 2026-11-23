@@ -28,7 +28,7 @@ USDT_SELECTORS = {
     "0753c30c": ("deprecate", "address"),
     "c0324c77": ("setParams", "raw"),
     # new-generation TetherToken / USDT0 (WithBlockedList)
-    "40c10f19": ("mint", "raw"),
+    "40c10f19": ("mint", "address_amount"),
     "9dc29fac": ("burn", "address_amount"),
     "8040a2c7": ("setOFTContract", "address"),
     "f32a12ac": ("setTrusted", "address"),
@@ -95,7 +95,21 @@ BALANCE_FUNCS = ("addBlackList", "destroyBlackFunds", "addToBlockedList", "destr
 # action classes for the cross-chain view
 FREEZE_FUNCS = ("addBlackList", "addToBlockedList", "freeze_accounts", "freeze_wallet")
 UNFREEZE_FUNCS = ("removeBlackList", "removeFromBlockedList", "unfreeze_accounts", "unfreeze_wallet")
-DESTROY_FUNCS = ("destroyBlackFunds", "destroyBlockedFunds")
+DESTROY_FUNCS = ("destroyBlackFunds", "destroyBlockedFunds", "burn_from")
+SUPPLY_FUNCS = ("issue", "mint", "redeem", "burn")  # treasury supply operations, unrelated to freezes
+
+
+def category_of(function):
+    """freeze | unfreeze | destroy | supply | admin (any other call)."""
+    if function in FREEZE_FUNCS:
+        return "freeze"
+    if function in UNFREEZE_FUNCS:
+        return "unfreeze"
+    if function in DESTROY_FUNCS:
+        return "destroy"
+    if function in SUPPLY_FUNCS:
+        return "supply"
+    return "admin"
 SEL_IS_BLOCKED = "fbac3951"
 TOPIC_BLOCK_PLACED = "0x406bbf2d8d145125adf1198d2cf8a67c66cc4bb0ab01c37dccd4f7c0aae1e7c7"
 TOPIC_BLOCK_RELEASED = "0x665918c9e02eb2fd85acca3969cb054fc84c138e60ec4af22ab6ef2fd4c93c27"
