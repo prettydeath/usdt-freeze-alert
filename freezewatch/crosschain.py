@@ -5,7 +5,7 @@ from collections import defaultdict
 
 from . import eth, evmmsw
 from .constants import DESTROY_FUNCS, FREEZE_FUNCS, SEL_BALANCE_OF, UNFREEZE_FUNCS, USDT_DECIMALS
-from .registry import EVM_CHAINS, MSW_CHAINS, SAFE_CHAINS, chain_meta
+from .registry import EVENT_CHAINS, EVM_CHAINS, MSW_CHAINS, SAFE_CHAINS, chain_meta
 from .util import b58check_decode, parse_iso
 
 log = logging.getLogger("freezewatch.crosschain")
@@ -78,15 +78,16 @@ def rpc_and_token(chain):
         return eth.rpc_url(), m.get("token")
     if chain in MSW_CHAINS:
         return MSW_CHAINS[chain]["rpc"], MSW_CHAINS[chain]["token"]
-    if chain in SAFE_CHAINS:
-        return SAFE_CHAINS[chain].get("rpc"), SAFE_CHAINS[chain]["token"]
+    if chain in SAFE_CHAINS or chain in EVENT_CHAINS:
+        c = SAFE_CHAINS.get(chain) or EVENT_CHAINS[chain]
+        return c.get("rpc"), c["token"]
     return None, None
 
 
 def balances_elsewhere(addr, exclude):
     """USDT balances (>0) of the address on all EVM networks with an RPC, excluding those already involved. Network errors are ignored."""
     res = {}
-    for ch in ["eth", *MSW_CHAINS, *SAFE_CHAINS]:
+    for ch in ["eth", *MSW_CHAINS, *SAFE_CHAINS, *EVENT_CHAINS]:
         if ch in exclude:
             continue
         url, token = rpc_and_token(ch)

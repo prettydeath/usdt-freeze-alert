@@ -5,7 +5,7 @@ import logging
 
 from . import abi
 from .constants import USDT_SELECTORS
-from .db import add_event, ensure_proposal, update_proposal
+from .db import add_event, ensure_proposal, meta_get, meta_set, update_proposal
 from .derive import compute_status
 from .registry import SAFE_CHAINS
 from .util import http_json, key_pool, now_ts, parse_iso
@@ -90,15 +90,19 @@ def sync_chain(conn, chain, stale_days=7, full=False):
     info = _get(f"{BASE}/{net}/api/v1/safes/{safe}/")
     safe_nonce = int(info["nonce"])
     url = f"{BASE}/{net}/api/v1/safes/{safe}/multisig-transactions/"
-    have_any = conn.execute("SELECT 1 FROM proposals WHERE chain=? LIMIT 1", (chain,)).fetchone()
+    complete = meta_get(conn, f"{chain}_safe_full") == "1"
     pages = []
-    # open - always; history - in full on the first run, then only the fresh page
+    # open ones - always; full history until it has been fetched completely once, then only the fresh page
     pages.append(_get(url, {"executed": "false", "ordering": "-nonce", "limit": 100}))
     o = _get(url, {"ordering": "-nonce", "limit": 100})
     pages.append(o)
-    while (full or not have_any) and o.get("next"):
+    walked = False
+    while (full or not complete) and o.get("next"):
         o = _get(o["next"])
         pages.append(o)
+        walked = True
+    if not complete and not o.get("next"):
+        meta_set(conn, f"{chain}_safe_full", "1")
     n = 0
     seen = set()
     for pg in pages:

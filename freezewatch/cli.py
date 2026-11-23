@@ -5,7 +5,7 @@ import sys
 import time
 from datetime import datetime, timezone
 
-from . import alerts, analytics, crosschain, eth, evmmsw, inflows, others, safe, tron
+from . import alerts, analytics, crosschain, eth, evmmsw, inflows, others, safe, tokenevents, tron
 from .constants import BALANCE_FUNCS
 from .db import connect, meta_get, meta_set, update_proposal
 from .derive import derive_all, rebuild_blacklist
@@ -28,10 +28,11 @@ def stale_days():
     return int(env("STALE_DAYS", "7"))
 
 
-from .registry import MSW_CHAINS, NON_EVM, SAFE_CHAINS  # noqa: E402
+from .registry import EVENT_CHAINS, MSW_CHAINS, NON_EVM, SAFE_CHAINS  # noqa: E402
 
 BASE = ["eth", "tron", "usdc_eth", "sol_usdc", "sol_usdt"]
-GROUPS = {"all": BASE + list(MSW_CHAINS) + list(SAFE_CHAINS) + list(NON_EVM), "usdc": ["usdc_eth"],
+GROUPS = {"all": BASE + list(MSW_CHAINS) + list(SAFE_CHAINS) + list(EVENT_CHAINS) + list(NON_EVM), "usdc": ["usdc_eth"],
+          "usdt0": list(SAFE_CHAINS) + list(EVENT_CHAINS), "events": list(EVENT_CHAINS),
           "sol": ["sol_usdc", "sol_usdt"], "msw": list(MSW_CHAINS), "safe": list(SAFE_CHAINS),
           "core": BASE}
 CHOICES = sorted(set(GROUPS["all"]) | set(GROUPS))
@@ -51,7 +52,7 @@ def refresh_balances(conn):
         try:
             if r["chain"] in MSW_CHAINS:
                 bal = evmmsw.balance_of(r["chain"], r["target"])
-            elif r["chain"] in SAFE_CHAINS:
+            elif r["chain"] in SAFE_CHAINS or r["chain"] in EVENT_CHAINS:
                 bal = crosschain.balance_on(r["chain"], r["target"])
             elif r["chain"] in CHAINS:
                 bal = CHAINS[r["chain"]].balance_of(r["target"])
@@ -82,6 +83,13 @@ def do_sync(conn, chain, since, budget):
             evmmsw.sync_chain(conn, chain, stale_days())
         elif chain in SAFE_CHAINS:
             safe.sync_chain(conn, chain, stale_days(), full=since is not None)
+            conn.commit()
+            try:  # token events are the source of truth; a failure here must not undo the Safe data
+                tokenevents.sync_chain(conn, chain, stale_days())
+            except Exception as e:  # noqa: BLE001
+                log.warning("%s: token events failed: %s", chain, str(e)[:100])
+        elif chain in EVENT_CHAINS:
+            tokenevents.sync_chain(conn, chain, stale_days())
         elif chain in NON_EVM:
             import importlib
             importlib.import_module(f".{chain}", __package__).sync(conn, stale_days())

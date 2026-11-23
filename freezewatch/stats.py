@@ -3,7 +3,7 @@ import json
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 
-from .constants import BALANCE_FUNCS, DATA_DIR, SOURCE_LABELS
+from .constants import BALANCE_FUNCS, DATA_DIR, FREEZE_FUNCS, SOURCE_LABELS
 from .util import iso, now_ts, parse_iso
 
 WINDOWS = {"7d": 7, "30d": 30, "all": None}
@@ -162,6 +162,8 @@ def compute(conn, now=None):
             "max_id": max((r["tx_id"] for r in cr), default=None),
             "first_submitted": iso(min(subs)) if subs else None, "last_submitted": iso(max(subs)) if subs else None,
             "executed": sum(1 for r in cr if r["executed"]),
+            "freezes": sum(1 for r in cr if r["executed"] and r["function"] in FREEZE_FUNCS),
+            "no_public": sum(1 for r in cr if r["executed"] and r["function"] in FREEZE_FUNCS and r.get("public_proposal") == 0),
             "without_submit_time": sum(1 for r in cr if not r["sub_ts"]),
         }
     out["others"] = compute_others(conn, now)

@@ -65,6 +65,49 @@ SAFE_CHAINS = {
 for _k, _u in {'arb1': 'https://arb1.arbitrum.io/rpc', 'pol': 'https://polygon-bor-rpc.publicnode.com', 'plasma': 'https://rpc.plasma.to', 'mantle': 'https://rpc.mantle.xyz', 'oeth': 'https://mainnet.optimism.io', 'monad': 'https://rpc.monad.xyz', 'unichain': 'https://mainnet.unichain.org', 'stable': 'https://rpc.stable.xyz', 'morph': 'https://rpc.morphl2.io', 'ink': 'https://rpc-gel.inkonchain.com', 'hyper': 'https://rpc.hyperliquid.xyz/evm', 'berachain': 'https://rpc.berachain.com'}.items():
     SAFE_CHAINS[_k]["rpc"] = _u
 
+# USDT0 chains without a Safe Transaction Service: only executed actions (from token events) are available
+EVENT_CHAINS = {
+    "xlayer": {"label": "USDT0 - X Layer", "rpc": "https://rpc.xlayer.tech",
+               "token": "0x779Ded0c9e1022225f8E0630b35a9b54bE713736",
+               "addr": "https://www.oklink.com/x-layer/address/", "tx": "https://www.oklink.com/x-layer/tx/"},
+    "flare": {"label": "USDT0 - Flare", "rpc": "https://flare-api.flare.network/ext/C/rpc",
+              "token": "0xe7cd86e13AC4309349F30B3435a9d337750fC82D",
+              "addr": "https://flarescan.com/address/", "tx": "https://flarescan.com/tx/"},
+    "conflux": {"label": "USDT0 - Conflux", "rpc": "https://evm.confluxrpc.com",
+                "token": "0xaf37E8B6C9ED7f6318979f56Fc287d76c30847ff",
+                "addr": "https://evm.confluxscan.org/address/", "tx": "https://evm.confluxscan.org/tx/"},
+    "sei": {"label": "USDT0 - Sei", "rpc": "https://evm-rpc.sei-apis.com",
+            "token": "0x9151434b16b9763660705744891fA906F660EcC5",
+            "addr": "https://seitrace.com/address/", "tx": "https://seitrace.com/tx/"},
+    "megaeth": {"label": "USDT0 - MegaETH", "rpc": "https://mainnet.megaeth.com/rpc",
+                "token": "0xb8ce59fc3717ada4c02eadf9682a9e934f625ebb",
+                "addr": "https://megaeth.blockscout.com/address/", "tx": "https://megaeth.blockscout.com/tx/"},
+    "rootstock": {"label": "USDT0 - Rootstock", "rpc": "https://public-node.rsk.co",
+                  "token": "0x779dED0C9e1022225F8e0630b35A9B54Be713736",
+                  "addr": "https://rootstock.blockscout.com/address/", "tx": "https://rootstock.blockscout.com/tx/"},
+}
+
+# where the token events (BlockPlaced / BlockReleased / DestroyedBlockedFunds) are read from, in order of preference.
+# v2 = Etherscan V2 (chainid), blockscout = Blockscout / Etherscan-compatible API, rpc = eth_getLogs in adaptive chunks
+EVENT_SOURCES = {
+    "arb1": [("v2", 42161)], "pol": [("v2", 137)], "hyper": [("v2", 999)], "plasma": [("v2", 9745)],
+    "mantle": [("v2", 5000)], "unichain": [("v2", 130)], "berachain": [("v2", 80094)], "monad": [("v2", 143)],
+    "stable": [("v2", 988)], "sei": [("v2", 1329)], "megaeth": [("v2", 4326)],
+    "oeth": [("blockscout", "https://optimism.blockscout.com/api")],
+    "ink": [("blockscout", "https://explorer.inkonchain.com/api")],
+    "morph": [("blockscout", "https://explorer-api.morphl2.io/api")],
+    "flare": [("blockscout", "https://flare-explorer.flare.network/api")],
+    "rootstock": [("blockscout", "https://rootstock.blockscout.com/api")],
+    "conflux": [("blockscout", "https://evmapi.confluxscan.io/api")],
+    "xlayer": [],  # no free log API (OKLink needs a key; the public RPC allows ~100-block ranges): not covered
+}
+
+
+def evm_cfg(chain):
+    """{label, rpc, token, ...} for MSW, Safe and event-only chains."""
+    return MSW_CHAINS.get(chain) or SAFE_CHAINS.get(chain) or EVENT_CHAINS[chain]
+
+
 # non-EVM
 NON_EVM = {
     "near": {"label": "USDt - NEAR", "addr": "https://nearblocks.io/address/", "tx": "https://nearblocks.io/txns/",
@@ -90,6 +133,11 @@ def chain_meta():
     for k, c in SAFE_CHAINS.items():
         m[k] = {"label": c["label"], "mech": MECH_SAFE, "addr": c["addr"], "tx": c["tx"], "threshold": "3 of 5",
                 "token": c["token"]}
+    for k, c in EVENT_CHAINS.items():
+        m[k] = {"label": c["label"], "mech": MECH_EXECUTED, "addr": c["addr"], "tx": c["tx"], "threshold": "Safe",
+                "token": c["token"]}
+    for k in list(SAFE_CHAINS) + list(EVENT_CHAINS):
+        m[k]["family"] = "usdt0"
     for k, c in NON_EVM.items():
         m[k] = {"label": c["label"], "mech": MECH_ONCHAIN, "addr": c["addr"], "tx": c["tx"],
                 "threshold": c["threshold"]}
@@ -97,4 +145,4 @@ def chain_meta():
 
 
 # networks where the target address is a 20-byte EVM-compatible one (for cross-chain matching); TRON is converted separately
-EVM_CHAINS = ["eth", *MSW_CHAINS, *SAFE_CHAINS]
+EVM_CHAINS = ["eth", *MSW_CHAINS, *SAFE_CHAINS, *EVENT_CHAINS]

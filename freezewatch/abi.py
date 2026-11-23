@@ -37,7 +37,10 @@ def decode_calldata(data_hex: str, is_usdt: bool, fmt_addr) -> dict:
         return {"function": "0x" + sel, "target": None, "amount": None}
     name, kind = meta
     out = {"function": name, "target": None, "amount": None}
-    if kind == "address" and len(args) >= 64:
+    if kind == "address_amount" and len(args) >= 128:
+        out["target"] = fmt_addr(word_addr(args[:64]))
+        out["amount"] = int(args[64:128], 16) / 10 ** USDT_DECIMALS
+    elif kind == "address" and len(args) >= 64:
         out["target"] = fmt_addr(word_addr(args[:64]))
     elif kind == "amount" and len(args) >= 64:
         out["amount"] = int(args[:64], 16) / 10 ** USDT_DECIMALS

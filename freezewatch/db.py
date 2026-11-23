@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS proposals (
     status TEXT NOT NULL DEFAULT 'pending',
     delay_seconds INTEGER,
     chain_verified INTEGER NOT NULL DEFAULT 0,
+    public_proposal INTEGER NOT NULL DEFAULT 1,   -- 0 = executed action seen only as a token event
     balance_at_detect REAL,
     balance_now REAL,
     balance_checked_at TEXT,
@@ -129,6 +130,19 @@ CREATE TABLE IF NOT EXISTS inflow_cursor (
     PRIMARY KEY (chain, address)
 );
 
+CREATE TABLE IF NOT EXISTS token_events (
+    chain TEXT NOT NULL,
+    tx_hash TEXT NOT NULL,
+    log_index INTEGER NOT NULL,
+    kind TEXT NOT NULL,            -- placed | released | destroyed
+    address TEXT NOT NULL,
+    amount REAL,
+    ts TEXT NOT NULL,
+    block INTEGER,
+    linked INTEGER,                -- 1 = matched to a Safe transaction, 0 = no public proposal, NULL = not processed
+    PRIMARY KEY (chain, tx_hash, log_index)
+);
+
 CREATE TABLE IF NOT EXISTS alerts (
     chain TEXT NOT NULL,
     tx_id INTEGER NOT NULL,
@@ -151,6 +165,9 @@ def connect(path: Path | str | None = None) -> sqlite3.Connection:
     conn.row_factory = sqlite3.Row
     conn.executescript(SCHEMA)
     cols = {r["name"] for r in conn.execute("PRAGMA table_info(proposals)")}
+    if "public_proposal" not in cols:  # migration of old DBs
+        conn.execute("ALTER TABLE proposals ADD COLUMN public_proposal INTEGER NOT NULL DEFAULT 1")
+        conn.commit()
     if "chain_verified" not in cols:  # migration of old DBs
         conn.execute("ALTER TABLE proposals ADD COLUMN chain_verified INTEGER NOT NULL DEFAULT 0")
         conn.execute("UPDATE proposals SET chain_verified=1 WHERE chain='eth' AND destination IS NOT NULL")

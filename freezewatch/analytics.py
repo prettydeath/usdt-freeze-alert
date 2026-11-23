@@ -16,7 +16,7 @@ import time
 from . import crosschain, eth
 from .constants import (DESTROY_FUNCS, FREEZE_FUNCS, SEL_BALANCE_OF, SOLANA_SOURCES, TRON_USDT, UNFREEZE_FUNCS,
                         USDC_ETH, USDT_DECIMALS)
-from .registry import MSW_CHAINS, SAFE_CHAINS
+from .registry import EVENT_CHAINS, MSW_CHAINS, SAFE_CHAINS
 from .util import iso, now_ts, parse_iso
 
 log = logging.getLogger("freezewatch.analytics")
@@ -40,13 +40,13 @@ def special_sinks(chain):
         token = crosschain.rpc_and_token(chain)[1]
     except Exception:  # noqa: BLE001
         token = None
-    if token or chain in ("eth", "avax", "celo", "kaia", "kava") or chain in SAFE_CHAINS:
+    if token or chain in ("eth", "avax", "celo", "kaia", "kava") or chain in SAFE_CHAINS or chain in EVENT_CHAINS:
         return {EVM_ZERO} | ({token.lower()} if token else set())
     return set()
 
 
 def token_of(chain):
-    if chain in SAFE_CHAINS:
+    if chain in SAFE_CHAINS or chain in EVENT_CHAINS:
         return "USDT0"
     return "USDC" if chain in ("usdc_eth", "sol_usdc") else "USDT"
 
@@ -54,7 +54,8 @@ def token_of(chain):
 def norm(chain, addr):
     if not addr:
         return None
-    return addr.lower() if (chain in ("eth", "usdc_eth", "avax", "celo", "kaia", "kava") or chain in SAFE_CHAINS) else addr
+    return addr.lower() if (chain in ("eth", "usdc_eth", "avax", "celo", "kaia", "kava") or chain in SAFE_CHAINS
+                            or chain in EVENT_CHAINS) else addr
 
 
 # ---------------- timelines and attribution (pure) ----------------
@@ -192,7 +193,8 @@ def compute(conn, now=None):
 # ---------------- balances ----------------
 def supported(chain):
     """Chains whose balances can be read (Aptos and TON stay 'unknown')."""
-    return chain in ("eth", "usdc_eth", "tron", "near") or chain in MSW_CHAINS or chain in SAFE_CHAINS or chain in SOLANA_SOURCES
+    return chain in ("eth", "usdc_eth", "tron", "near") or chain in MSW_CHAINS or chain in SAFE_CHAINS \
+        or chain in EVENT_CHAINS or chain in SOLANA_SOURCES
 
 
 def open_targets(conn):
@@ -217,8 +219,8 @@ def fetch_balances(chain, addrs):
     if chain in MSW_CHAINS:
         c = MSW_CHAINS[chain]
         return _batch_eth_balances(c["rpc"], c["token"], addrs)
-    if chain in SAFE_CHAINS:
-        c = SAFE_CHAINS[chain]
+    if chain in SAFE_CHAINS or chain in EVENT_CHAINS:
+        c = SAFE_CHAINS.get(chain) or EVENT_CHAINS[chain]
         return _batch_eth_balances(c["rpc"], c["token"], addrs)
     if chain == "tron":
         from . import tron
