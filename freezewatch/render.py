@@ -122,7 +122,7 @@ def build_payload(conn, stats, stale_days):
     from . import livecheck
     return {"generated_at": iso(now), "stale_days": stale_days, "live": livecheck.targets(), "stale_total": stale_total, "chains": chains,
             "pending": kept, "stale": stale, "stale_by_chain": stale_by_chain, "ex": ex, "recent": recent[:200], "signers": signers, "coverage": stats.get("coverage", {}),
-            "others": stats.get("others", {}), "authority": auth, "cross": xt, "cross_total": xn,
+            "others": stats.get("others", {}), "health": stats.get("health"), "authority": auth, "cross": xt, "cross_total": xn,
             "analytics": an if len(an_json) < 1_200_000 else None, "analytics_url": "analytics.json",
             "sources": ["Etherscan V2", "public RPCs", "TronGrid/Tronscan", "Safe Transaction Service", "nearblocks",
                         "Aptos Indexer", "tonapi", "Solana RPC"]}

@@ -107,6 +107,7 @@ th.sortable{cursor:pointer;user-select:none}
 .sharebar{display:flex;height:22px;border-radius:5px;overflow:hidden;border:1px solid var(--hair);margin:8px 0}
 .sharebar span{display:block;min-width:2px}
 
+.stalepill{background:var(--st-red-bg);color:var(--st-red-fg);border-color:transparent;font-weight:600}
 .qbox{font:inherit;font-size:12px;padding:3px 10px;border:1px solid var(--hair);border-radius:999px;background:var(--surf);color:var(--fg);width:200px;max-width:100%}
 .qbox:focus{outline:2px solid var(--acc);outline-offset:1px}
 textarea#wlText{width:100%;min-height:90px;font:12px var(--mono);padding:8px;border:1px solid var(--hair);border-radius:6px;background:var(--bg);color:var(--fg);resize:vertical}
@@ -154,6 +155,7 @@ footer{margin:30px 0 18px;color:var(--mut);font-size:12px;border-top:1px solid v
   <h1>USDT Freeze Alert<small>See USDT freezes before they happen</small></h1>
   <span class="pill live" id="live">live</span>
   <span class="pill" id="nch"></span>
+  <span class="pill stalepill" id="hstale" hidden></span>
   <input class="qbox" id="q" type="search" placeholder="Search an address…" aria-label="Search an address" autocomplete="off" spellcheck="false">
   <div class="filters" id="filters"></div>
   <button type="button" class="pill themebtn" id="themeBtn" title="Theme: auto / light / dark" aria-label="Switch theme">🌓 Auto</button>
@@ -307,6 +309,8 @@ const exA = () => D.ex.filter(e => active(e[0]));
   const el = $('live'); el.textContent = 'live · data changed ' + (ageMin < 90 ? ageMin + ' min' : Math.round(ageMin/60) + ' h') + ' ago';
   if(ageMin > 180) el.classList.add('old');
   $('nch').textContent = Object.keys(CH).length + ' chains & tokens';
+  const bad = Object.entries(D.health || {}).filter(([c, h]) => h && h.stale).map(([c]) => c.toUpperCase());
+  if(bad.length){ const hs = $('hstale'); hs.hidden = false; hs.textContent = '⚠ ' + bad.join(', ') + ' data stale'; hs.title = 'On-chain transaction count is ahead of our data; ingestion is behind.'; }
   const f = $('filters');
   const all = document.createElement('span'); all.className='pill fp on'; all.textContent='All'; f.appendChild(all);
   all.onclick = () => { sel.clear(); window.sync(); render(); };
@@ -1127,7 +1131,7 @@ window.addEventListener('hashchange', () => { if(openWatchFromHash()) return; co
   btn.onclick = () => { mode = MODES[(MODES.indexOf(mode) + 1) % MODES.length]; apply(); };
   try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if(mode === 'auto') repaint(); }); } catch(e) {}
 })();
-$('foot').innerHTML = '<div class="datalinks" style="margin-bottom:6px"><b>Data:</b> ' + [['data/proposals.csv','proposals.csv'],['data/blacklist.csv','blacklist.csv'],['data/inflows.csv','inflows.csv'],['site/analytics.json','analytics.json'],['site/addresses.json','addresses.json'],['data/freezewatch.sqlite','freezewatch.sqlite']].map(([p, n]) => '<a href="' + RAW + p + '" target="_blank" rel="noopener">' + n + '</a>').join('') + '</div>Sources: ' + D.sources.map(esc).join(', ') + '. Data changed: ' + dt(D.generated_at) + '. ' +
+$('foot').innerHTML = (Object.entries(D.health || {}).filter(([c, h]) => h && h.stale).map(([c, h]) => '<div class="warn">⚠ ' + c.toUpperCase() + ' data stale: on-chain transaction count ' + h.onchain_count + ', newest id in our data ' + h.max_id + '.</div>').join('')) + '<div class="datalinks" style="margin-bottom:6px"><b>Data:</b> ' + [['data/proposals.csv','proposals.csv'],['data/blacklist.csv','blacklist.csv'],['data/inflows.csv','inflows.csv'],['site/analytics.json','analytics.json'],['site/addresses.json','addresses.json'],['data/freezewatch.sqlite','freezewatch.sqlite']].map(([p, n]) => '<a href="' + RAW + p + '" target="_blank" rel="noopener">' + n + '</a>').join('') + '</div>Sources: ' + D.sources.map(esc).join(', ') + '. Data changed: ' + dt(D.generated_at) + '. ' +
   'Freezing actions = addBlackList / addToBlockedList; destroy*; remove*. ' +
   'TRON execution time is inferred from confirmations; Safe queues live off-chain; USDC and Solana have no queue (delay n/a). ' +
   'Not financial advice.';

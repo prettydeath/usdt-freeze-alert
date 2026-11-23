@@ -5,7 +5,7 @@ import sys
 import time
 from datetime import datetime, timezone
 
-from . import alerts, analytics, crosschain, eth, evmmsw, inflows, others, safe, tokenevents, tron
+from . import alerts, analytics, crosschain, eth, evmmsw, health, inflows, others, safe, tokenevents, tron
 from .constants import BALANCE_FUNCS
 from .db import connect, meta_get, meta_set, update_proposal
 from .derive import derive_all, rebuild_blacklist
@@ -126,6 +126,10 @@ def cmd_update(args, conn=None):
     refresh_balances(conn)
     rebuild_blacklist(conn)
     conn.commit()
+    try:
+        health.check(conn)
+    except Exception as e:  # noqa: BLE001
+        log.warning("health check failed: %s", str(e)[:80])
     budget = int(env("ANALYTICS_BUDGET_SEC", "120"))
     for step in (analytics.enrich_destroy_amounts, analytics.refresh_balances, inflows.refresh):
         try:

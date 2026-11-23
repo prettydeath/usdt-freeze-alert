@@ -167,6 +167,8 @@ def compute(conn, now=None):
             "without_submit_time": sum(1 for r in cr if not r["sub_ts"]),
         }
     out["others"] = compute_others(conn, now)
+    from . import health
+    out["health"] = health.load(conn)
     return out
 
 
