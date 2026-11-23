@@ -31,6 +31,12 @@ def export_files(conn):
         w = csv.DictWriter(f, fieldnames=COLS, extrasaction="ignore")
         w.writeheader()
         w.writerows(rows)
+    inf = [dict(r) for r in conn.execute("SELECT chain, token, frozen_address, sender, amount, ts, tx_hash FROM "
+                                         "inflows_after_freeze ORDER BY ts")]
+    with open(DATA_DIR / "inflows.csv", "w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=["chain", "token", "frozen_address", "sender", "amount", "ts", "tx_hash"])
+        w.writeheader()
+        w.writerows(inf)
     bl = [dict(r) for r in conn.execute("SELECT * FROM blacklist ORDER BY chain, address")]
     with open(DATA_DIR / "blacklist.csv", "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=["chain", "address", "status", "first_blocked_at", "last_change_at",
@@ -175,3 +181,5 @@ def render_all(conn, stats, stale_days=7):
     export_files(conn)
     payload = render_site(conn, stats, stale_days)
     write_badges(payload)
+    from . import addresses
+    addresses.write(SITE_DIR, addresses.build(conn))
