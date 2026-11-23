@@ -93,11 +93,13 @@ def build(conn, extras=None):
         if f["owner"] and f["owner"] != f["subject"] and canon_for(f["source"], f["owner"]):
             o = rec(canon_for(f["source"], f["owner"]))
             o["e"] = o.get("e", []) + [[f["source"], k, ts, f["tx_hash"], f["amount"], None, f["subject"], None, None, None, None, 0]]
-    for r in conn.execute("SELECT chain, address, balance FROM balances WHERE balance IS NOT NULL"):
+    for r in conn.execute("SELECT chain, address, balance, checked_at FROM balances WHERE balance IS NOT NULL"):
         if skip(r["chain"], r["address"]):
             continue
         key = canon_for(r["chain"], r["address"])
         rec(key).setdefault("b", {})[r["chain"]] = round(r["balance"], 2)
+        if r["checked_at"]:
+            rec(key).setdefault("bc", {})[r["chain"]] = r["checked_at"]   # date the balance was read (stale for unfrozen addresses)
     senders = {}
     spans = {}
     for r in conn.execute("SELECT chain, frozen_address, sender, amount, ts FROM inflows_after_freeze"):

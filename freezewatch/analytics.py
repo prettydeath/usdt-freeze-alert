@@ -170,6 +170,13 @@ def load_balances(conn):
             for r in conn.execute("SELECT chain, address, balance, frozen_balance FROM balances")}
 
 
+def _unique_counts(freezes):
+    """{freezes, addresses}: freeze events (one per address and chain interval) vs distinct addresses across all chains."""
+    from .addresses import canon_for
+    rows = [f for f in freezes if f[3] != "dup"]
+    return {"freezes": len(rows), "addresses": len({canon_for(f[1], f[2]) for f in rows})}
+
+
 def compute(conn, now=None):
     """Aggregates per chain x month (see IDX) plus the top still-frozen list and coverage numbers."""
     now = now or now_ts()
@@ -220,6 +227,7 @@ def compute(conn, now=None):
     targets = open_targets(conn)
     return {"idx": IDX, "monthly": {ch: m for ch, m in monthly.items()},
             "tokens": {ch: token_of(ch) for ch in monthly}, "top": top,
+            "unique": _unique_counts(freezes),
             "coverage": {"checked": len([t for t in targets if t in bal]), "total": len(targets), "rows": checked},
             "still_open": still_total, "inflow": inflow, "supply": supply_monthly(conn), "generated_at": iso(now)}
 
@@ -283,14 +291,24 @@ def fetch_balances(chain, addrs):
     return {}
 
 
+def recent_unfrozen(conn, days=30):
+    """(chain, address) unfrozen within the last `days`: their balance is read too, so the dashboard can show what is
+    movable again (the balance is not a 'frozen' amount and never overwrites frozen_balance)."""
+    events, _n, _p = load_events(conn)
+    _f, _d, unfreezes = attribute(events, {})
+    cutoff = now_ts() - days * 86400
+    return sorted({(chain, addr) for ts, chain, addr, _b in unfreezes if ts >= cutoff and supported(chain)})
+
+
 def refresh_balances(conn, budget_sec=150):
     """Incremental, resumable: never-checked addresses first, then those checked before today. Writes at most one
     row change per address per day (checked_at is a date), so the DB file stays stable between runs."""
     t0 = time.time()
     today = iso(now_ts())[:10]
     have = {(r["chain"], r["address"]): r["checked_at"] for r in conn.execute("SELECT chain, address, checked_at FROM balances")}
-    todo = [t for t in open_targets(conn) if have.get(t) != today]
-    todo.sort(key=lambda t: (have.get(t) is not None, have.get(t) or ""))
+    movable = set(recent_unfrozen(conn))
+    todo = [t for t in sorted(set(open_targets(conn)) | movable) if have.get(t) != today]
+    todo.sort(key=lambda t: (t not in movable, have.get(t) is not None, have.get(t) or ""))  # just-unfrozen first
     by_chain = {}
     for chain, addr in todo:
         by_chain.setdefault(chain, []).append(addr)
@@ -309,6 +327,12 @@ def refresh_balances(conn, budget_sec=150):
                 log.warning("balances %s: %s", chain, str(e)[:100])
                 break
             for a, b in res.items():
+                if (chain, a) in movable:  # unfrozen: keep the balance observed while frozen untouched
+                    conn.execute("INSERT INTO balances(chain,address,token,balance,checked_at) VALUES(?,?,?,?,?) "
+                                 "ON CONFLICT(chain,address) DO UPDATE SET balance=excluded.balance, checked_at=excluded.checked_at",
+                                 (chain, a, token_of(chain), b, today))
+                    n += 1
+                    continue
                 conn.execute(
                     "INSERT INTO balances(chain,address,token,balance,checked_at,frozen_balance,frozen_checked_at) "
                     "VALUES(?,?,?,?,?,?,?) ON CONFLICT(chain,address) DO UPDATE SET balance=excluded.balance, "

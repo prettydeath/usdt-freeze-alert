@@ -142,7 +142,7 @@ def _extract(marker_a, marker_b):
 def test_report_builder_markdown(tmp_path):
     body = _extract("// REPORT-BEGIN", "// REPORT-END")
     stubs = """
-const CH = {eth: {label: 'USDT - Ethereum', tx: 'https://etherscan.io/tx/', addr: 'https://etherscan.io/address/'}};
+const CH = {pol: {label: 'USDT0 - Polygon'}, eth: {label: 'USDT - Ethereum', tx: 'https://etherscan.io/tx/', addr: 'https://etherscan.io/address/'}};
 const D = {generated_at: '2026-11-23T10:00:00Z'};
 const usd = x => '$' + Math.round(x).toLocaleString('en-US'); const dur = s => s + 's'; const dstr = ts => 'T' + ts;
 const statusOf = r => ({word: 'BLOCKED', summary: 'on 1 chain', amount: '$5', also: ''});
@@ -153,7 +153,8 @@ const timelineOf = r => [{ts: 1, chain: 'eth', label: 'frozen', tx: 'TXHASH'}];
            "r": {"eth": ["sanctions", "OFAC SDN", "https://ofac/src", "wallet-attribution", 1]},
            "e": [["eth", "f", 1795000000, "0x" + "ab" * 32, None, 120, None, 7, 3, 3, 1794999880, 1]],
            "o": {"eth": [[1795000000, 5000, 4000, [["0x" + "99" * 20, 5000, 4000, ["Gate.io", "", "exchange", "s", "u", "high"], 0]], 250, 1, 0]]},
-           "c": ["b-1234abcd"], "x": [["eth", "frozen", 1795000000, [["pol", "USDT0", 5000, 4900]]]]}
+           "c": ["b-1234abcd"], "x": [["eth", "frozen", 1795000000, [["pol", "USDT0", 5000, 4900]]]],
+           "s": {"eth": "unfrozen", "pol": "frozen"}, "b": {"eth": 239942.5, "pol": 1200.0, "avax": 0}, "bc": {"eth": "2026-11-21"}}
     js = stubs + body + "\nconst r = " + json.dumps({"input": ADDR, "key": ADDR, "rec": rec, "live": None}) + \
         ";\nprocess.stdout.write(buildReport(r, '2026-11-23T10:05:00Z'));"
     f = tmp_path / "r.js"
@@ -165,4 +166,53 @@ const timelineOf = r => [{ts: 1, chain: 'eth', label: 'frozen', tx: 'TXHASH'}];
     assert "https://etherscan.io/tx/0x" + "ab" * 32 in md                                       # tx hash and explorer link
     assert "escaped $5,000 ($4,000 between proposal and execution)" in md and "moved between addresses that were also frozen" in md
     assert "TRUNCATED (lower bound)" in md and "[label from wallet-attribution: Gate.io / exchange]" in md
+    assert "## Balances" in md and "| State | As of |" in md                                          # balances as a table with a state column
+    assert "| USDT - Ethereum | $239,943 | Unfrozen - funds can move again | 2026-11-21 |" in md
+    assert "| USDT0 - Polygon | $1,200 | Frozen - cannot move | last scan |" in md
+    assert "avax" not in md.split("## Balances")[1].split("##")[0].lower()                          # zero balances are not listed
     assert "`b-1234abcd`" in md and "still unblocked: $4,900 on" in md and "not financial or legal advice" in md.lower()
+
+
+
+@pytest.mark.skipif(not shutil.which("node"), reason="node not available")
+def test_balance_state_per_chain_js(tmp_path):
+    """blocked chain -> frozen; unfrozen (index or live says not blocked after a freeze) -> movable; never blocked -> not blocked."""
+    body = _extract("// REPORT-BEGIN", "// REPORT-END")
+    live_ok = {"results": [{"chain": "eth", "blocked": False, "balance": 350, "checked_at": "2026-11-23T10:00:00Z"}]}
+    cases = {
+        "index_frozen": {"rec": {"s": {"eth": "frozen"}, "b": {"eth": 100}}, "live": None},
+        "index_unfrozen": {"rec": {"s": {"eth": "unfrozen"}, "b": {"eth": 200}, "bc": {"eth": "2026-11-01"}}, "live": None},
+        "live_says_open_after_freeze": {"rec": {"s": {"eth": "frozen"}, "b": {"eth": 300}}, "live": live_ok},
+        "live_clean": {"rec": None, "live": {"results": [
+            {"chain": "pol", "blocked": False, "balance": 50, "checked_at": "2026-11-23T10:00:00Z"},
+            {"chain": "eth", "blocked": None, "balance": None, "checked_at": "x"}]}},
+        "live_blocked": {"rec": {"s": {"eth": "frozen"}}, "live": {"results": [
+            {"chain": "eth", "blocked": True, "balance": 900, "checked_at": "2026-11-23T10:00:00Z"}]}},
+    }
+    js = (body + "\nconst cases = " + json.dumps(cases) + ";\nconst out = {};\n"
+          "for(const [k, r] of Object.entries(cases)) out[k] = balanceRows({...r, input: 'x'}).map(b => [b.c, b.v, b.state, b.asof, b.src]);\n"
+          "process.stdout.write(JSON.stringify(out));")
+    f = tmp_path / "s.js"
+    f.write_text(js, encoding="utf-8")
+    out = json.loads(subprocess.run(["node", str(f)], capture_output=True, text=True, check=True).stdout)
+    assert out["index_frozen"] == [["eth", 100, "blocked", None, "index"]]
+    assert out["index_unfrozen"] == [["eth", 200, "unfrozen", "2026-11-01", "index"]]
+    assert out["live_says_open_after_freeze"][0][:3] == ["eth", 350, "unfrozen"] and out["live_says_open_after_freeze"][0][4] == "live"
+    assert out["live_clean"] == [["pol", 50, "clear", "2026-11-23 10:00 UTC", "live"]]
+    assert out["live_blocked"][0][2] == "blocked"
+
+
+def test_recently_unfrozen_balance_is_read_without_touching_frozen_balance(tmp_path, monkeypatch):
+    from freezewatch import analytics
+    conn = connect(tmp_path / "u.sqlite")
+    mk(conn, "eth", 1, A1, NOW - 10 * 86400)                               # frozen 10 days ago ...
+    mk(conn, "eth", 2, A1, NOW - 3600, fn="removeBlackList")               # ... unfrozen an hour ago
+    mk(conn, "eth", 3, A2, NOW - 90 * 86400)
+    mk(conn, "eth", 4, A2, NOW - 80 * 86400, fn="removeBlackList")         # unfrozen long ago: not re-read
+    conn.execute("INSERT INTO balances(chain,address,token,balance,checked_at,frozen_balance,frozen_checked_at) "
+                 "VALUES('eth',?,'USDT',5.0,'2026-01-01',777.0,'2026-01-01')", (A1,))
+    assert analytics.recent_unfrozen(conn) == [("eth", A1)]
+    monkeypatch.setattr(analytics, "fetch_balances", lambda chain, addrs: {a: 1234.5 for a in addrs})
+    analytics.refresh_balances(conn, 30)
+    row = conn.execute("SELECT balance, frozen_balance FROM balances WHERE address=?", (A1,)).fetchone()
+    assert row["balance"] == 1234.5 and row["frozen_balance"] == 777.0      # frozen_balance (balance while frozen) is preserved

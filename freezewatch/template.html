@@ -243,6 +243,15 @@ details.provd summary{cursor:pointer}details.provd>div{margin-top:4px}
   #tipbox{max-width:calc(100vw - 24px)}
 }
 .t-sup{background:var(--grybg);color:var(--gry)}
+.chip.grn{background:var(--st-grn-bg);color:var(--st-grn-fg);border-color:transparent}
+.btiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.btile{border:1px solid var(--hair);border-left:4px solid var(--gry);border-radius:8px;padding:10px 12px;background:var(--bg)}
+.btile.blocked{border-left-color:var(--red)}.btile.unfrozen{border-left-color:var(--grn)}
+.bt-l{font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.4px}
+.bt-v{font-size:24px;font-weight:700;margin:2px 0 6px;font-variant-numeric:tabular-nums;line-height:1.2}
+.btile .chip{white-space:normal;font-size:12px}
+.bt-n{font-size:11px;color:var(--mut);margin-top:5px}
+@media (max-width:640px){.btiles{grid-template-columns:repeat(2,1fr);gap:8px}.bt-v{font-size:20px}.btile{padding:8px 10px}}
 .repbar{justify-content:flex-start;flex-wrap:wrap;align-items:center;margin:14px 0 6px}
 .repbar button{font-size:12px;padding:3px 11px;color:var(--fg)}
 .heat{display:grid;grid-template-columns:34px repeat(24,1fr);gap:2px;font-size:10px;align-items:center}
@@ -345,6 +354,7 @@ footer{margin:30px 0 18px;color:var(--mut);font-size:12px;border-top:1px solid v
   <div class="mut" id="anote" style="margin-top:6px"></div>
   <div class="mut" id="acov"></div>
   <div class="mut" id="asupply"></div>
+  <div class="mut" id="auniq"></div>
   <div class="mut" id="acov2"></div>
   <div class="mut" id="acov3"></div>
 
@@ -854,7 +864,7 @@ function renderAnalytics(){
   for(const [c, v] of Object.entries((AN.inflow && AN.inflow.periods[AX.period]) || {})) if(chOk(c)) v.forEach((x, i) => inf[i] += x);
   const unfS = s.unfrozen_usd > 0 ? usdS(s.unfrozen_usd) + ' <span class="mut" style="font-size:13px">· ' + s.unfrozen_n + ' addr.</span>' : s.unfrozen_n + ' <span class="mut" style="font-size:13px">addresses</span>';
   $('akpis').innerHTML = [
-    ['🧊 Frozen', usdS(s.frozen_usd), s.frozen_n.toLocaleString('en-US') + ' addresses' + (s.frozen_unk ? ' · +' + s.frozen_unk.toLocaleString('en-US') + ' unknown' : ''), APX('Burned amount if later destroyed, else current balance of the frozen address (frozen funds cannot move). Unknown = balance not read yet.')],
+    ['🧊 Frozen', usdS(s.frozen_usd), s.frozen_n.toLocaleString('en-US') + ' freezes' + (s.frozen_unk ? ' · +' + s.frozen_unk.toLocaleString('en-US') + ' unknown' : ''), APX('Burned amount if later destroyed, else current balance of the frozen address (frozen funds cannot move). Unknown = balance not read yet.')],
     ['🔥 Burned', usdS(s.burned_usd), s.burned_n.toLocaleString('en-US') + ' destroys' + (s.burned_unk ? ' · ' + s.burned_unk + ' amount unknown' : ''), ''],
     ['💸 Sent after freeze', usdS(inf[3]), usdS(inf[5]) + ' later burned · ' + inf[0].toLocaleString('en-US') + ' addresses (' + inf[4].toLocaleString('en-US') + ' burned) · ' + inf[1].toLocaleString('en-US') + ' senders', APX('Transfers to an address while it was blacklisted (zero address and token contracts excluded). Only the scanned chains are included.')],
     ['🟢 Unfrozen', unfS, s.unfrozen_unk && s.unfrozen_usd > 0 ? s.unfrozen_unk + ' without known balance' : 'balance when unfrozen is rarely known', APX('Balance last observed while the address was frozen; the exact amount at unfreeze is not recorded on chain.')],
@@ -864,6 +874,7 @@ function renderAnalytics(){
   const sup = {i: 0, r: 0, ni: 0, nr: 0}, since = sinceMonth();
   for(const [c, months] of Object.entries(AN.supply || {})){ if(!chOk(c)) continue; for(const [mo, v] of Object.entries(months)){ if(since && mo < since) continue; sup.i += v[0]; sup.r += v[1]; sup.ni += v[2]; sup.nr += v[3]; } }
   $('asupply').textContent = '🏦 Treasury supply operations (separate from freezes): issued/minted ' + usdS(sup.i) + ' in ' + sup.ni + ' operations, redeemed/burned ' + usdS(sup.r) + ' in ' + sup.nr + '.';
+  $('auniq').textContent = AN.unique ? 'All time: ' + AN.unique.freezes.toLocaleString('en-US') + ' freezes on ' + AN.unique.addresses.toLocaleString('en-US') + ' unique addresses (an address frozen on several chains counts once here, once per chain in the tables).' : '';
   const cov = AN.coverage;
   const ic = AN.inflow && AN.inflow.coverage;
   const ex = AN.inflow && AN.inflow.excluded;
@@ -1265,7 +1276,7 @@ function renderInsights(){
   if(C){
     const k = C.counts || {};
     $('clnote').textContent = 'Batch ' + (k.batch || 0) + ' · cross-chain ' + (k.crosschain || 0) + ' · counterparty ' + (k.counterparty || 0) + ' clusters. Top by amount frozen. A cluster is a lead, not proof of a common owner.';
-    let h = '<tr><th>Cluster</th><th>Type</th><th>Addresses</th><th>Chains</th><th>Frozen</th><th>Span</th><th>Members</th></tr>';
+    let h = '<tr><th>Cluster</th><th>Type</th><th>Members</th><th>Chains</th><th>Frozen</th><th>Span</th><th>Members</th></tr>';
     for(const c of C.top){
       const span = c.first ? esc(dstr(c.first).slice(0, 10)) + (c.last && c.last !== c.first ? ' → ' + esc(dstr(c.last).slice(0, 10)) : '') : '-';
       const mem = c.members.map(m => '<div class="m">' + esc(cshort(m[0])) + ' ' + addrL(m[0], m[1]) + (m[2] ? ' ' + labelHtml(m[2], false) : '') + '</div>').join('') + (c.size > c.members.length ? '<div class="mut">+' + (c.size - c.members.length) + ' more (see addresses.json / proposals.csv)</div>' : '');
@@ -1295,6 +1306,19 @@ const hintOf = (c, a) => (D.hints || {})[c + ':' + canonKey(a)];
 const hintChip = (c, a) => { const h = hintOf(c, a); return h ? ' ' + reasonChip(h, false) : ''; };
 
 // REPORT-BEGIN
+function chainState(r, c){
+  const rec = r.rec, lv = r.live && r.live.results.find(x => x.chain === c && x.blocked !== null), ix = rec && rec.s ? rec.s[c] : null;
+  if(lv) return lv.blocked ? 'blocked' : (ix === 'unfrozen' || ix === 'frozen' || ix === 'burned') ? 'unfrozen' : 'clear';
+  if(ix === 'frozen' || ix === 'burned') return 'blocked';
+  return ix === 'unfrozen' ? 'unfrozen' : 'clear';
+}
+function balanceRows(r){
+  const out = {}, rec = r.rec;
+  if(rec && rec.b) for(const [c, v] of Object.entries(rec.b)) if(v > 0) out[c] = {c, v, asof: (rec.bc || {})[c] || null, src: 'index'};
+  if(r.live) for(const x of r.live.results) if(x.balance > 0) out[x.chain] = {c: x.chain, v: x.balance, asof: x.checked_at.slice(0, 16).replace('T', ' ') + ' UTC', src: 'live'};
+  return Object.values(out).map(b => ({...b, state: chainState(r, b.c)})).sort((a, b) => b.v - a.v);
+}
+const STATE_TXT = {blocked: 'Frozen - cannot move', unfrozen: 'Unfrozen - funds can move again', clear: 'Not blocked'};
 function mdEsc(s){ return String(s == null ? '' : s).replace(/\|/g, '\\|').replace(/\n/g, ' '); }
 function buildReport(r, nowIso){
   const rec = r.rec, st = statusOf(r), L = [];
@@ -1335,8 +1359,12 @@ function buildReport(r, nowIso){
     L.push('|---|---|---|---|---|---|');
     for(const x of rec.e) L.push('| ' + mdEsc((CH[x[0]] || {}).label) + ' | ' + ({f: 'frozen', u: 'unfrozen', b: 'burned'}[x[1]] || x[1]) + ' | ' + dstr(x[2]) + ' | ' + (x[11] === 0 ? 'no public proposal' : x[5] == null ? 'n/a' : x[5] === 0 ? 'no advance notice' : dur(x[5])) + ' | ' + (x[4] != null ? usd(x[4]) : '-') + ' | `' + (x[3] || '') + '` |');
   }
-  const bal = rec ? Object.entries(rec.b || {}).filter(([c, v]) => v > 0) : [];
-  if(bal.length){ L.push(''); L.push('## Current balances'); L.push(''); for(const [c, v] of bal) L.push('- ' + (CH[c] || {}).label + ': ' + usd(v)); }
+  const bal = balanceRows(r);
+  if(bal.length){
+    L.push(''); L.push('## Balances'); L.push('');
+    L.push('| Chain | Balance | State | As of |'); L.push('|---|---|---|---|');
+    for(const b of bal) L.push('| ' + mdEsc((CH[b.c] || {}).label) + ' | ' + usd(b.v) + ' | ' + STATE_TXT[b.state] + ' | ' + (b.asof || 'last scan') + (b.src === 'live' ? ' (live check)' : '') + ' |');
+  }
   if(rec && rec.o){
     L.push('');
     L.push('## Funds moved before the freeze (72 h window)');
@@ -1413,12 +1441,12 @@ function renderReasons(){
   $('rnote').textContent = 'A reason is known only from a curated entry with a public source or from a wallet-attribution label (hack / scam / ransomware / sanctions ...). Everything else is "unknown": most freezes are never explained publicly.' + (R.curated ? '' : ' No curated entries yet (config/reasons.yaml).');
   const unk = R.unknown, tot = R.freezes;
   $('rkpis').innerHTML = [
-    ['🧾 Known reason', R.known_pct == null ? 'n/a' : R.known_pct + '%', R.known.toLocaleString('en-US') + ' of ' + tot.toLocaleString('en-US') + ' frozen addresses · ' + usdS(R.known_usd)],
-    ['❔ Unknown', unk.toLocaleString('en-US'), usdS(R.unknown_usd) + ' frozen without a public reason'],
-    ['⚖ OFAC SDN', R.ofac.n.toLocaleString('en-US'), usdS(R.ofac.usd) + ' frozen on OFAC-listed addresses' + (R.sanctioned_other ? ' · +' + R.sanctioned_other + ' other "sanctioned" labels' : '')],
+    ['🧾 Known reason', R.known_pct == null ? 'n/a' : R.known_pct + '%', R.known.toLocaleString('en-US') + ' of ' + tot.toLocaleString('en-US') + ' freezes (' + R.known_unique.toLocaleString('en-US') + ' of ' + R.unique.toLocaleString('en-US') + ' unique addresses) · ' + usdS(R.known_usd)],
+    ['❔ Unknown', unk.toLocaleString('en-US'), 'freezes with no public reason · ' + usdS(R.unknown_usd)],
+    ['⚖ OFAC SDN', R.ofac.unique.toLocaleString('en-US') + ' addresses', R.ofac.n.toLocaleString('en-US') + ' freezes · ' + usdS(R.ofac.usd) + ' frozen on OFAC-listed addresses' + (R.sanctioned_other ? ' · +' + R.sanctioned_other + ' other "sanctioned" labels' : '')],
   ].map(([l, v, s]) => `<div class="kpi"><div class="l">${l}</div><div class="v">${v}</div><div class="s">${s}</div></div>`).join('');
   const cats = Object.entries(R.by_category);
-  $('rtable').innerHTML = '<tr><th>Reason</th><th>Addresses</th><th>Frozen</th></tr>' + cats.map(([c, v]) => `<tr><td>${REASON_ICON[c] || ''} ${esc(c)}</td><td>${v.n.toLocaleString('en-US')}</td><td>${usd(v.usd)}</td></tr>`).join('') + `<tr><td>❔ unknown</td><td>${unk.toLocaleString('en-US')}</td><td>${usd(R.unknown_usd)}</td></tr>`;
+  $('rtable').innerHTML = '<tr><th>Reason</th><th>Freezes</th><th>Frozen</th></tr>' + cats.map(([c, v]) => `<tr><td>${REASON_ICON[c] || ''} ${esc(c)}</td><td>${v.n.toLocaleString('en-US')}</td><td>${usd(v.usd)}</td></tr>`).join('') + `<tr><td>❔ unknown</td><td>${unk.toLocaleString('en-US')}</td><td>${usd(R.unknown_usd)}</td></tr>`;
   $('ofac').innerHTML = R.ofac.top.length ? '<tr><th>Chain</th><th>Address</th><th>Frozen</th><th>Source</th></tr>' + R.ofac.top.map(x => `<tr><td class="ch">${esc(cshort(x.chain))}</td><td class="m addr">${addrL(x.chain, x.address)} <a href="#addr=${encodeURIComponent(x.address)}">page</a></td><td>${usd(x.usd)}</td><td>${x.url ? '<a href="' + esc(x.url) + '" target="_blank" rel="noopener">source ↗</a>' : ''}</td></tr>`).join('') : '<tr><td class="empty">None.</td></tr>';
 }
 const groupOf = c => c === 'eth' ? 'ETH' : c === 'tron' ? 'TRON' : (CH[c] && CH[c].family === 'usdt0') ? 'USDT0' : 'Other';
@@ -1459,6 +1487,12 @@ function renderPulse(){
   const mlist = []; const now = new Date(); for(let i = 11; i >= 0; i--){ const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1)); mlist.push(d.toISOString().slice(0, 7)); }
   const spark = months => { const v = mlist.map(m => months[m] || 0), mxv = Math.max(1, ...v); return v.map(x => '▁▂▃▄▅▆▇█'[Math.min(7, Math.round(7 * x / mxv))]).join(''); };
   $('psign').innerHTML = rows.length ? '<tr><th>Signer</th><th>Confirmations</th><th>Last 12 months</th><th>Median time to confirm</th><th>Gave the last signature</th></tr>' + rows.map(s => `<tr><td class="m addr">${addrL(PX.chain, s.signer)}</td><td>${s.n.toLocaleString('en-US')}</td><td class="spark" title="monthly confirmations, oldest to newest">${spark(s.months)}</td><td>${s.median_confirm_s == null ? '<span class="mut">n/a</span>' : dur(s.median_confirm_s)}</td><td>${s.last_share == null ? '-' : Math.round(100 * s.last_share) + '% (' + s.last_n + ')'}</td></tr>`).join('') : '<tr><td class="empty">No signer data.</td></tr>';
+}
+
+const BAL_ICON = {blocked: '🧊', unfrozen: '🔓', clear: '✓'}, BAL_CHIP = {blocked: 'red', unfrozen: 'grn', clear: 'gry'};
+function balanceTiles(r){
+  const rows = balanceRows(r); if(!rows.length) return '';
+  return '<div class="btiles">' + rows.map(b => `<div class="btile ${b.state}"><div class="bt-l">${esc(cname(b.c))}</div><div class="bt-v">${usd(b.v)}</div><span class="chip ${BAL_CHIP[b.state]}">${BAL_ICON[b.state]} ${esc(STATE_TXT[b.state])}</span><div class="bt-n">${b.src === 'live' ? 'live check, ' : ''}balance as of ${esc(b.asof || 'last scan')}</div></div>`).join('') + '</div>';
 }
 
 // ================= merged per-chain details and timeline =================
@@ -1561,7 +1595,8 @@ function statusOf(r){
     st = {status: 'PROPOSED', icon: '⏳', word: 'FREEZE PROPOSED', cls: 'amb', summary: cshort(p[0]) + ' · ' + propRef(p[0], p[1]) + ' · ' + p[3] + '/' + (p[4] ?? '?') + ' signed' + (m != null ? ' · usually executes in ~' + dur(m) : ''), amount: b != null ? usd(b) + ' at risk' : 'balance unknown'};
   } else if(unfrozen.length){
     const c = unfrozen[0], f = evs(c, 'f')[0], u = evs(c, 'u').slice(-1)[0];
-    st = {status: 'UNFROZEN', icon: '🔓', word: 'UNFROZEN', cls: 'gry', summary: unfrozen.map(cshort).join(', ') + (likely.includes(c) || !u ? ' · likely unfrozen recently (live check)' : ' · was blocked ' + (f ? dstr(f[2]) : '?') + ' – ' + dstr(u[2]) + ' · not blocked now'), amount: null};
+    const movable = balanceRows(r).filter(b => b.state === 'unfrozen').reduce((s, b) => s + b.v, 0);
+    st = {status: 'UNFROZEN', icon: '🔓', word: 'UNFROZEN', cls: 'gry', summary: unfrozen.map(cshort).join(', ') + (likely.includes(c) || !u ? ' · likely unfrozen recently (live check)' : ' · was blocked ' + (f ? dstr(f[2]) : '?') + ' – ' + dstr(u[2]) + ' · not blocked now'), amount: movable > 0 ? usd(movable) + ' now movable' : null};
   } else {
     st = {status: 'NOT_BLOCKED', icon: '✅', word: 'NOT BLOCKED', cls: 'grn', summary: (rec ? 'no active freeze' : 'no freeze history in Tether / USDT0 / USDC data') + (L && !L.note ? ' · live: clean on ' + clean.length + ' chain' + (clean.length === 1 ? '' : 's') : ''), amount: null};
   }
@@ -1571,7 +1606,7 @@ function statusOf(r){
   if(st.status !== 'PROPOSED' && st.status !== 'BLOCKED' && false) also.push('');
   return {...st, blocked, proposed, unfrozen, clean, likely, also: also.join(' · ')};
 }
-function det(title, body){ return body ? `<details class="sec"><summary>${title}</summary><div class="secb">${body}</div></details>` : ''; }
+function det(title, body, open){ return body ? `<details class="sec"${open ? ' open' : ''}><summary>${title}</summary><div class="secb">${body}</div></details>` : ''; }
 function renderCard(r, i){
   const rec = r.rec, k = r.key, st = statusOf(r);
   let h = `<div class="box wlcard st-${st.cls}">`;
@@ -1617,13 +1652,13 @@ function renderCard(r, i){
       rec.e.map(x => `<tr><td class="ch">${esc(cshort(x[0]))}</td><td>${actHtml(x[1], x[6] ? ' <span class="mut">token account ' + esc(x[6]) + '</span>' : '')}</td><td class="m">${dstr(x[2])}</td><td>${x[5] == null ? '<span class="mut">n/a</span>' : x[5] === 0 ? '<span class="warn">no warning</span>' : dur(x[5])}</td><td>${x[4] != null ? usd(x[4]) : '-'}</td><td class="m">${txL(x[0], x[3])}</td></tr>`).join('') + '</table></div>'));
     const outf = Object.entries(rec.o || {});
     if(outf.length) sec.push(det('Funds moved before the freeze', outf.map(([c, fl]) => fl.map(f => `<div class="mut">${esc(cshort(c))} · frozen ${esc(dstr(f[0]))}: <b>${usd(f[1])}</b> escaped in the 72 h before${f[6] ? ' <span class="tag" title="This frozen address is a labelled exchange / service wallet: its transfers are routine operations, not counted in the escape totals">service wallet, not counted</span>' : ''}${f[5] ? ' <span class="tag t-des" title="This address has so many transfers that the list hit a cap; totals are a lower bound and it is never flagged as front-run.">truncated: at least these</span>' : ''}, of which <b>${usd(f[2])}</b> between proposal and execution${f[4] > 0 ? '<br>+ ' + usd(f[4]) + ' moved between addresses that were also frozen (not counted)' : ''}</div><div class="tw"><table><tr><th>Recipient</th><th>72 h</th><th>In-window</th><th>Label</th></tr>` + f[3].map(x => `<tr><td class="m addr">${addrL(c, x[0])}${x[4] ? ' <span class="tag" title="This recipient was (or became) frozen too">also frozen</span>' : ''}</td><td>${usd(x[1])}</td><td>${x[2] > 0 ? '<span class="warn">' + usd(x[2]) + '</span>' : '-'}</td><td>${labelHtml(x[3], true) || '<span class="mut">unlabelled</span>'}</td></tr>`).join('') + '</table></div>').join('')).join('')));
-    const bal = Object.entries(rec.b || {}).filter(([c, v]) => v > 0);
-    if(bal.length) sec.push(det('Current balances', '<div class="mut">Frozen funds cannot move.</div><div class="chips">' + bal.map(([c, v]) => '<span class="tag">' + esc(cshort(c)) + ' ' + usd(v) + '</span>').join(' ') + '</div>'));
     const inf = Object.entries(rec.i || {});
     if(inf.length) sec.push(det('Funds sent after the freeze', '<div class="tw"><table><tr><th>Chain</th><th>Transfers</th><th>Total</th><th>Top senders</th></tr>' +
       inf.map(([c, v]) => `<tr><td class="ch">${esc(cshort(c))}</td><td>${v[0]}</td><td>${usd(v[1])}</td><td class="m addr">${v[2].map(s => addrL(c, s[0]) + ' (' + s[1] + ', ' + usd(s[2]) + ')').join('<br>')}</td></tr>`).join('') + '</table></div>'));
     if(live.length || stale.length) sec.push(det('Pending / stale proposals (' + (live.length + stale.length) + ')', (live.length ? '<h3>Pending</h3><div class="tw"><table>' + phead + prow(live) + '</table></div>' : '') + (stale.length ? '<h3>Stale (never executed)</h3><div class="tw"><table>' + phead + prow(stale) + '</table></div>' : '')));
   }
+  const bt = balanceTiles(r);
+  if(bt) sec.splice(1, 0, det('Balances', bt, true));
   if(r.live) sec.push(det('Live check per chain', renderVerdict(r)));
   return h + sec.join('') + '</div>';
 }
@@ -1679,6 +1714,7 @@ function watchRows(){
       for(const e of (r.rec.e || [])) rows.push([r.input, r.key, e[0], ACTION[e[1]] || e[1], iso(e[2]), e[5] ?? '', e[4] ?? '', e[3] || '', (r.rec.s || {})[e[0]] || '', (r.rec.b || {})[e[0]] ?? '', '', '', '', '']);
       for(const p of (r.rec.p || [])) rows.push([r.input, r.key, p[0], 'proposal_' + p[6] + ':' + p[2], iso(p[5]), '', '', '', p[3] + '/' + (p[4] ?? '?'), '', '', '', '', '']);
     }
+    for(const b of balanceRows(r)) rows.push([r.input, r.key || '', b.c, 'balance', '', '', '', '', STATE_TXT[b.state], b.v, cname(b.c), b.state === 'blocked', b.asof || '', b.src]);
     if(r.live) for(const x of r.live.results) rows.push([r.input, r.key || '', x.chain, 'live_check', '', '', '', '', '', x.balance ?? '', x.label, x.blocked === null ? 'unavailable' : x.blocked, x.checked_at, x.source]);
     for(const i of timelineOf(r)) rows.push([r.input, r.key || '', i.chain, 'timeline: ' + i.label, iso(i.ts), '', '', i.tx || '', '', '', '', '', '', '']);
     for(let q = n0; q < rows.length; q++) rows[q].push(S);
