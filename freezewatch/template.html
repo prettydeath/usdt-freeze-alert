@@ -200,6 +200,7 @@ details.provd summary{cursor:pointer}details.provd>div{margin-top:4px}
   .story{font-size:16px}
   /* tables -> cards */
   .tw{overflow:visible;background:none;border:0;border-radius:0}
+  .tw table{min-width:0}
   table.cards{min-width:0;width:100%;display:block}
   table.cards tbody{display:block}
   table.cards tr{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;background:var(--surf);border:1px solid var(--hair);border-radius:10px;padding:10px 12px;margin-bottom:8px}
@@ -281,6 +282,12 @@ footer{margin:30px 0 18px;color:var(--mut);font-size:12px;border-top:1px solid v
   <div class="tw"><table id="pending"></table></div>
 
   <div class="stalehd">
+    <h2 id="sigTitle">🔗 At risk on other chains</h2>
+  </div>
+  <div class="mut" style="margin-bottom:6px" id="sigHint">An address that was just frozen (or has a freeze proposal) on one chain and still holds funds on chains where it is not blocked yet. Checked on every run.</div>
+  <div class="tw"><table id="signals"></table></div>
+
+  <div class="stalehd">
     <h2 id="staleTitle">Stale proposals</h2>
     <label class="sw" title="Show stale proposals"><input type="checkbox" id="staleSw"><span></span></label>
   </div>
@@ -350,6 +357,22 @@ footer{margin:30px 0 18px;color:var(--mut);font-size:12px;border-top:1px solid v
     <div class="box"><h3>Frozen addresses still receiving funds</h3><div class="tw" style="border:0"><table id="arecv"></table></div></div>
   </div>
 
+  <h2>Moved out before the freeze</h2>
+  <div class="mut" id="onote"></div>
+  <div class="kpis" id="okpis"></div>
+  <div class="cols" style="margin-top:12px">
+    <div class="box"><h3>Top recipient entities</h3><div class="tw" style="border:0"><table id="oent"></table></div></div>
+    <div class="box"><h3>Front-run in the window</h3><div class="mut" id="ofnote"></div><div class="tw" style="border:0"><table id="ofront"></table></div></div>
+  </div>
+
+  <h2>Cross-chain lag</h2>
+  <div class="kpis" id="xkpis"></div>
+  <div class="tw" style="margin-top:10px"><table id="xhist"></table></div>
+
+  <h2>Clusters</h2>
+  <div class="mut" id="clnote"></div>
+  <div class="tw"><table id="aclusters"></table></div>
+
   <details class="gloss box" id="glossary" style="margin-top:18px">
     <summary>Glossary</summary>
     <dl>
@@ -364,6 +387,10 @@ footer{margin:30px 0 18px;color:var(--mut);font-size:12px;border-top:1px solid v
       <dt>No advance notice</dt><dd>The action executed in the same moment it was proposed (delay 0), so nobody could see it coming.</dd>
       <dt>Delay</dt><dd>Time from the proposal being submitted to the action being executed. On TRON the execution time is inferred from the confirmations.</dd>
       <dt>Stale</dt><dd>A proposal older than 7 days that never executed. Funds may still be on the address.</dd>
+      <dt>Cross-chain signal</dt><dd>An address frozen (or proposed for freezing) on one chain that still holds at least $1,000 on another chain where it is not blocked. The lag is the time until the second chain blocks it; "moved before" means its balance there dropped by more than 10% first.</dd>
+      <dt>Moved out before the freeze</dt><dd>Token transfers from the address in the 72 hours before the freeze executed. "In-window" = between the proposal being submitted and executed. Recipients are labelled from wallet-attribution where known.</dd>
+      <dt>Cluster</dt><dd>Batch: freezes on one chain within 10 minutes of each other. Cross-chain: one address frozen on several chains. Counterparty: frozen addresses sharing senders or recipients (labelled exchanges, bridges, protocols and busy hubs are ignored as connectors). A cluster is a lead, not proof of a common owner.</dd>
+      <dt>Labels</dt><dd>Entity labels come from the public wallet-attribution dataset (MIT) and its upstream sources (DefiLlama CEX lists, GraphSense, OFAC SDN and others). They are shown as "label from wallet-attribution", never as our own claim.</dd>
       <dt>Sinks (excluded)</dt><dd>Zero address and token-contract addresses are blacklisted to burn mistaken sends; they are excluded from totals and lists.</dd>
       <dt>USDT, USDT0, pre-USDT0 Arbitrum</dt><dd>USDT is Tether's own token; USDT0 is its omnichain version controlled by a different Safe wallet. On Arbitrum the token changed hands on 2025-01-28: earlier actions were done by Tether's multisig (shown as "Arbitrum USDT"), later ones by the USDT0 Safe.</dd>
     </dl>
@@ -925,7 +952,7 @@ function exportTable(id, name, fmt){
   else { const [h, ...b] = rows; download(name, 'application/json', JSON.stringify(b.map(r => Object.fromEntries(h.map((k, i) => [k, r[i]]))), null, 1)); }
 }
 (function(){
-  const EXPORTS = [['pending','pending'],['supply','treasury_supply_ops'],['stale','stale'],['recent','recently_executed'],['achain','analytics_by_chain'],['atop','top_frozen'],['asend','inflow_senders'],['arecv','frozen_addresses_receiving'],['signers','signers'],['cross','cross_chain']];
+  const EXPORTS = [['pending','pending'],['signals','cross_chain_signals'],['oent','top_recipient_entities'],['ofront','front_run'],['xhist','cross_chain_lag'],['aclusters','clusters'],['supply','treasury_supply_ops'],['stale','stale'],['recent','recently_executed'],['achain','analytics_by_chain'],['atop','top_frozen'],['asend','inflow_senders'],['arecv','frozen_addresses_receiving'],['signers','signers'],['cross','cross_chain']];
   for(const [id, name] of EXPORTS){
     const t = $(id); if(!t) continue;
     const wrap = t.closest('.tw') || t.parentElement;
@@ -1137,6 +1164,74 @@ async function runLive(r, other){
   return res;
 }
 
+
+// ================= cross-chain signals, outflows, clusters =================
+const labelHtml = (lb, withUrl) => {
+  if(!lb) return '';
+  const sev = ['sanctioned','hack','exploit','ransomware','scam','phishing','terrorism','darknet','theft','fraud','mixer'].includes(lb[2]);
+  const name = lb[0] && lb[1] && lb[1] !== lb[0] ? lb[0] + ' · ' + lb[1] : (lb[0] || lb[1]);
+  return `<span class="tag ${sev ? 't-add' : ''}" title="label from wallet-attribution (${esc(lb[3])}), confidence ${esc(lb[5] || 'n/a')}">${esc(name)}${lb[2] ? ' · ' + esc(lb[2]) : ''}</span>` +
+    (withUrl && lb[4] ? ` <a href="${esc(lb[4])}" target="_blank" rel="noopener" title="upstream source of the label">source ↗</a>` : '');
+};
+const lagS = s => s == null ? 'n/a' : dur(s);
+function sigRisk(s){ const done = new Set(s.resolutions.map(x => x.chain)); return s.at_risk.filter(e => !done.has(e[0])); }
+function renderSignals(){
+  const S = D.signals; if(!S) return;
+  const rows = S.open.filter(s => active(s.frozen_on));
+  $('sigTitle').textContent = '🔗 At risk on other chains (' + rows.length + ')';
+  let h = '<tr><th>Address</th><th>Frozen on</th><th>When</th><th>Still holds, not blocked</th><th>Status</th></tr>';
+  for(const s of rows){
+    const risk = sigRisk(s), blocked = s.resolutions;
+    h += `<tr><td class="m addr">${addrL(s.frozen_on, s.show)}</td><td class="ch">${esc(cshort(s.frozen_on))}</td><td>${s.stage === 'proposed' ? 'proposed ' : ''}${esc(age(s.frozen_at))} ago</td>` +
+      `<td>${risk.map(e => '<b>' + usd(e[3]) + '</b> ' + esc(e[1]) + ' on ' + esc(cshort(e[0]))).join('<br>')}</td>` +
+      `<td>${blocked.length ? blocked.map(x => esc(cshort(x.chain)) + ' blocked ' + lagS(x.lag_s) + ' later' + (x.moved_before ? ' (funds moved first)' : '')).join('<br>') : '<span class="warn">open</span>'}</td></tr>`;
+  }
+  $('signals').innerHTML = rows.length ? h : '<tr><td class="empty">No open signals: nothing frozen recently still sits unblocked on another chain.</td></tr>';
+}
+function renderInsights(){
+  const O = D.outflows, S = D.signals, C = D.clusters;
+  if(O){
+    $('onote').textContent = 'Last 12 months, ' + (O.checked || 0).toLocaleString('en-US') + ' executed freezes checked so far (Ethereum, USDC, Celo, Avalanche, TRON; the scan is budgeted per run and continues). Window = 72 h before execution.';
+    const pct = O.moved_12m + O.frozen_12m > 0 ? (100 * O.moved_12m / (O.moved_12m + O.frozen_12m)).toFixed(1) + '% of moved + frozen (' + usdS(O.frozen_12m) + ' frozen)' : 'amount frozen unknown';
+    $('okpis').innerHTML = [
+      ['📤 Moved out, 72 h before', usdS(O.moved_12m), pct + ' · ' + O.with_out + ' of ' + O.checked + ' freezes had outgoing transfers'],
+      ['⏱ In the window', usdS(O.window_12m), 'between proposal and execution'],
+      ['🏃 Front-run', String(O.n_frontrun), 'freezes where in-window outflow was at least half of (outflow + frozen)'],
+    ].map(([l, v, s]) => `<div class="kpi"><div class="l">${l}</div><div class="v">${v}</div><div class="s">${s}</div></div>`).join('');
+    $('oent').innerHTML = O.top_entities.length ? '<tr><th>Entity</th><th>Category</th><th>Received</th><th>Transfers</th><th>Source</th></tr>' + O.top_entities.map(e => `<tr><td><b>${esc(e.entity)}</b></td><td>${esc(e.category)}</td><td>${usd(e.usd)}</td><td>${e.n}</td><td>${e.url ? '<a href="' + esc(e.url) + '" target="_blank" rel="noopener">wallet-attribution ↗</a>' : ''}</td></tr>`).join('') : '<tr><td class="empty">No labelled recipients yet.</td></tr>';
+    $('ofnote').textContent = 'Shown: the 25 largest.';
+    $('ofront').innerHTML = O.frontrun.length ? '<tr><th>Chain</th><th>Address</th><th>Frozen (UTC)</th><th>Moved in window</th><th>Frozen</th><th>Share</th></tr>' + O.frontrun.map(f => `<tr><td class="ch">${esc(cshort(f.chain))}</td><td class="m addr">${addrL(f.chain, f.address)}</td><td class="m">${esc(dt(f.freeze_ts))}</td><td>${usd(f.window_out)}</td><td>${usd(f.frozen_usd)}</td><td>${Math.round(100 * f.share)}%</td></tr>`).join('') : '<tr><td class="empty">None yet.</td></tr>';
+  }
+  if(S){
+    const st = S.stats;
+    $('xkpis').innerHTML = [
+      ['🔗 Signals', String(st.signals), st.open + ' open · ' + usd(st.open_usd) + ' still unblocked elsewhere'],
+      ['⏳ Median lag', st.median_lag_s == null ? 'n/a' : dur(st.median_lag_s), 'first freeze to the next chain blocking it (' + st.resolved_chains + ' cases)'],
+      ['🏃 Moved before', st.moved_before_pct == null ? 'n/a' : st.moved_before_pct + '%', st.moved_balance_pct == null ? 'of cases' : st.moved_balance_pct + '% of the balance had left'],
+    ].map(([l, v, s]) => `<div class="kpi"><div class="l">${l}</div><div class="v">${v}</div><div class="s">${s}</div></div>`).join('');
+    const hist = S.history.filter(s => active(s.frozen_on)).slice(0, 40);
+    let h = '<tr><th>Address</th><th>First frozen on</th><th>Then blocked on</th><th>Lag</th><th>Funds</th></tr>';
+    for(const s of hist) for(const x of s.resolutions) h += `<tr><td class="m addr">${addrL(s.frozen_on, s.show)}</td><td class="ch">${esc(cshort(s.frozen_on))}</td><td class="ch">${esc(cshort(x.chain))}</td><td>${lagS(x.lag_s)}</td><td>${x.moved_before ? '<span class="warn">moved first</span> ' : ''}${usd(x.balance_before)} → ${usd(x.balance_at_block)}</td></tr>`;
+    $('xhist').innerHTML = h.includes('<td') ? h : '<tr><td class="empty">No resolved signals yet.</td></tr>';
+  }
+  if(C){
+    const k = C.counts || {};
+    $('clnote').textContent = 'Batch ' + (k.batch || 0) + ' · cross-chain ' + (k.crosschain || 0) + ' · counterparty ' + (k.counterparty || 0) + ' clusters. Top by amount frozen. A cluster is a lead, not proof of a common owner.';
+    let h = '<tr><th>Cluster</th><th>Type</th><th>Addresses</th><th>Chains</th><th>Frozen</th><th>Span</th><th>Members</th></tr>';
+    for(const c of C.top){
+      const span = c.first ? esc(dstr(c.first).slice(0, 10)) + (c.last && c.last !== c.first ? ' → ' + esc(dstr(c.last).slice(0, 10)) : '') : '-';
+      const mem = c.members.map(m => '<div class="m">' + esc(cshort(m[0])) + ' ' + addrL(m[0], m[1]) + '</div>').join('') + (c.size > c.members.length ? '<div class="mut">+' + (c.size - c.members.length) + ' more (see addresses.json / proposals.csv)</div>' : '');
+      h += `<tr id="cl-${esc(c.id)}"><td class="m">${esc(c.id)}</td><td>${esc(c.kind)}</td><td>${c.size}</td><td>${c.chains.map(cshort).map(esc).join(', ')}</td><td>${usd(c.usd)}</td><td>${span}</td><td class="wide"><details><summary>${c.size} address${c.size > 1 ? 'es' : ''}</summary>${mem}</details></td></tr>`;
+    }
+    $('aclusters').innerHTML = C.top.length ? h : '<tr><td class="empty">No clusters yet.</td></tr>';
+  }
+}
+document.addEventListener('click', ev => {
+  const a = ev.target.closest('[data-cl]'); if(!a) return;
+  ev.preventDefault(); showTab('analytics');
+  setTimeout(() => { const row = document.getElementById('cl-' + a.dataset.cl); if(row){ const d = row.querySelector('details'); if(d) d.open = true; row.scrollIntoView({block: 'center'}); row.style.outline = '2px solid var(--acc)'; } }, 150);
+});
+
 // ================= merged per-chain details and timeline =================
 const isSafeChain = c => (CH[c] || {}).mech === 'safe_api';
 function chainDetail(r, x){
@@ -1266,6 +1361,15 @@ function renderCard(r, i){
     if(inf > 0) h += `<div class="keyl">💸 ${usd(inf)} sent to it after the freeze</div>`;
     if(burns.length){ const amt = burns.reduce((s, e) => s + (e[4] || 0), 0); h += `<div class="keyl">🔥 ${amt ? usd(amt) + ' burned' : 'funds burned'} on ${esc(dstr(burns[0][2]))}</div>`; }
   } else h += `<div class="mut" style="margin-top:6px">Not in our freeze index (as of ${esc(dt(D.generated_at))}). Only addresses with a proposal, freeze, unfreeze or burn are indexed.</div>`;
+  if(rec){
+    const lbs = Object.entries(rec.l || {});
+    if(lbs.length) h += lbs.map(([c, l]) => `<div class="keyl">🏷 label from wallet-attribution (${esc(cshort(c))}): ${labelHtml(l, true)}</div>`).join('');
+    if((rec.x || []).length) h += rec.x.map(x => `<div class="keyl">🔗 ${x[1] === 'proposed' ? 'freeze proposed' : 'frozen'} on ${esc(cshort(x[0]))}, still unblocked: ${x[3].map(e => '<b>' + usd(e[3]) + '</b> on ' + esc(cshort(e[0]))).join(', ')}</div>`).join('');
+    if((rec.c || []).length){
+      const have = new Set(((D.clusters || {}).top || []).map(c => c.id));
+      h += '<div class="keyl">🧩 Clusters: ' + rec.c.map(id => have.has(id) ? `<a href="#analytics" class="chip" data-cl="${esc(id)}" title="Open the cluster list">${esc(id)}</a>` : `<span class="chip" title="Cluster not in the top list">${esc(id)}</span>`).join(' ') + '</div>';
+    }
+  }
   // collapsible sections
   const sec = [];
   sec.push(det('Timeline', renderTimeline(r)));
@@ -1275,6 +1379,8 @@ function renderCard(r, i){
     const phead = '<tr><th>Chain</th><th>ID</th><th>Action</th><th>Signatures</th><th>Age</th></tr>';
     if((rec.e || []).length) sec.push(det('Executed actions (' + rec.e.length + ')', '<div class="tw"><table><tr><th>Chain</th><th>Action</th><th>When (UTC)</th><th>Delay</th><th>Amount</th><th>Tx</th></tr>' +
       rec.e.map(x => `<tr><td class="ch">${esc(cshort(x[0]))}</td><td>${actHtml(x[1], x[6] ? ' <span class="mut">token account ' + esc(x[6]) + '</span>' : '')}</td><td class="m">${dstr(x[2])}</td><td>${x[5] == null ? '<span class="mut">n/a</span>' : x[5] === 0 ? '<span class="warn">no warning</span>' : dur(x[5])}</td><td>${x[4] != null ? usd(x[4]) : '-'}</td><td class="m">${txL(x[0], x[3])}</td></tr>`).join('') + '</table></div>'));
+    const outf = Object.entries(rec.o || {});
+    if(outf.length) sec.push(det('Funds moved before the freeze', outf.map(([c, fl]) => fl.map(f => `<div class="mut">${esc(cshort(c))} · frozen ${esc(dstr(f[0]))}: <b>${usd(f[1])}</b> left in the 72 h before, of which <b>${usd(f[2])}</b> between proposal and execution</div><div class="tw"><table><tr><th>Recipient</th><th>72 h</th><th>In-window</th><th>Label</th></tr>` + f[3].map(x => `<tr><td class="m addr">${addrL(c, x[0])}</td><td>${usd(x[1])}</td><td>${x[2] > 0 ? '<span class="warn">' + usd(x[2]) + '</span>' : '-'}</td><td>${labelHtml(x[3], true) || '<span class="mut">unlabelled</span>'}</td></tr>`).join('') + '</table></div>').join('')).join('')));
     const bal = Object.entries(rec.b || {}).filter(([c, v]) => v > 0);
     if(bal.length) sec.push(det('Current balances', '<div class="mut">Frozen funds cannot move.</div><div class="chips">' + bal.map(([c, v]) => '<span class="tag">' + esc(cshort(c)) + ' ' + usd(v) + '</span>').join(' ') + '</div>'));
     const inf = Object.entries(rec.i || {});
@@ -1378,9 +1484,9 @@ function openWatchFromHash(){
 })();
 function render(){
   if(TAB === 'live'){
-    renderKpis(); renderPending(); renderSupply(); renderRecent(); renderHero(); renderHist(); renderWeekly(); renderStory();
+    renderKpis(); renderPending(); renderSignals(); renderSupply(); renderRecent(); renderHero(); renderHist(); renderWeekly(); renderStory();
     renderBadges(); renderCross();
-  } else if(TAB === 'analytics'){ renderAnalytics(); }
+  } else if(TAB === 'analytics'){ renderAnalytics(); renderInsights(); }
   else if(TAB === 'watchlist'){ if(!WL.results.length && $('wlText').value.trim()) runWatch(parseAddrs($('wlText').value), false); }
   else if(TAB === 'status'){ renderStatus(); }
   else { renderSigners(); }
@@ -1407,7 +1513,7 @@ window.addEventListener('hashchange', () => { if(openWatchFromHash()) return; co
   btn.onclick = () => { mode = MODES[(MODES.indexOf(mode) + 1) % MODES.length]; apply(); };
   try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if(mode === 'auto') repaint(); }); } catch(e) {}
 })();
-$('foot').innerHTML = '<div><button type="button" class="sublink" id="glosslink">Glossary</button> · <a href="#status">Source status</a></div>' + (Object.entries(D.health || {}).filter(([c, h]) => h && h.stale).map(([c, h]) => '<div class="warn">⚠ ' + c.toUpperCase() + ' data stale: on-chain transaction count ' + h.onchain_count + ', newest id in our data ' + h.max_id + '.</div>').join('')) + '<div class="datalinks" style="margin-bottom:6px"><b>Data:</b> ' + [['data/proposals.csv','proposals.csv'],['data/blacklist.csv','blacklist.csv'],['data/inflows.csv','inflows.csv'],['site/analytics.json','analytics.json'],['site/addresses.json','addresses.json'],['data/freezewatch.sqlite','freezewatch.sqlite']].map(([p, n]) => '<a href="' + RAW + p + '" target="_blank" rel="noopener">' + n + '</a>').join('') + '</div>Sources: ' + D.sources.map(esc).join(', ') + '. Data changed: ' + dt(D.generated_at) + '. ' +
+$('foot').innerHTML = '<div><button type="button" class="sublink" id="glosslink">Glossary</button> · <a href="#status">Source status</a></div>' + (Object.entries(D.health || {}).filter(([c, h]) => h && h.stale).map(([c, h]) => '<div class="warn">⚠ ' + c.toUpperCase() + ' data stale: on-chain transaction count ' + h.onchain_count + ', newest id in our data ' + h.max_id + '.</div>').join('')) + '<div class="datalinks" style="margin-bottom:6px"><b>Data:</b> ' + [['data/proposals.csv','proposals.csv'],['data/blacklist.csv','blacklist.csv'],['data/inflows.csv','inflows.csv'],['site/analytics.json','analytics.json'],['site/addresses.json','addresses.json'],['data/freezewatch.sqlite','freezewatch.sqlite']].map(([p, n]) => '<a href="' + RAW + p + '" target="_blank" rel="noopener">' + n + '</a>').join('') + '</div>Sources: ' + D.sources.map(esc).join(', ') + '. Labels: <a href="https://github.com/prettydeath/wallet-attribution" target="_blank" rel="noopener">wallet-attribution</a> (MIT) and its upstream sources. Data changed: ' + dt(D.generated_at) + '. ' +
   'Freezing actions = addBlackList / addToBlockedList; destroy*; remove*. ' +
   'TRON execution time is inferred from confirmations; Safe queues live off-chain; USDC and Solana have no queue (delay n/a). ' +
   'Not financial advice.';
