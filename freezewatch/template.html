@@ -10,13 +10,14 @@
 :root{
   --bg:#f5f6f7;--surf:#fff;--fg:#15191f;--mut:#667080;--hair:#dfe3e8;--acc:#2a78d6;--accfg:#fff;
   --red:#c63a2f;--redbg:#fbe9e7;--amb:#a96b00;--ambbg:#fdf0d6;--grn:#23803f;--grnbg:#e3f3e8;--gry:#6b7280;--grybg:#eceef1;
+  --st-red-bg:#fde8e6;--st-red-fg:#8a1c13;--st-amb-bg:#fdf0d6;--st-amb-fg:#6b4200;--st-gry-bg:#eceef1;--st-gry-fg:#3a424d;--st-grn-bg:#e3f3e8;--st-grn-fg:#12482a;
   --serif:Georgia,"Iowan Old Style","Palatino Linotype",serif;--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#0f1216;--surf:#171b21;--fg:#e8ebef;--mut:#98a2b0;--hair:#2a3039;--acc:#6da6ee;--accfg:#0f1216;
-  --red:#ff8a7f;--redbg:#3a1f1c;--amb:#f0b650;--ambbg:#3a2d12;--grn:#6fd08c;--grnbg:#173323;--gry:#a0a8b4;--grybg:#252a32}}
+  --red:#ff8a7f;--redbg:#3a1f1c;--amb:#f0b650;--ambbg:#3a2d12;--grn:#6fd08c;--grnbg:#173323;--gry:#a0a8b4;--grybg:#252a32;--st-red-bg:#3d1b18;--st-red-fg:#ffb9b0;--st-amb-bg:#3a2d12;--st-amb-fg:#f8cd7a;--st-gry-bg:#272c34;--st-gry-fg:#c5ccd6;--st-grn-bg:#15351f;--st-grn-fg:#9be8b4;}}
 :root[data-theme="dark"]{
   --bg:#0f1216;--surf:#171b21;--fg:#e8ebef;--mut:#98a2b0;--hair:#2a3039;--acc:#6da6ee;--accfg:#0f1216;
-  --red:#ff8a7f;--redbg:#3a1f1c;--amb:#f0b650;--ambbg:#3a2d12;--grn:#6fd08c;--grnbg:#173323;--gry:#a0a8b4;--grybg:#252a32}
+  --red:#ff8a7f;--redbg:#3a1f1c;--amb:#f0b650;--ambbg:#3a2d12;--grn:#6fd08c;--grnbg:#173323;--gry:#a0a8b4;--grybg:#252a32;--st-red-bg:#3d1b18;--st-red-fg:#ffb9b0;--st-amb-bg:#3a2d12;--st-amb-fg:#f8cd7a;--st-gry-bg:#272c34;--st-gry-fg:#c5ccd6;--st-grn-bg:#15351f;--st-grn-fg:#9be8b4;}
 :root{color-scheme:light dark}:root[data-theme="light"]{color-scheme:light}:root[data-theme="dark"]{color-scheme:dark}
 .themebtn{cursor:pointer;font:inherit;font-size:12px;line-height:1.4}
 .themebtn:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
@@ -129,6 +130,22 @@ textarea#wlText{width:100%;min-height:90px;font:12px var(--mono);padding:8px;bor
 .cdet .cdh{margin-bottom:4px}
 ul.dl{margin:4px 0 4px 16px;padding:0}
 .tl div{padding:2px 0;border-left:2px solid var(--hair);padding-left:8px;margin-left:2px;font-size:12px}
+
+.banner{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 16px;padding:14px 16px;border-radius:8px;border-left:6px solid currentColor}
+.banner.red{background:var(--st-red-bg);color:var(--st-red-fg)}.banner.amb{background:var(--st-amb-bg);color:var(--st-amb-fg)}
+.banner.gry{background:var(--st-gry-bg);color:var(--st-gry-fg)}.banner.grn{background:var(--st-grn-bg);color:var(--st-grn-fg)}.banner.unk{background:var(--grybg);color:var(--fg)}
+.bn-word{font-size:22px;font-weight:800;letter-spacing:.3px;line-height:1.2}.bn-sum{font-size:13px;margin-top:2px}.bn-amt{font-size:22px;font-weight:800;text-align:right;margin-left:auto}
+.also{margin:6px 2px 0;font-size:12px;color:var(--mut)}
+.chiprow{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin:10px 0 6px}
+.chip{display:inline-flex;align-items:center;gap:4px;padding:1px 9px;border-radius:999px;font-size:12px;font-weight:600;border:1px solid var(--hair);background:var(--grybg);color:var(--fg)}
+.chip.red{background:var(--st-red-bg);color:var(--st-red-fg);border-color:transparent}.chip.amb{background:var(--st-amb-bg);color:var(--st-amb-fg);border-color:transparent}
+.chip.gry{background:var(--st-gry-bg);color:var(--st-gry-fg);border-color:transparent}.chip.lv{color:var(--grn)}
+.wladdr{margin-top:4px;font-size:13px}.keyl{font-size:13px;margin-top:4px}
+details.sec{border-top:1px solid var(--hair);margin-top:10px;padding-top:6px}
+details.sec>summary{cursor:pointer;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:var(--mut);padding:2px 0}
+details.sec[open]>summary{color:var(--fg)}.secb{padding-top:6px}
+.wlsum{margin:12px 0 0;font-size:14px;font-weight:600}
+details.provd summary{cursor:pointer}details.provd>div{margin-top:4px}
 footer{margin:30px 0 18px;color:var(--mut);font-size:12px;border-top:1px solid var(--hair);padding-top:10px}
 </style>
 </head>
@@ -225,12 +242,13 @@ footer{margin:30px 0 18px;color:var(--mut);font-size:12px;border-top:1px solid v
     </div>
     <div class="livebox">
       <button type="button" id="wlLiveAll">Check all live on-chain</button>
-      <label style="margin-left:10px"><input type="checkbox" id="wlOther"> also check the same 20-byte key on the other family (EVM ↔ TRON)</label>
-      <div class="privacy" style="margin-top:4px">⚠️ The live check is opt-in and <b>does send the address</b> to public blockchain RPC providers (<span id="wlProv"></span>). The index lookup above does not. It never runs automatically.</div>
+      <label style="margin-left:10px"><input type="checkbox" id="wlOther"> also check the same key on the other family (EVM ↔ TRON)</label>
+      <details class="privacy provd"><summary>⚠️ Live check sends the address to public RPC providers - show list</summary><div>The live check is opt-in, never runs automatically and <b>does send the address</b> to: <span id="wlProv"></span>. The index lookup does not.</div></details>
     </div>
-    <div class="privacy" style="margin-top:8px">🔒 Addresses never leave your browser: the lookup runs locally against a static index file, and the saved list lives in this browser's localStorage only. Share a list with <span class="m">#watch=addr1,addr2</span> in the URL (the part after # is never sent to any server).</div>
+    <div class="privacy" style="margin-top:8px">🔒 Addresses never leave your browser (index lookup runs locally; the saved list stays in localStorage). <span class="m">#watch=addr1,addr2</span> in the URL pre-fills the list.</div>
   </div>
   <div class="xbar" id="wlExp" hidden style="margin-top:10px"><span class="mut" style="align-self:center">Results:</span><button type="button" id="wlCsv">⬇ CSV</button><button type="button" id="wlJson">⬇ JSON</button></div>
+  <div class="wlsum" id="wlSummary" aria-live="polite"></div>
   <div id="wlOut"></div>
 </div>
 
@@ -896,7 +914,7 @@ function timelineOf(r){
 }
 function renderTimeline(r){
   const tl = timelineOf(r); if(!tl.length) return '';
-  return '<h3>Timeline</h3><div class="tl">' + tl.map(i => `<div><span class="m">${esc(dstr(i.ts))}</span> <b>${esc(cshort(i.chain))}</b> ${esc(i.label)}${i.tx ? ' · <span class="m">' + txL(i.chain, i.tx) + '</span>' : ''}</div>`).join('') + '</div>';
+  return '<div class="tl">' + tl.map(i => `<div><span class="m">${esc(dstr(i.ts))}</span> <b>${esc(cshort(i.chain))}</b> ${esc(i.label)}${i.tx ? ' · <span class="m">' + txL(i.chain, i.tx) + '</span>' : ''}</div>`).join('') + '</div>';
 }
 function renderVerdict(r){
   const L = r.live; if(!L) return '';
@@ -910,34 +928,98 @@ function renderVerdict(r){
   return h + det.map(x => chainDetail(r, x)).join('');
 }
 
-function renderCard(r, i){
-  const rec = r.rec, k = r.key;
-  const chains = new Set();
-  if(rec){ (rec.p || []).forEach(x => chains.add(x[0])); (rec.e || []).forEach(x => chains.add(x[0])); Object.keys(rec.b || {}).forEach(c => chains.add(c)); Object.keys(rec.i || {}).forEach(c => chains.add(c)); }
-  let h = `<div class="box wlcard"><div class="wlhead"><div class="m addr">${esc(r.input)}</div>`;
-  if(!r.invalid) h += `<button type="button" class="livebtn" data-i="${i}" title="Sends this address to public RPC providers">${r.live ? 'Re-check live' : 'Check live on-chain'}</button>`;
-  h += '</div>';
-  if(!r.invalid && r.input.toLowerCase() !== k && /^T/.test(r.input)) h += `<div class="mut m">EVM-style key ${esc(k)}</div>`;
-  if(r.invalid) return h + '<div class="empty">Not a recognised address (EVM, TRON, Solana, NEAR, Aptos or TON).</div></div>';
-  if(r.rec === undefined) return h + '<div class="empty">Address index could not be loaded.</div></div>';
-  h += renderVerdict(r);
-  if(!rec) return h + `<div class="empty">Not found in Tether / USDT0 / USDC freeze data (as of ${esc(dt(D.generated_at))}). Only addresses with a proposal, freeze, unfreeze or burn are indexed.${r.live ? '' : ' Use "Check live on-chain" to ask the chains directly.'}</div>` + renderTimeline(r) + '</div>';
-  h += '<div class="chips">' + [...chains].map(c => '<span class="tag">' + esc(cshort(c)) + (rec.s && rec.s[c] ? ' · ' + rec.s[c] : '') + '</span>').join(' ') + '</div>';
-  h += renderTimeline(r);
-  const live = (rec.p || []).filter(x => x[6] === 'pending'), stale = (rec.p || []).filter(x => x[6] === 'stale');
-  const prow = a => a.map(x => `<tr><td class="ch">${esc(cshort(x[0]))}</td><td class="m">${x[1]}</td><td>${esc(x[2])}</td><td>${x[3]}/${x[4] ?? '?'}</td><td>${x[5] ? dur(NOW - x[5]) : 'unknown'}</td></tr>`).join('');
-  if(live.length) h += '<h3>Pending proposals</h3><div class="tw"><table><tr><th>Chain</th><th>ID</th><th>Action</th><th>Signatures</th><th>Age</th></tr>' + prow(live) + '</table></div>';
-  if(stale.length) h += '<h3>Stale proposals (never executed)</h3><div class="tw"><table><tr><th>Chain</th><th>ID</th><th>Action</th><th>Signatures</th><th>Age</th></tr>' + prow(stale) + '</table></div>';
-  if((rec.e || []).length){
-    h += '<h3>Executed actions</h3><div class="tw"><table><tr><th>Chain</th><th>Action</th><th>When (UTC)</th><th>Delay</th><th>Amount</th><th>Tx</th></tr>' +
-      rec.e.map(x => `<tr><td class="ch">${esc(cshort(x[0]))}</td><td>${esc(ACTION[x[1]] || x[1])}${x[6] ? ' <span class="mut">token account ' + esc(x[6]) + '</span>' : ''}</td><td class="m">${dstr(x[2])}</td><td>${x[5] == null ? '<span class="mut">n/a</span>' : x[5] === 0 ? '<span class="warn">no warning</span>' : dur(x[5])}</td><td>${x[4] != null ? usd(x[4]) : '-'}</td><td class="m">${txL(x[0], x[3])}</td></tr>`).join('') + '</table></div>';
+// ================= status banner model =================
+function medianDelay30(chain){
+  const d = D.ex.filter(e => e[0] === chain && e[2] >= 0 && NOW - e[1] <= 30 * 86400).map(e => e[2]);
+  return d.length ? med(d) : null;
+}
+function propRef(c, id){ return isSafeChain(c) ? 'Safe nonce ' + Math.floor(id / 100) : 'proposal #' + id; }
+function statusOf(r){
+  if(r.invalid) return {status: 'UNKNOWN', icon: '❔', word: 'UNKNOWN', cls: 'unk', summary: 'Not a recognised address (EVM, TRON, Solana, NEAR, Aptos or TON)', amount: null, blocked: [], proposed: [], unfrozen: [], clean: [], also: ''};
+  const rec = r.rec, L = r.live, idx = (rec && rec.s) || {}, liveBy = {};
+  if(L) for(const x of L.results) if(x.blocked !== null) liveBy[x.chain] = x;
+  const blocked = [], unfrozen = [], clean = [], likely = [];
+  for(const c of new Set([...Object.keys(idx), ...Object.keys(liveBy)])){
+    const ix = idx[c], lv = liveBy[c], was = ix === 'frozen' || ix === 'burned';
+    if(lv){ if(lv.blocked) blocked.push(c); else if(was){ unfrozen.push(c); likely.push(c); } else if(ix === 'unfrozen') unfrozen.push(c); else clean.push(c); }
+    else if(was) blocked.push(c); else if(ix === 'unfrozen') unfrozen.push(c);
   }
-  const bal = Object.entries(rec.b || {}).filter(([c, v]) => v > 0);
-  if(bal.length) h += '<h3>Current balance (frozen funds cannot move)</h3><div class="chips">' + bal.map(([c, v]) => '<span class="tag">' + esc(cshort(c)) + ' ' + usd(v) + '</span>').join(' ') + '</div>';
-  const inf = Object.entries(rec.i || {});
-  if(inf.length) h += '<h3>Funds sent after the freeze</h3><div class="tw"><table><tr><th>Chain</th><th>Transfers</th><th>Total</th><th>Top senders</th></tr>' +
-    inf.map(([c, v]) => `<tr><td class="ch">${esc(cshort(c))}</td><td>${v[0]}</td><td>${usd(v[1])}</td><td class="m addr">${v[2].map(s => addrL(c, s[0]) + ' (' + s[1] + ', ' + usd(s[2]) + ')').join('<br>')}</td></tr>`).join('') + '</table></div>';
-  return h + '</div>';
+  const pend = ((rec && rec.p) || []).filter(p => p[6] === 'pending').sort((a, b) => (b[3] / (b[4] || 99)) - (a[3] / (a[4] || 99)));
+  const proposed = [...new Set(pend.map(p => p[0]))];
+  const evs = (c, k) => ((rec && rec.e) || []).filter(e => e[0] === c && e[1] === k).sort((a, b) => a[2] - b[2]);
+  const bal = c => liveBy[c] && liveBy[c].balance != null ? liveBy[c].balance : (rec && rec.b ? rec.b[c] : null);
+  let st;
+  if(blocked.length){
+    const firsts = blocked.map(c => evs(c, 'f')[0]).filter(Boolean).sort((a, b) => a[2] - b[2]);
+    let sum = 'on ' + blocked.length + ' chain' + (blocked.length > 1 ? 's' : '');
+    if(firsts.length){
+      const e = firsts[0];
+      sum += ' · since ' + dstr(e[2]) + ' · ' + (e[11] === 0 ? 'no public proposal' : e[5] == null ? 'delay n/a' : e[5] === 0 ? 'no advance notice' : dur(e[5]) + ' after proposal');
+    } else sum += ' · blocked after our last update';
+    const known = blocked.map(bal).filter(v => v != null), total = known.reduce((s, v) => s + v, 0);
+    st = {status: 'BLOCKED', icon: '⛔', word: 'BLOCKED', cls: 'red', summary: sum, amount: known.length ? usd(total) + ' frozen now' : 'balance unknown'};
+  } else if(pend.length){
+    const p = pend[0], m = medianDelay30(p[0]), b = bal(p[0]) ?? p[7];
+    st = {status: 'PROPOSED', icon: '⏳', word: 'FREEZE PROPOSED', cls: 'amb', summary: cshort(p[0]) + ' · ' + propRef(p[0], p[1]) + ' · ' + p[3] + '/' + (p[4] ?? '?') + ' signed' + (m != null ? ' · usually executes in ~' + dur(m) : ''), amount: b != null ? usd(b) + ' at risk' : 'balance unknown'};
+  } else if(unfrozen.length){
+    const c = unfrozen[0], f = evs(c, 'f')[0], u = evs(c, 'u').slice(-1)[0];
+    st = {status: 'UNFROZEN', icon: '🔓', word: 'UNFROZEN', cls: 'gry', summary: unfrozen.map(cshort).join(', ') + (likely.includes(c) || !u ? ' · likely unfrozen recently (live check)' : ' · was blocked ' + (f ? dstr(f[2]) : '?') + ' – ' + dstr(u[2]) + ' · not blocked now'), amount: null};
+  } else {
+    st = {status: 'NOT_BLOCKED', icon: '✅', word: 'NOT BLOCKED', cls: 'grn', summary: (rec ? 'no active freeze' : 'no freeze history in Tether / USDT0 / USDC data') + (L && !L.note ? ' · live: clean on ' + clean.length + ' chain' + (clean.length === 1 ? '' : 's') : ''), amount: null};
+  }
+  const also = [];
+  if(st.status === 'BLOCKED' && proposed.length) also.push('⏳ proposal pending on ' + proposed.map(cshort).join(', '));
+  if(st.status !== 'UNFROZEN' && unfrozen.length) also.push('🔓 unfrozen on ' + unfrozen.map(cshort).join(', '));
+  if(st.status !== 'PROPOSED' && st.status !== 'BLOCKED' && false) also.push('');
+  return {...st, blocked, proposed, unfrozen, clean, likely, also: also.join(' · ')};
+}
+function det(title, body){ return body ? `<details class="sec"><summary>${title}</summary><div class="secb">${body}</div></details>` : ''; }
+function renderCard(r, i){
+  const rec = r.rec, k = r.key, st = statusOf(r);
+  let h = `<div class="box wlcard st-${st.cls}">`;
+  h += `<div class="banner ${st.cls}" role="status"><div class="bn-l"><div class="bn-word"><span aria-hidden="true">${st.icon}</span> ${esc(st.word)}</div><div class="bn-sum">${esc(st.summary)}</div></div>${st.amount ? '<div class="bn-amt">' + esc(st.amount) + '</div>' : ''}</div>`;
+  if(st.also) h += `<div class="also">also: ${esc(st.also)}</div>`;
+  if(r.invalid){ return h + `<div class="m addr wladdr">${esc(r.input)}</div></div>`; }
+  // chips row + live button
+  let chips = st.blocked.map(c => `<span class="chip red">⛔ ${esc(cshort(c))}</span>`).join('') + st.proposed.map(c => `<span class="chip amb">⏳ ${esc(cshort(c))}</span>`).join('') + st.unfrozen.map(c => `<span class="chip gry">🔓 ${esc(cshort(c))}</span>`).join('');
+  if(st.clean.length) chips += `<span class="chip" title="${esc(st.clean.map(cshort).join(', '))}">+${st.clean.length} clean</span>`;
+  if(r.live) chips += `<span class="chip lv">live check ${esc(r.live.at.slice(11, 16))} UTC ✓</span>`;
+  h += `<div class="chiprow"><div class="chips">${chips}</div><button type="button" class="livebtn" data-i="${i}" title="Sends this address to public RPC providers">${r.live ? 'Re-check live' : 'Check live on-chain'}</button></div>`;
+  h += `<div class="m addr wladdr">${esc(r.input)}</div>`;
+  if(r.input.toLowerCase() !== k && /^T/.test(r.input)) h += `<div class="mut m">EVM-style key ${esc(k)}</div>`;
+  if(r.rec === undefined) return h + '<div class="empty">Address index could not be loaded.</div></div>';
+  if(rec){
+    const inf = Object.values(rec.i || {}).reduce((s, v) => s + v[1], 0), burns = (rec.e || []).filter(e => e[1] === 'b').sort((a, b) => b[2] - a[2]);
+    if(inf > 0) h += `<div class="keyl">💸 ${usd(inf)} sent to it after the freeze</div>`;
+    if(burns.length){ const amt = burns.reduce((s, e) => s + (e[4] || 0), 0); h += `<div class="keyl">🔥 ${amt ? usd(amt) + ' burned' : 'funds burned'} on ${esc(dstr(burns[0][2]))}</div>`; }
+  } else h += `<div class="mut" style="margin-top:6px">Not in our freeze index (as of ${esc(dt(D.generated_at))}). Only addresses with a proposal, freeze, unfreeze or burn are indexed.</div>`;
+  // collapsible sections
+  const sec = [];
+  sec.push(det('Timeline', renderTimeline(r)));
+  if(rec){
+    const live = (rec.p || []).filter(x => x[6] === 'pending'), stale = (rec.p || []).filter(x => x[6] === 'stale');
+    const prow = a => a.map(x => `<tr><td class="ch">${esc(cshort(x[0]))}</td><td class="m">${x[1]}</td><td>${esc(x[2])}</td><td>${x[3]}/${x[4] ?? '?'}</td><td>${x[5] ? dur(NOW - x[5]) : 'unknown'}</td></tr>`).join('');
+    const phead = '<tr><th>Chain</th><th>ID</th><th>Action</th><th>Signatures</th><th>Age</th></tr>';
+    if((rec.e || []).length) sec.push(det('Executed actions (' + rec.e.length + ')', '<div class="tw"><table><tr><th>Chain</th><th>Action</th><th>When (UTC)</th><th>Delay</th><th>Amount</th><th>Tx</th></tr>' +
+      rec.e.map(x => `<tr><td class="ch">${esc(cshort(x[0]))}</td><td>${esc(ACTION[x[1]] || x[1])}${x[6] ? ' <span class="mut">token account ' + esc(x[6]) + '</span>' : ''}</td><td class="m">${dstr(x[2])}</td><td>${x[5] == null ? '<span class="mut">n/a</span>' : x[5] === 0 ? '<span class="warn">no warning</span>' : dur(x[5])}</td><td>${x[4] != null ? usd(x[4]) : '-'}</td><td class="m">${txL(x[0], x[3])}</td></tr>`).join('') + '</table></div>'));
+    const bal = Object.entries(rec.b || {}).filter(([c, v]) => v > 0);
+    if(bal.length) sec.push(det('Current balances', '<div class="mut">Frozen funds cannot move.</div><div class="chips">' + bal.map(([c, v]) => '<span class="tag">' + esc(cshort(c)) + ' ' + usd(v) + '</span>').join(' ') + '</div>'));
+    const inf = Object.entries(rec.i || {});
+    if(inf.length) sec.push(det('Funds sent after the freeze', '<div class="tw"><table><tr><th>Chain</th><th>Transfers</th><th>Total</th><th>Top senders</th></tr>' +
+      inf.map(([c, v]) => `<tr><td class="ch">${esc(cshort(c))}</td><td>${v[0]}</td><td>${usd(v[1])}</td><td class="m addr">${v[2].map(s => addrL(c, s[0]) + ' (' + s[1] + ', ' + usd(s[2]) + ')').join('<br>')}</td></tr>`).join('') + '</table></div>'));
+    if(live.length || stale.length) sec.push(det('Pending / stale proposals (' + (live.length + stale.length) + ')', (live.length ? '<h3>Pending</h3><div class="tw"><table>' + phead + prow(live) + '</table></div>' : '') + (stale.length ? '<h3>Stale (never executed)</h3><div class="tw"><table>' + phead + prow(stale) + '</table></div>' : '')));
+  }
+  if(r.live) sec.push(det('Live check per chain', renderVerdict(r)));
+  return h + sec.join('') + '</div>';
+}
+function summaryLine(){
+  const c = {BLOCKED: 0, PROPOSED: 0, UNFROZEN: 0, NOT_BLOCKED: 0, UNKNOWN: 0};
+  WL.results.forEach(r => c[statusOf(r).status]++);
+  if(!WL.results.length) return '';
+  const parts = [WL.results.length + ' checked'];
+  if(c.BLOCKED) parts.push('⛔ ' + c.BLOCKED + ' blocked'); if(c.PROPOSED) parts.push('⏳ ' + c.PROPOSED + ' proposed'); if(c.UNFROZEN) parts.push('🔓 ' + c.UNFROZEN + ' unfrozen');
+  if(c.NOT_BLOCKED) parts.push('✅ ' + c.NOT_BLOCKED + ' clean'); if(c.UNKNOWN) parts.push('❔ ' + c.UNKNOWN + ' unknown');
+  return parts.join(' · ');
 }
 function bindWatch(){
   document.querySelectorAll('#wlOut .livebtn').forEach(b => b.onclick = async () => {
@@ -954,6 +1036,7 @@ async function liveOne(r){
 function showResults(){
   $('wlOut').innerHTML = WL.results.length ? WL.results.map(renderCard).join('') : '<div class="empty">Paste one or more addresses above.</div>';
   $('wlExp').hidden = !WL.results.length;
+  $('wlSummary').textContent = summaryLine();
   bindWatch();
 }
 
@@ -972,9 +1055,10 @@ async function runWatch(inputs, save){
   if(save){ try { localStorage.setItem('ufa.watch', JSON.stringify(inputs)); } catch(e) {} }
 }
 function watchRows(){
-  const rows = [['address','key','chain','kind','when_utc','delay_seconds','amount','tx','state','balance','token','blocked','checked_at','source']];
+  const rows = [['address','key','chain','kind','when_utc','delay_seconds','amount','tx','state','balance','token','blocked','checked_at','source','status']];
   const iso = ts => ts ? new Date(ts * 1000).toISOString().replace('.000Z', 'Z') : '';
   for(const r of WL.results){
+    const S = statusOf(r).status, n0 = rows.length;
     if(!r.rec){ rows.push([r.input, r.key || '', '', r.invalid ? 'invalid' : 'not_found', '', '', '', '', '', '', '', '', '', '']); }
     else {
       for(const e of (r.rec.e || [])) rows.push([r.input, r.key, e[0], ACTION[e[1]] || e[1], iso(e[2]), e[5] ?? '', e[4] ?? '', e[3] || '', (r.rec.s || {})[e[0]] || '', (r.rec.b || {})[e[0]] ?? '', '', '', '', '']);
@@ -982,6 +1066,7 @@ function watchRows(){
     }
     if(r.live) for(const x of r.live.results) rows.push([r.input, r.key || '', x.chain, 'live_check', '', '', '', '', '', x.balance ?? '', x.label, x.blocked === null ? 'unavailable' : x.blocked, x.checked_at, x.source]);
     for(const i of timelineOf(r)) rows.push([r.input, r.key || '', i.chain, 'timeline: ' + i.label, iso(i.ts), '', '', i.tx || '', '', '', '', '', '', '']);
+    for(let q = n0; q < rows.length; q++) rows[q].push(S);
   }
   return rows;
 }
@@ -997,7 +1082,7 @@ function watchRows(){
   $('wlClear').onclick = () => { $('wlText').value = ''; WL.liveCache = {}; try { localStorage.removeItem('ufa.watch'); } catch(e) {} runWatch([], false); };
   $('wlFile').onchange = ev => { const f = ev.target.files[0]; if(!f) return; const rd = new FileReader(); rd.onload = () => { $('wlText').value = (($('wlText').value ? $('wlText').value + '\n' : '') + rd.result); runWatch(parseAddrs($('wlText').value), false); }; rd.readAsText(f); ev.target.value = ''; };
   $('wlCsv').onclick = () => download('watchlist', 'text/csv', toCsv(watchRows()));
-  $('wlJson').onclick = () => download('watchlist', 'application/json', JSON.stringify(WL.results.map(r => ({address: r.input, key: r.key, found: !!r.rec, invalid: !!r.invalid, data: r.rec, live: r.live ? r.live.results : null, live_found: r.live ? r.live.found : null, timeline: timelineOf(r).map(i => ({when_utc: new Date(i.ts * 1000).toISOString(), chain: i.chain, event: i.label, tx: i.tx || null}))})), null, 1));
+  $('wlJson').onclick = () => download('watchlist', 'application/json', JSON.stringify(WL.results.map(r => ({address: r.input, key: r.key, status: statusOf(r).status, found: !!r.rec, invalid: !!r.invalid, data: r.rec, live: r.live ? r.live.results : null, live_found: r.live ? r.live.found : null, timeline: timelineOf(r).map(i => ({when_utc: new Date(i.ts * 1000).toISOString(), chain: i.chain, event: i.label, tx: i.tx || null}))})), null, 1));
   const q = $('q');
   q.addEventListener('keydown', ev => { if(ev.key === 'Enter' && q.value.trim()){ $('wlText').value = q.value.trim(); showTab('watchlist'); runWatch(parseAddrs(q.value), false); } });
   let saved = []; try { saved = JSON.parse(localStorage.getItem('ufa.watch') || '[]'); } catch(e) {}

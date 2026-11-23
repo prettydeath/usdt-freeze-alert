@@ -70,7 +70,7 @@ def build(conn):
         return addr in sinks.setdefault(chain, analytics.special_sinks(chain))
 
     for r in conn.execute("SELECT chain, tx_id, function, target, confirmations, required, status, submitted_at, executed, "
-                          "executed_at, exec_tx, amount, delay_seconds, public_proposal FROM proposals WHERE target IS NOT NULL"):
+                          "executed_at, exec_tx, amount, delay_seconds, public_proposal, balance_now FROM proposals WHERE target IS NOT NULL"):
         k = _kind(r["function"])
         if not k or skip(r["chain"], analytics.norm(r["chain"], r["target"])):
             continue
@@ -84,7 +84,7 @@ def build(conn):
                                                  parse_iso(r["submitted_at"]), r["public_proposal"]])
         elif r["status"] in ("pending", "stale"):
             rec(key).setdefault("p", []).append([r["chain"], r["tx_id"], r["function"], r["confirmations"], r["required"],
-                                                 parse_iso(r["submitted_at"]), r["status"]])
+                                                 parse_iso(r["submitted_at"]), r["status"], r["balance_now"]])
     for f in conn.execute("SELECT source, subject, owner, action, ts, tx_hash, amount FROM freezes"):
         k = "f" if f["action"] == "freeze" else "u"
         ts = parse_iso(f["ts"])
