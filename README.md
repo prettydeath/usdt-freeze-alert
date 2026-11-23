@@ -135,6 +135,8 @@ Every table on the dashboard has **⬇ CSV / ⬇ JSON** buttons that export exac
 
 The **Watchlist** tab and the header search look addresses up (EVM, TRON, Solana, NEAR, Aptos, TON) in `addresses.json`. It runs entirely in the browser: addresses are never sent anywhere, the saved list lives in `localStorage`, and `#watch=addr1,addr2` in the URL pre-fills it. Results export as CSV / JSON.
 
+**Live check (opt-in).** Each result has a "Check live on-chain" button (and "Check all"). It asks the chains directly from your browser - `isBlackListed` / `isBlacklisted` / `isBlocked` plus `balanceOf` on ETH USDT and USDC, TRON, Avalanche, Celo, Kaia, Kava, 18 USDT0 chains and Solana token accounts - so it also works for addresses that are not in our index, and merges the answer with the index (freeze time, tx, proposal, delay, signers, burns, inflows, timeline). Privacy: **this does send the address to public RPC providers** (listed next to the button); the index lookup does not, and the live check never runs automatically or from a `#watch=` link. Every RPC used was tested for browser CORS access.
+
 Everything is read from public chain data and APIs. Delays were cross-checked against
 [BitOK's tether-blacklist-research](https://github.com/BitOKorg/tether-blacklist-research) (bitok.org, CC BY 4.0):
 Ethereum matches on 2251 of 2251 shared proposals, TRON on 7204 of 7204. No BitOK data is included in this repository.
