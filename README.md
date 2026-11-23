@@ -118,9 +118,22 @@ Preview every template without sending: `python -m freezewatch alert-test` (`--s
 - Solana freezes a token account, not the wallet; Solana USDT history fills gradually on the public RPC.
 - Not financial advice.
 
-## Data and attribution
+## Data & export
 
-Aggregates behind the **Analytics** tab are published as `site/analytics.json` on the `data` branch (see Analytics above).
+Everything is on the `data` branch (CI refreshes it every few minutes); raw URLs under
+`https://raw.githubusercontent.com/prettydeath/usdt-freeze-alert/data/`:
+
+| File | Content |
+|---|---|
+| `data/proposals.csv`, `data/blacklist.csv` | all proposals and the current blacklist |
+| `data/inflows.csv` | transfers sent to already-frozen addresses |
+| `site/analytics.json` | aggregates behind the Analytics tab |
+| `site/addresses.json` | compact per-address index used by the dashboard's lookup |
+| `data/freezewatch.sqlite` | the full database |
+
+Every table on the dashboard has **⬇ CSV / ⬇ JSON** buttons that export exactly the rows currently shown (chain pills, period and token filters apply).
+
+The **Watchlist** tab and the header search look addresses up (EVM, TRON, Solana, NEAR, Aptos, TON) in `addresses.json`. It runs entirely in the browser: addresses are never sent anywhere, the saved list lives in `localStorage`, and `#watch=addr1,addr2` in the URL pre-fills it. Results export as CSV / JSON.
 
 Everything is read from public chain data and APIs. Delays were cross-checked against
 [BitOK's tether-blacklist-research](https://github.com/BitOKorg/tether-blacklist-research) (bitok.org, CC BY 4.0):
