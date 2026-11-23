@@ -5,6 +5,7 @@ EVM (Ethereum USDT / USDC, Celo, Avalanche): Transfer logs with topic1 = the add
 from getblocknobytime. TRON: TronGrid trc20 only_from=true with min/max timestamp (key rotation, Transfer rows only).
 Sinks (zero address, token contracts) and self-transfers are ignored. Budgeted and resumable: newest freezes first, every
 (chain, address, freeze time) is done once."""
+import json
 import logging
 import time
 
@@ -93,27 +94,30 @@ def _evm_page(chain, addr, frm, to):
     return o["result"] if isinstance(o.get("result"), list) else []
 
 
-def fetch_evm_out(chain, addr, frm, to, page=_evm_page, max_queries=MAX_QUERIES):
-    """All outgoing transfers in the block range; a full result page splits the range in halves (no deep pagination, which
-    the explorers cap at ~2,000). -> (rows, truncated) - truncated only if a single block still overflows a page or the
-    query budget ran out."""
-    raw, st = [], {"left": max_queries, "trunc": False}
-
-    def q(a, b):
-        if st["left"] <= 0:
-            st["trunc"] = True
-            return
-        st["left"] -= 1
-        res = page(chain, addr, a, b)
+def fetch_evm_out(chain, addr, frm, to, page=_evm_page, max_queries=MAX_QUERIES, stop=None, ranges=None):
+    """Outgoing transfers in the block range; a full result page splits the range in halves (no deep pagination, which the
+    explorers cap at ~2,000). Explicit stack, so the scan can stop at any query (`stop()` true, query budget, HTTP error) and
+    resume later from the returned `pending` ranges. -> (rows, truncated, pending, queries_used). truncated = a single block still
+    overflows a page."""
+    stack = [tuple(r) for r in ranges] if ranges else [(int(frm), int(to))]
+    raw, trunc, left = [], False, max_queries
+    while stack and left > 0 and not (stop and stop()):
+        a, b = stack.pop()
+        left -= 1
+        try:
+            res = page(chain, addr, a, b)
+        except Exception as e:  # noqa: BLE001
+            stack.append((a, b))
+            log.info("outflows %s %s: query stopped (%s)", chain, str(addr)[:10], str(e)[:60])
+            break
         if len(res) >= PAGE:
             if b > a:
                 m = (a + b) // 2
-                q(a, m)
-                q(m + 1, b)
-                return
-            st["trunc"] = True
+                stack.append((m + 1, b))
+                stack.append((a, m))
+                continue
+            trunc = True
         raw.extend(res)
-    q(int(frm), int(to))
     seen, rows = set(), []
     for x in raw:
         k = (x.get("transactionHash"), x.get("logIndex"))
@@ -123,28 +127,36 @@ def fetch_evm_out(chain, addr, frm, to, page=_evm_page, max_queries=MAX_QUERIES)
         pr = parse_out_log(x)
         if pr:
             rows.append(pr)
-    return rows, st["trunc"]
+    return rows, trunc, [list(r) for r in stack], max_queries - left
 
 
-TRON_MAX_PAGES = 40    # x 200 transfers
+TRON_MAX_PAGES = 40    # x 200 transfers, across all runs of one freeze
 
 
-def fetch_tron_out(addr, min_ms, max_ms, get=None, max_pages=TRON_MAX_PAGES):
-    """-> (rows, truncated): truncated when TronGrid still offered another page after max_pages."""
+def fetch_tron_out(addr, min_ms, max_ms, get=None, max_pages=TRON_MAX_PAGES, fp=None, stop=None, pages_done=0):
+    """TronGrid pages with a resumable fingerprint. -> (rows, truncated, next_fp, pages_done). next_fp is set when the scan
+    stopped early (`stop()` / HTTP error); truncated when TronGrid still offered another page after `max_pages` pages."""
     get = get or _grid_get
-    rows, fp, more = [], None, False
-    for i in range(max_pages):
+    rows, more, i = [], False, pages_done
+    while i < max_pages:
+        if stop and stop():
+            return [p for p in (parse_tron_out(x) for x in rows) if p], False, fp, i
         params = {"only_from": "true", "contract_address": TRON_USDT, "min_timestamp": int(min_ms), "max_timestamp": int(max_ms),
                   "limit": 200, "order_by": "block_timestamp,asc"}
         if fp:
             params["fingerprint"] = fp
-        o = get(f"{TRONGRID}/v1/accounts/{addr}/transactions/trc20", params)
+        try:
+            o = get(f"{TRONGRID}/v1/accounts/{addr}/transactions/trc20", params)
+        except Exception as e:  # noqa: BLE001
+            log.info("outflows tron %s: page stopped (%s)", str(addr)[:10], str(e)[:60])
+            return [p for p in (parse_tron_out(x) for x in rows) if p], False, fp, i
         rows += o.get("data") or []
+        i += 1
         fp = (o.get("meta") or {}).get("fingerprint")
         if not fp:
-            break
-        more = i == max_pages - 1
-    return [p for p in (parse_tron_out(x) for x in rows) if p], more
+            return [p for p in (parse_tron_out(x) for x in rows) if p], False, None, i
+        more = i >= max_pages
+    return [p for p in (parse_tron_out(x) for x in rows) if p], more, None, i
 
 
 # ---------------- driver ----------------
@@ -167,16 +179,28 @@ def candidates(conn):
     return out
 
 
-def save(conn, chain, addr, freeze_ts, rows, n_transfers=None, truncated=False):
-    n = tot = win = 0
+def store_rows(conn, chain, addr, freeze_ts, rows):
+    n = 0
     for rcp, amt, ts, tx, li, inw in rows:
         n += conn.execute("INSERT OR IGNORE INTO outflows(chain,frozen_address,recipient,amount,ts,tx_hash,log_index,in_window,"
                           "freeze_ts) VALUES(?,?,?,?,?,?,?,?,?)", (chain, addr, rcp, amt, iso(ts), tx, li, inw, iso(freeze_ts))).rowcount
-        tot += amt
-        win += amt if inw else 0
+    return n
+
+
+def finish(conn, chain, addr, freeze_ts, n_transfers, truncated):
+    """Mark a freeze done; totals come from the stored rows (a scan may span several runs)."""
+    r = conn.execute("SELECT COALESCE(SUM(amount),0), COALESCE(SUM(CASE WHEN in_window THEN amount ELSE 0 END),0) FROM outflows "
+                     "WHERE chain=? AND frozen_address=? AND freeze_ts=?", (chain, addr, iso(freeze_ts))).fetchone()
     conn.execute("INSERT OR REPLACE INTO outflow_done(chain,frozen_address,freeze_ts,checked_at,total_out,window_out,n_transfers,"
-                 "truncated) VALUES(?,?,?,?,?,?,?,?)", (chain, addr, iso(freeze_ts), iso(now_ts()), tot, win,
-                                                        n_transfers if n_transfers is not None else len(rows), int(bool(truncated))))
+                 "truncated) VALUES(?,?,?,?,?,?,?,?)", (chain, addr, iso(freeze_ts), iso(now_ts()), r[0], r[1], n_transfers,
+                                                        int(bool(truncated))))
+    conn.execute("DELETE FROM outflow_cursor WHERE chain=? AND frozen_address=? AND freeze_ts=?", (chain, addr, iso(freeze_ts)))
+
+
+def save(conn, chain, addr, freeze_ts, rows, n_transfers=None, truncated=False):
+    """Store the rows of a complete scan and mark it done."""
+    n = store_rows(conn, chain, addr, freeze_ts, rows)
+    finish(conn, chain, addr, freeze_ts, n_transfers if n_transfers is not None else len(rows), truncated)
     return n
 
 
@@ -198,34 +222,70 @@ def requeue_suspects(conn):
     return n
 
 
+ADDRESS_SEC = 60       # one address may use at most this long per run; huge wallets continue on the next runs
+MAX_TOTAL_QUERIES = 400   # explorer queries per freeze over all runs; beyond that the totals are marked truncated
+
+
+def _load_cursors(conn):
+    return {(r[0], r[1], r[2]): json.loads(r[3]) for r in conn.execute("SELECT chain, frozen_address, freeze_ts, state FROM outflow_cursor")}
+
+
 def refresh(conn, budget_sec=120):
-    """Collect outflows for not-yet-done freezes, newest first. Returns the number processed."""
+    """Collect outflows for not-yet-done freezes: unfinished cursors first, then newest freezes. Every address has its own
+    time cap and a resumable cursor (block ranges / TronGrid fingerprint); the step stops when the budget or the run
+    deadline is over, also inside the paging / bisection loops. Returns the number of freezes finished."""
+    from . import deadline
     t0 = time.time()
     requeue_suspects(conn)
     done = {(r[0], r[1], r[2]) for r in conn.execute("SELECT chain, frozen_address, freeze_ts FROM outflow_done")}
-    todo = [c for c in candidates(conn) if (c[0], c[1], iso(c[2])) not in done]
+    cursors = _load_cursors(conn)
+    cands = [c for c in candidates(conn) if (c[0], c[1], iso(c[2])) not in done]
+    todo = sorted(cands, key=lambda c: (((c[0], c[1], iso(c[2])) not in cursors), 0))   # stable: cursors first, then newest first
     sinks = {}
-    n = 0
+    n = steps = 0
     for chain, addr, fts, sub in todo:
-        if time.time() - t0 > budget_sec:
+        if time.time() - t0 > budget_sec or deadline.http_stop():
             break
+        key = (chain, addr, iso(fts))
+        st = cursors.get(key) or {}
         sk = sinks.setdefault(chain, analytics.special_sinks(chain))
+        end = min(time.time() + ADDRESS_SEC, t0 + budget_sec)
+        stop = lambda end=end: time.time() > end or deadline.http_stop()  # noqa: E731
         try:
             if chain == "tron":
-                rows, trunc = fetch_tron_out(addr, (fts - WINDOW_SEC) * 1000, (fts + 1) * 1000)
+                rows, trunc, fp, pages = fetch_tron_out(addr, (fts - WINDOW_SEC) * 1000, (fts + 1) * 1000, fp=st.get("fp"), stop=stop,
+                                                        pages_done=st.get("pages", 0))
+                pending = fp is not None
+                st = {"fp": fp, "pages": pages, "n": st.get("n", 0) + len(rows), "q": pages}
             else:
-                rows, trunc = fetch_evm_out(chain, addr, block_at(chain, fts - WINDOW_SEC), block_at(chain, fts + 30))
+                ranges = st.get("ranges")
+                if ranges is None:
+                    ranges = [[block_at(chain, fts - WINDOW_SEC), block_at(chain, fts + 30)]]
+                q_left = max(1, MAX_TOTAL_QUERIES - st.get("q", 0))
+                rows, trunc, pend, used = fetch_evm_out(chain, addr, 0, 0, stop=stop, ranges=ranges, max_queries=min(MAX_QUERIES, q_left))
+                st = {"ranges": pend, "q": st.get("q", 0) + used, "n": st.get("n", 0) + len(rows)}
+                pending = bool(pend) and not trunc
+                if pending and st["q"] >= MAX_TOTAL_QUERIES:   # the explorer budget for this freeze is spent: totals are a lower bound
+                    trunc, pending = True, False
         except Exception as e:  # noqa: BLE001
             log.warning("outflows %s %s: %s", chain, str(addr)[:12], str(e)[:80])
-            if "ETHERSCAN" in str(e).upper():
+            if "ETHERSCAN" in str(e).upper() or deadline.http_stop():
                 break
             continue
-        save(conn, chain, addr, fts, window_rows(rows, addr, fts, sub, sk), n_transfers=len(rows), truncated=trunc)
+        store_rows(conn, chain, addr, fts, window_rows(rows, addr, fts, sub, sk))
+        steps += 1
+        if pending:
+            conn.execute("INSERT OR REPLACE INTO outflow_cursor(chain,frozen_address,freeze_ts,state,updated_at) VALUES(?,?,?,?,?)",
+                         (chain, addr, iso(fts), json.dumps(st), iso(now_ts())))
+            conn.commit()
+            continue
+        finish(conn, chain, addr, fts, st.get("n", len(rows)), trunc)
         n += 1
         if n % 20 == 0:
             conn.commit()
     conn.commit()
-    log.info("outflows: %s freezes checked (%s remaining)", n, max(0, len(todo) - n))
+    log.info("outflows: %s freezes finished, %s scan steps (%s remaining, %s with a saved cursor)", n, steps,
+             max(0, len(todo) - n), len(_load_cursors(conn)))
     return n
 
 

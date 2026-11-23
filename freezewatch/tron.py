@@ -7,9 +7,12 @@ from .constants import (SEL_BALANCE_OF, SEL_CONF_COUNT, SEL_REQUIRED, SEL_TRANSA
                         TRON_MULTISIG, TRON_USDT, USDT_DECIMALS, SIG)
 from .db import add_event, ensure_proposal, meta_get, meta_set, update_proposal
 from .derive import derive_all
+from . import deadline
 from .util import HttpError, env, http_json, iso, key_pool, tron_from_hex20, tron_to_hex20
 
 log = logging.getLogger("freezewatch.tron")
+CALL_MAX_SEC = 45     # wall-clock cap of one TronGrid constant call including its retries
+STALE_PER_RUN = 25    # stale / revoked open ids re-read per run (rotating)
 CHAIN = "tron"
 TRONGRID = "https://api.trongrid.io"
 TRONSCAN = "https://apilist.tronscanapi.com/api/transaction"
@@ -28,7 +31,10 @@ def constant_call(selector_hex_name: str, parameter: str = "", contract: str = T
     pool = key_pool("TRONGRID_API_KEY")
     interval = 0.06 / max(1, len(pool)) if len(pool) else 0.5
     last = None
+    t_start = time.monotonic()
     for attempt in range(10 + 3 * len(pool)):
+        if time.monotonic() - t_start > CALL_MAX_SEC or deadline.http_stop():   # bounded: a rate-limited TronGrid must not stall a run
+            break
         key = pool.next()
         headers = {"TRON-PRO-API-KEY": key} if key else {}
         try:
@@ -257,9 +263,17 @@ def assemble(conn, since_ms=None, stale_days=7, budget_sec=None, touched=None, f
     override = {}
     open_rows = conn.execute("SELECT tx_id, status FROM proposals WHERE chain='tron' AND executed=0 AND destination IS NOT NULL "
                              "ORDER BY tx_id DESC").fetchall()
+    # pending ids are re-read every run (they can execute any minute); the old stale / revoked ones (100+) only a few per run,
+    # in rotation - re-reading all of them each run took many minutes whenever TronGrid rate-limited
+    pend = [r for r in open_rows if r["status"] == "pending"]
+    rest = [r for r in open_rows if r["status"] != "pending"]
+    off = int(meta_get(conn, "tron_stale_offset", 0) or 0) % max(1, len(rest))
+    rot = (rest[off:] + rest[:off])[:STALE_PER_RUN]
+    meta_set(conn, "tron_stale_offset", off + STALE_PER_RUN)
+    open_rows = pend + rot
     for r in open_rows:
         tid = r["tx_id"]
-        if budget_sec and time.time() - t0 > budget_sec * 3:
+        if budget_sec and time.time() - t0 > budget_sec:
             log.warning("TRON: time budget used while refreshing open ids")
             break
         d = read_transaction(tid)

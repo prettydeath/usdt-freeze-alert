@@ -175,7 +175,11 @@ def build(conn, health=None, labels=None):
     out.sort(key=lambda x: (order[x["status"]], x["source"]))
     states = {x["status"] for x in out}
     overall = "failing" if "failing" in states else "degraded" if "degraded" in states else "ok"
-    return {"overall": overall, "bad": [x["source"] for x in out if x["status"] != "ok"],
+    try:
+        run = json.loads(meta_get(conn, "run_timings") or "null")
+    except ValueError:
+        run = None
+    return {"run": run, "overall": overall, "bad": [x["source"] for x in out if x["status"] != "ok"],
             "sources": out}
 
 

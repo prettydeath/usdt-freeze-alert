@@ -5,8 +5,8 @@ import sys
 import time
 from datetime import datetime, timezone
 
-from . import (alerts, analytics, crosschain, eth, evmmsw, health, inflows, labels, others, outflows, safe, signals, status,
-               tokenevents, tron)
+from . import (alerts, analytics, crosschain, deadline, eth, evmmsw, health, inflows, labels, others, outflows, safe, signals,
+               status, tokenevents, tron)
 from .constants import BALANCE_FUNCS
 from .db import connect, meta_get, meta_set, update_proposal
 from .derive import derive_all, rebuild_blacklist
@@ -77,11 +77,19 @@ def _row_count(conn, chain):
     return conn.execute(q, (chain,)).fetchone()[0]
 
 
-def do_sync(conn, chain, since, budget):
-    """Sync a single chain; a failure does not stop the others. Every run is recorded in source_health."""
+# chains whose long history is optional work: in `run` the core pass only reads what is new, the history pass back-fills
+# within what is left of the run deadline
+HISTORY_CHAINS = ("sol_usdc", "sol_usdt", "xlayer", "oeth")
+
+
+def do_sync(conn, chain, since, budget, phase="all"):
+    """Sync a single chain; a failure does not stop the others. Every run is recorded in source_health.
+    phase: "all" (backfill command), "core" (new data only for HISTORY_CHAINS) or "history" (the back-fill part only)."""
     before = _row_count(conn, chain)
     soft = []
-    ok = _do_sync(conn, chain, since, budget, soft)
+    ok = _do_sync(conn, chain, since, budget, soft, phase)
+    if phase == "history" and ok is True and not soft:
+        return True   # the core pass already recorded this source; the back-fill only reports problems
     try:
         status.record(conn, chain, ok is True, error=ok if ok is not True else None,
                       rows_added=max(0, _row_count(conn, chain) - before), soft_error="; ".join(soft) or None)
@@ -91,32 +99,35 @@ def do_sync(conn, chain, since, budget):
     return ok is True
 
 
-def _do_sync(conn, chain, since, budget, soft):
+def _do_sync(conn, chain, since, budget, soft, phase="all"):
     """-> True or the error text."""
+    hist = None if phase == "all" else (0 if phase == "core" else max(1, int(budget)))   # back-fill seconds for HISTORY_CHAINS
     try:
         if chain == "eth":
             eth.sync(conn, since, stale_days())
         elif chain == "tron":
-            tron.sync(conn, since, stale_days(), budget)
+            tron.sync(conn, since, stale_days(), int(deadline.cap(budget)) if deadline.started() else budget)
         elif chain == "usdc_eth":
             others.sync_usdc_eth(conn, since)
         elif chain in MSW_CHAINS:
             evmmsw.sync_chain(conn, chain, stale_days())
         elif chain in SAFE_CHAINS:
-            safe.sync_chain(conn, chain, stale_days(), full=since is not None)
-            conn.commit()
+            if phase != "history":   # the history pass only continues the token-event scan
+                safe.sync_chain(conn, chain, stale_days(), full=since is not None)
+                conn.commit()
             try:  # token events are the source of truth; a failure here must not undo the Safe data
-                tokenevents.sync_chain(conn, chain, stale_days())
+                tokenevents.sync_chain(conn, chain, stale_days(), backfill_sec=hist)
             except Exception as e:  # noqa: BLE001
                 log.warning("%s: token events failed: %s", chain, str(e)[:100])
                 soft.append("token events: " + str(e))
         elif chain in EVENT_CHAINS:
-            tokenevents.sync_chain(conn, chain, stale_days())
+            tokenevents.sync_chain(conn, chain, stale_days(), backfill_sec=hist)
         elif chain in NON_EVM:
             import importlib
             importlib.import_module(f".{chain}", __package__).sync(conn, stale_days())
         else:
-            AUTH_CHANGES.extend(others.sync_solana(conn, chain, since, budget))
+            if hist is None or hist > 0 or phase == "core":
+                AUTH_CHANGES.extend(others.sync_solana(conn, chain, since, hist if hist else budget, history=hist != 0))
         meta_set(conn, f"{chain}_last_ok", iso(now_ts()))
         conn.commit()
         return True
@@ -137,38 +148,76 @@ def cmd_backfill(args):
     return 0 if ok else 1
 
 
+class _Run:
+    abandoned = False   # an optional step hung and was abandoned: its thread may still touch the old connection
+
+
+def _optional(conn_box, name, fn, own):
+    """One optional step: budget = min(own, time left - reserve); runs in a guard thread so a hung socket cannot hold the run."""
+    st = deadline.step(name, own)
+    if _Run.abandoned or st.skipped:
+        deadline.note(name, 0.0, "skipped")
+        log.info("step %s skipped (run deadline: %.0fs of optional time left)", name, deadline.optional_remaining())
+        return
+    with st:
+        done = deadline.run_guarded(lambda: fn(conn_box[0], st.budget), name, st.budget)
+    if not done:
+        _Run.abandoned = True
+        conn_box[0] = connect()   # the abandoned thread may still hold the old connection
+
+
 def cmd_update(args, conn=None):
+    own_conn = conn is None
     conn = conn or connect()
+    deadline.start()
+    _Run.abandoned = False
+    box = [conn]
     before = alerts.snapshot(conn)
     before_pairs = crosschain.pairs(conn)
     max_fr = conn.execute("SELECT COALESCE(MAX(rowid),0) FROM freezes").fetchone()[0]
     max_inflow = conn.execute("SELECT COALESCE(MAX(rowid),0) FROM inflows_after_freeze").fetchone()[0]
-    results = [do_sync(conn, c, None, args.budget) for c in chains_of(getattr(args, "chain", "all"))]
+    # 1. core: new proposals / freezes of every chain (always runs; bounded only by the per-call HTTP timeouts)
+    results = []
+    for c in chains_of(getattr(args, "chain", "all")):
+        with deadline.step(c, optional=False):
+            results.append(do_sync(conn, c, None, args.budget, phase="core"))
     ok = any(results)  # one failing source must not fail the whole run (rate limits, missing optional keys)
-    refresh_balances(conn)
+    with deadline.step("balances-open", optional=False):
+        refresh_balances(conn)
     rebuild_blacklist(conn)
     conn.commit()
     try:
         health.check(conn)
     except Exception as e:  # noqa: BLE001
         log.warning("health check failed: %s", str(e)[:80])
-    for step in (signals.detect, signals.resolve):  # cross-chain signals first, so their alerts go out in this run
-        t0 = time.time()
-        try:
-            step(conn)
-        except Exception as e:  # noqa: BLE001
-            log.warning("signals step %s failed: %s", step.__name__, status.sanitize(e, 100))
-        log.debug("%s took %.1fs", step.__name__, time.time() - t0)
+    # 2. optional work, each step capped by what is left of the run deadline (reserve kept for render + publish)
+    _optional(box, "signals", lambda c, b: (signals.detect(c, budget_sec=min(90, b)), signals.resolve(c, budget_sec=min(60, b))), 120)
     budget = int(env("ANALYTICS_BUDGET_SEC", "120"))
-    for step in (analytics.enrich_destroy_amounts, analytics.refresh_balances, inflows.refresh, outflows.refresh, labels.refresh):
-        try:
-            step(conn, budget)
-        except Exception as e:  # noqa: BLE001
-            log.warning("analytics step %s failed: %s", step.__name__, str(e)[:100])
-    n = alerts.run_alerts(conn, before, max_fr, before_pairs, AUTH_CHANGES, max_inflow)
+    for c in HISTORY_CHAINS:
+        if c in chains_of(getattr(args, "chain", "all")):
+            _optional(box, f"history:{c}", lambda cn, b, c=c: do_sync(cn, c, None, b, phase="history"), min(budget, 90))
+    for name, fn in (("destroy-amounts", analytics.enrich_destroy_amounts), ("balances", analytics.refresh_balances),
+                     ("inflows", inflows.refresh), ("outflows", outflows.refresh), ("labels", labels.refresh)):
+        _optional(box, name, lambda cn, b, fn=fn: fn(cn, b), budget)
+    conn = box[0]
+    with deadline.step("alerts", optional=False):
+        n = alerts.run_alerts(conn, before, max_fr, before_pairs, AUTH_CHANGES, max_inflow)
     if n:
         log.info("alerts sent: %s", n)
+    _save_timings(conn)
+    if own_conn:
+        log.info(deadline.summary())
     return 0 if ok else 1
+
+
+def _save_timings(conn):
+    import json
+    try:
+        meta_set(conn, "run_timings", json.dumps({"at": iso(now_ts()), "run_s": round(deadline.elapsed(), 1),
+                                                  "deadline_s": deadline._S["total"], "steps": deadline.timings()}))
+        conn.commit()
+    except Exception as e:  # noqa: BLE001
+        log.warning("timings not saved: %s", str(e)[:60])
 
 
 def cmd_alert_test(args):
@@ -202,7 +251,12 @@ def cmd_run(args):
     conn = connect()
     # if there is no history yet - first run = backfill (time-budgeted; continues on the next run)
     rc = cmd_update(args, conn)
-    cmd_render(args, conn)
+    try:
+        with deadline.step("render", optional=False):
+            cmd_render(args, connect() if _Run.abandoned else conn)
+    finally:
+        log.info(deadline.summary())
+        deadline.stop()
     return rc
 
 

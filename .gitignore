@@ -13,3 +13,5 @@ data/*.sqlite-shm
 /data/
 /site/
 .hypothesis/
+
+.cache/

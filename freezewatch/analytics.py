@@ -11,6 +11,7 @@ Methodology (all approximations are labelled in the UI):
   are excluded everywhere.
 - Reissuance to victims happens off-chain / via treasury transfers and is NOT tracked."""
 import logging
+import functools
 import time
 
 from . import crosschain, eth
@@ -40,16 +41,17 @@ def all_token_hex20():
     return toks
 
 
+@functools.lru_cache(maxsize=None)
 def special_sinks(chain):
     """Addresses Tether/Circle blacklist to burn mistaken sends: the zero address and the token contract addresses of ANY
     chain (e.g. Ethereum's USDT contract was blocked on Arbitrum). TRON uses base58 forms of the same hex."""
     from .util import tron_from_hex20
     toks = all_token_hex20()
     if chain == "tron":
-        return {TRON_ZERO} | {tron_from_hex20(h) for h in toks}
+        return frozenset({TRON_ZERO} | {tron_from_hex20(h) for h in toks})
     if chain in ("eth", "usdc_eth", "avax", "celo", "kaia", "kava") or chain in SAFE_CHAINS or chain in EVENT_CHAINS:
-        return {EVM_ZERO} | {"0x" + h for h in toks}
-    return set()
+        return frozenset({EVM_ZERO} | {"0x" + h for h in toks})
+    return frozenset()
 
 
 def token_of(chain):

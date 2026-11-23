@@ -124,7 +124,7 @@ curl -X POST \
 | `ETH_RPC_URL`, `SOLANA_RPC_URL` | no | your own RPCs (the public Solana RPC is very slow) |
 | `TG_BOT_TOKEN`, `TG_CHAT_ID` | no | [Telegram alerts](#telegram-alerts) |
 
-Key values are never logged. The first runs build the `data` branch; a long first backfill can be started from the *Actions* tab (`watch` → *Run workflow* → backfill).
+Each run has a **deadline** (`FREEZEWATCH_RUN_DEADLINE_SEC`, default 420 s): new proposals of every chain are read first, the optional scans (balances, inflows, outflows, labels, history) use what is left and continue on the next run; the *Status* tab shows the timings. Key values are never logged. The first runs build the `data` branch; a long first backfill can be started from the *Actions* tab (`watch` → *Run workflow* → backfill).
 
 ## Telegram alerts
 

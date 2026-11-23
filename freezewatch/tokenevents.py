@@ -127,6 +127,7 @@ def _rpcscan(conn, cfg, spec, chain, budget=None):
     from concurrent.futures import ThreadPoolExecutor
     budget = budget if budget is not None else float(os.environ.get("FREEZEWATCH_SCAN_SEC", spec.get("budget", 60)))
     t0 = time.time()
+    fwd_cap = 30  # seconds the "new blocks" phase may use; the back-fill below gets `budget` (0 = new blocks only)
     url, step, nb, workers = cfg["rpc"], spec.get("step", 100), spec.get("batch", 10), spec.get("parallel", 1)
     c = {"label": cfg["label"], "rpc": url, "msw": cfg["token"], "logs": {}}
     latest = int(eth.rpc_batch([("eth_blockNumber", [])], url=url)[0], 16)
@@ -170,7 +171,7 @@ def _rpcscan(conn, cfg, spec, chain, budget=None):
 
     # A. new blocks above hi
     cur = hi + 1
-    while cur <= latest and not err and time.time() - t0 < budget + 30:
+    while cur <= latest and not err and time.time() - t0 < fwd_cap:
         wins = []
         while cur <= latest and len(wins) < nb * workers:
             wins.append((cur, min(cur + step - 1, latest)))
@@ -182,7 +183,7 @@ def _rpcscan(conn, cfg, spec, chain, budget=None):
         if n < len(batches):
             break
     # B. back-fill below lo (towards the token's deploy block)
-    while not err and lo > first and time.time() - t0 < budget:
+    while not err and lo > first and budget > 0 and time.time() - t0 < fwd_cap + budget:
         wins = plan_windows(lo, first, step, nb * workers)
         batches = [wins[i:i + nb] for i in range(0, len(wins), nb)]
         n = go(batches)
@@ -194,7 +195,7 @@ def _rpcscan(conn, cfg, spec, chain, budget=None):
     return rows, {"first": first, "lo": lo, "hi": hi, "latest": latest, "error": err}
 
 
-def fetch(chain, from_block, conn=None):
+def fetch(chain, from_block, conn=None, budget=None):
     """Try the configured sources in order; the first that answers (even with zero events) wins."""
     cfg = evm_cfg(chain)
     last = None
@@ -209,7 +210,7 @@ def fetch(chain, from_block, conn=None):
                 rows, scanned = _rpc(cfg, arg, from_block)
                 return rows, kind, scanned
             if kind == "rpcscan":
-                rows, state = _rpcscan(conn, cfg, arg, chain)
+                rows, state = _rpcscan(conn, cfg, arg, chain, budget)
                 return rows, kind, state
         except Exception as e:  # noqa: BLE001
             last = e
@@ -318,12 +319,12 @@ def save_scan(conn, chain, state):
     return moved
 
 
-def sync_chain(conn, chain, stale_days=7):
+def sync_chain(conn, chain, stale_days=7, backfill_sec=None):
     if not EVENT_SOURCES.get(chain):
         log.info("%s: no free event source configured, skipped", chain)
         return
     cur = int(meta_get(conn, f"{chain}_ev_next", 0) or 0)
-    raw, kind, scanned = fetch(chain, max(0, cur - 5), conn)
+    raw, kind, scanned = fetch(chain, max(0, cur - 5), conn, backfill_sec)
     events = [e for e in (parse_log(x) for x in raw) if e]
     n = store(conn, chain, events)
     scan_err = None
@@ -339,8 +340,8 @@ def sync_chain(conn, chain, stale_days=7):
                 meta_set(conn, f"{chain}_scan_lo_ts", ts)
     elif events:
         meta_set(conn, f"{chain}_ev_next", max(e["block"] for e in events) + 1)
-    elif scanned and scanned - cur > 500_000:  # long quiet scan: remember it, but rarely (keeps the DB file stable)
-        meta_set(conn, f"{chain}_ev_next", scanned - 100_000)
+    elif scanned and scanned - cur > 60_000:  # quiet scan: remember it (small overlap), so the next run scans little
+        meta_set(conn, f"{chain}_ev_next", scanned - 20_000)
     meta_set(conn, f"{chain}_ev_source", kind)
     cutoff = era_cutoff(conn, chain)
     dropped = reattribute(conn, chain, cutoff)

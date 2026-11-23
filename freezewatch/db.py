@@ -192,6 +192,15 @@ CREATE TABLE IF NOT EXISTS outflow_done (
     PRIMARY KEY (chain, frozen_address, freeze_ts)
 );
 
+CREATE TABLE IF NOT EXISTS outflow_cursor (
+    chain TEXT NOT NULL,
+    frozen_address TEXT NOT NULL,
+    freeze_ts TEXT NOT NULL,
+    state TEXT NOT NULL,           -- JSON: pending block ranges / TronGrid fingerprint, queries and transfers so far
+    updated_at TEXT,
+    PRIMARY KEY (chain, frozen_address, freeze_ts)
+);
+
 CREATE TABLE IF NOT EXISTS address_labels (
     network TEXT NOT NULL,
     key TEXT NOT NULL,
@@ -246,7 +255,7 @@ CREATE TABLE IF NOT EXISTS meta (
 def connect(path: Path | str | None = None) -> sqlite3.Connection:
     p = Path(path or DB_PATH)
     p.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(p, timeout=120)
+    conn = sqlite3.connect(p, timeout=120, check_same_thread=False)  # optional steps run in guard threads
     conn.row_factory = sqlite3.Row
     sc = {r["name"] for r in conn.execute("PRAGMA table_info(signals)")}
     if sc and "stage" not in sc:  # pre-release shape of the signals table (never populated)

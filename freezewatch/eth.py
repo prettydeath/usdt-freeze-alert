@@ -13,6 +13,7 @@ from .util import HttpError, env, http_json, iso, key_pool, looks_rate_limited
 log = logging.getLogger("freezewatch.eth")
 CHAIN = "eth"
 ETHERSCAN = "https://api.etherscan.io/v2/api"
+STALE_REFRESH_SEC = 6 * 3600
 
 
 def rpc_url():
@@ -242,8 +243,15 @@ def sync(conn, since_ts=None, stale_days=7):
                             executed=int(d["executed"]), required=required, chain_verified=1)
         conn.commit()
     # open (not executed) - refresh the confirmation counter and executed flag from the chain
+    # stale / revoked / failed proposals (hundreds, almost never executed late) are re-read only every STALE_REFRESH_SEC; executions are also
+    # seen through the Execution events of sync_logs. Reading all of them every run cost minutes on a rate-limited RPC.
+    last_stale = meta_get(conn, "eth_stale_refresh_ts")
+    if last_stale is None:  # first run with this logic: the previous runs read them every time, so they are fresh
+        meta_set(conn, "eth_stale_refresh_ts", int(time.time()))
+    stale_due = last_stale is not None and time.time() - float(last_stale) > STALE_REFRESH_SEC
     open_ids = [r["tx_id"] for r in conn.execute(
-        "SELECT tx_id FROM proposals WHERE chain='eth' AND executed=0 AND destination IS NOT NULL")]
+        "SELECT tx_id, status FROM proposals WHERE chain='eth' AND executed=0 AND destination IS NOT NULL")
+        if stale_due or r["status"] == "pending"]
     override = {}
     if open_ids:
         # one batch: transactions() + getConfirmationCount()
@@ -256,6 +264,8 @@ def sync(conn, since_ts=None, stale_days=7):
                 if tx[tid]["executed"]:
                     update_proposal(conn, CHAIN, tid, executed=1)
                 update_proposal(conn, CHAIN, tid, required=required)
+    if stale_due:
+        meta_set(conn, "eth_stale_refresh_ts", int(time.time()))
     derive_all(conn, CHAIN, stale_days=stale_days, conf_override=override)
     conn.commit()
     return touched

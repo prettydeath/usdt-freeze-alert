@@ -255,20 +255,20 @@ def test_evm_fetch_splits_ranges_instead_of_capping():
 
     def page(chain, addr, a, b):  # the explorer returns at most 1000 logs
         return [transfers[n] for n in range(a, min(b, 2999) + 1)][:1000]
-    rows, trunc = outflows.fetch_evm_out("eth", A1, 0, 2999, page=page)
-    assert trunc is False and len(rows) == 3000 and len({r[3] for r in rows}) == 3000   # nothing lost beyond the 1000-row page
-    rows, trunc = outflows.fetch_evm_out("eth", A1, 0, 2999, page=page, max_queries=3)
-    assert trunc is True and len(rows) < 3000                                              # budget exhausted -> flagged
+    rows, trunc, pend, used = outflows.fetch_evm_out("eth", A1, 0, 2999, page=page)
+    assert trunc is False and pend == [] and len(rows) == 3000 and len({r[3] for r in rows}) == 3000   # nothing lost beyond the 1000-row page
+    rows, trunc, pend, used = outflows.fetch_evm_out("eth", A1, 0, 2999, page=page, max_queries=3)
+    assert trunc is False and pend and len(rows) < 3000 and used == 3                       # budget used up -> resumable, not "truncated"
     dense = lambda chain, addr, a, b: [transfers[0]] * 1000  # noqa: E731  one block alone overflows a page
-    assert outflows.fetch_evm_out("eth", A1, 5, 5, page=dense)[1] is True
+    assert outflows.fetch_evm_out("eth", A1, 5, 5, page=dense)[1] is True                 # one block overflowing a page IS truncated
 
 
 def test_tron_fetch_marks_truncation():
     def get(url, params):
         return {"data": [{"type": "Transfer", "value": "1000000", "to": "Tx", "block_timestamp": 1000, "transaction_id": "a"}],
                 "meta": {"fingerprint": "more"}}
-    rows, trunc = outflows.fetch_tron_out("Tfrom", 0, 10_000, get=get, max_pages=3)
-    assert trunc is True and len(rows) == 3
+    rows, trunc, fp, pages = outflows.fetch_tron_out("Tfrom", 0, 10_000, get=get, max_pages=3)
+    assert trunc is True and len(rows) == 3 and pages == 3
     done = lambda url, params: {"data": [], "meta": {}}  # noqa: E731
     assert outflows.fetch_tron_out("Tfrom", 0, 10_000, get=done)[1] is False
 

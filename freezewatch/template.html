@@ -485,6 +485,7 @@ footer{margin:30px 0 18px;color:var(--mut);font-size:12px;border-top:1px solid v
   <div id="tab-status" hidden>
   <h2>Status of data sources</h2>
   <p class="mut" id="stNote"></p>
+  <details class="sec" id="stRun" hidden><summary id="stRunSum"></summary><div class="secb m" id="stRunBody"></div></details>
   <div class="tw"><table id="srcStatus"></table></div>
   <p class="mut" style="margin-top:10px">Raw data: <a href="health.json">health.json</a>. A source is <b>failing</b> after 3 failed runs in a row, <b>degraded</b> after 1-2 or when the on-chain count is ahead of our data by more than 3. "Back-filling" only means older history is still being collected.</p>
 </div>
@@ -776,6 +777,13 @@ function renderStatus(){
          `<td>${esc(s.coverage)}${s.partial ? ' <span class="tag" title="Older history is still being collected, a little more on every run.">back-filling</span>' : ''}${s.rows_added ? `<div class="mut" style="font-size:12px">+${s.rows_added} rows last run</div>` : ''}${note}</td></tr>`;
   }
   $('srcStatus').innerHTML = S.sources.length ? h : '<tr><td class="empty">No run recorded yet.</td></tr>';
+  const R = S.run;
+  $('stRun').hidden = !R;
+  if(R){
+    const slow = R.steps.filter(x => x[2]).length;
+    $('stRunSum').textContent = 'Last run: ' + dur(R.run_s) + ' of a ' + dur(R.deadline_s) + ' deadline · ' + slow + ' step' + (slow === 1 ? '' : 's') + ' cut short or skipped · ' + dt(R.at);
+    $('stRunBody').innerHTML = R.steps.map(x => esc(x[0]) + ' ' + dur(x[1]) + (x[2] ? ' (' + esc(x[2]) + ')' : '')).join(' · ');
+  }
   const bad = S.sources.filter(s => s.status !== 'ok').length;
   $('stNote').textContent = S.sources.length + ' sources · ' + (bad ? bad + ' not fully healthy' : 'all healthy');
 }

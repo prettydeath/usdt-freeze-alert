@@ -92,10 +92,13 @@ def counterparty_clusters(edges, connector=lambda chain, cp: False, max_hub=MAX_
     return out
 
 
-def _first_ts(conn, member):
-    chain, addr = member
-    r = conn.execute("SELECT MIN(executed_at) FROM proposals WHERE chain=? AND executed=1 AND target=?", (chain, addr)).fetchone()
-    return parse_iso(r[0]) if r and r[0] else None
+def _first_ts_map(conn):
+    """{(chain, target): first execution time} in one pass (a query per cluster member was the slowest part of the render)."""
+    out = {}
+    for r in conn.execute("SELECT chain, target, MIN(executed_at) FROM proposals WHERE executed=1 AND target IS NOT NULL GROUP BY chain, target"):
+        if r[2]:
+            out[(r[0], r[1])] = parse_iso(r[2])
+    return out
 
 
 def build(conn, labels=None):
@@ -141,12 +144,13 @@ def build(conn, labels=None):
         edges.append((r["chain"], r["frozen_address"], r["recipient"]))
     cl = batch_clusters(rows) + crosschain_clusters(xrows) + counterparty_clusters(edges, connector)
     index = {}
+    first_ts = _first_ts_map(conn)
     for c in cl:
         mem = c["members"]
         c["size"] = len(mem)
         c["total_usd"] = round(sum(usd_by.get(m, 0) or 0 for m in mem), 2)
         if c["first"] is None:
-            ts = [t for t in (_first_ts(conn, m) for m in mem) if t]
+            ts = [t for t in (first_ts.get(m) for m in mem) if t]
             c["first"], c["last"] = (min(ts), max(ts)) if ts else (None, None)
         for m in mem:
             index.setdefault(m, []).append(c["id"])

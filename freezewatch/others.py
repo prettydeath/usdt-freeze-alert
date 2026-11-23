@@ -83,9 +83,13 @@ _sol_state = {"next": 0.0, "pause": 0.0}
 def sol_rpc(method, params, retries=40):
     """JSON-RPC with a shared adaptive limiter: ~4 req/s; any 429 pauses ALL threads (growing 2..20 s) instead of
     per-thread exponential backoff, which is much faster on the rate-limited public endpoint."""
+    from . import deadline
     body = {"jsonrpc": "2.0", "id": 1, "method": method, "params": params}
     last = None
+    t_start = time.monotonic()
     for _ in range(retries):
+        if deadline.http_stop() or time.monotonic() - t_start > 150:   # bounded: step budget / run deadline / 150 s per call
+            break
         with _sol_lock:
             now = time.monotonic()
             slot = max(now, _sol_state["next"])
@@ -93,7 +97,7 @@ def sol_rpc(method, params, retries=40):
         if slot > now:
             time.sleep(slot - now)
         try:
-            r = _session.post(sol_url(), json=body, timeout=40)
+            r = _session.post(sol_url(), json=body, timeout=(5, 20))
             o = r.json() if r.status_code != 429 else {"error": {"code": 429}}
         except Exception as e:  # noqa: BLE001
             last = repr(e)
@@ -220,7 +224,7 @@ def check_authority(conn, source, cfg):
     return {"source": source, "old": (row["m"], row["n"], row["signers"]), "new": (ms["m"], ms["n"], sig)}
 
 
-def sync_solana(conn, source, since_ts=None, budget_sec=None):
+def sync_solana(conn, source, since_ts=None, budget_sec=None, history=True):
     """Incrementally (until=newest) + backwards to since_ts (before=oldest), cursors saved per page.
     By default history goes back 180 days; --since can go deeper."""
     cfg = SOLANA_SOURCES[source]
@@ -258,7 +262,7 @@ def sync_solana(conn, source, since_ts=None, budget_sec=None):
     # history is optional work: in scheduled runs keep it short so the whole run fits the cron interval
     hist_budget = int(os.environ.get("FREEZEWATCH_SOL_HISTORY_SEC", "0") or 0) or budget_sec
     page_limit = 50 if hist_budget and hist_budget <= 300 else 250
-    while not complete and (oldest_ts is None or int(oldest_ts) > since_ts):
+    while history and not complete and (oldest_ts is None or int(oldest_ts) > since_ts):
         if hist_budget and time.time() - t0 > hist_budget:
             log.warning("%s: time budget exhausted, history will continue on the next run", source)
             break

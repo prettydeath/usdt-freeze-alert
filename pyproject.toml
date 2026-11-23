@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "usdt-freeze-alert"
-version = "2.0.0"
+version = "2.0.1"
 description = "See USDT freezes before they happen: Tether multisig freeze proposals across chains"
 license = {text = "MIT"}
 readme = "README.md"

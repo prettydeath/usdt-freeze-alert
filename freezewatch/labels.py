@@ -13,12 +13,12 @@ from pathlib import Path
 
 import requests
 
-from .constants import DATA_DIR
+from .constants import ROOT
 from .util import b58check_decode, iso, now_ts
 
 log = logging.getLogger("freezewatch.labels")
 RAW = "https://raw.githubusercontent.com/prettydeath/wallet-attribution/main/data/"
-CACHE = DATA_DIR / "cache" / "labels"
+CACHE = ROOT / ".cache" / "labels"   # outside data/: the cache must never be published on the data branch
 REFETCH_SEC = 24 * 3600
 RETRY_SEC = 6 * 3600  # cache missing (e.g. fresh CI checkout) but unlabeled addresses are waiting
 # our chain key -> wallet-attribution network file
@@ -69,26 +69,40 @@ def best(rows):
     return sorted(rows, key=lambda r: (0 if r["category"] in SEVERE else 1, rank.get(r["confidence"], 3)))[0]
 
 
-def fetch(network, cache=CACHE, session=None):
-    """Download data/<network>.csv (or .csv.gz) with ETag caching. -> path of the cached csv text file or None."""
+FETCH_LIMIT_SEC = 20   # a download slower than this is dropped for this run (never blocks a run)
+
+
+def fetch(network, cache=CACHE, session=None, limit_sec=FETCH_LIMIT_SEC):
+    """Download data/<network>.csv (or .csv.gz) with ETag caching, streamed and time-bounded. -> path of the cached file, or
+    None / the old cache when the server is slow or unreachable."""
+    import time
     s = session or requests
     cache.mkdir(parents=True, exist_ok=True)
+    t0 = time.monotonic()
     for ext in (".csv", ".csv.gz"):
         f = cache / f"{network}{ext}"
         et = cache / f"{network}{ext}.etag"
         hdr = {"If-None-Match": et.read_text().strip()} if f.exists() and et.exists() else {}
         try:
-            r = s.get(RAW + network + ext, headers=hdr, timeout=120)
-        except Exception as e:  # noqa: BLE001
-            log.warning("labels %s: %s", network, str(e)[:80])
-            return f if f.exists() else None
-        if r.status_code == 304:
-            return f
-        if r.status_code == 200:
-            f.write_bytes(r.content)
+            r = s.get(RAW + network + ext, headers=hdr, timeout=(5, 10), stream=True)
+            if r.status_code == 304:
+                return f
+            if r.status_code != 200:
+                continue
+            chunks = []
+            for ch in r.iter_content(262144):
+                chunks.append(ch)
+                if time.monotonic() - t0 > limit_sec:
+                    r.close()
+                    log.warning("labels %s: download slower than %ss, skipped this run", network, limit_sec)
+                    return f if f.exists() else None
+            f.write_bytes(b"".join(chunks))
             if r.headers.get("ETag"):
                 et.write_text(r.headers["ETag"])
             return f
+        except Exception as e:  # noqa: BLE001
+            log.warning("labels %s: %s", network, str(e)[:80])
+            return f if f.exists() else None
     return None
 
 
@@ -145,6 +159,7 @@ def refresh(conn, budget_sec=240, cache=CACHE):
     last = float(meta_get(conn, "labels_fetched_at", 0) or 0)
     due = now_ts() - last > REFETCH_SEC
     total = 0
+    all_ok = True
     for net, keys in sorted(cp.items()):
         checked = {r[0] for r in conn.execute("SELECT key FROM label_checked WHERE network=?", (net,))}
         todo = keys if due else keys - checked
@@ -152,15 +167,21 @@ def refresh(conn, budget_sec=240, cache=CACHE):
             continue
         if not due and now_ts() - float(meta_get(conn, f"labels_try_{net}", 0) or 0) < RETRY_SEC and not (cache / f"{net}.csv").exists():
             continue
+        if due and now_ts() - float(meta_get(conn, f"labels_try_{net}", 0) or 0) < 3600:
+            all_ok = False   # tried (and failed or was too slow) within the last hour: not again in this run
+            continue
         if time.time() - t0 > budget_sec:
+            all_ok = False
             break
         meta_set(conn, f"labels_try_{net}", now_ts())
         f = fetch(net, cache)
         if not f:
             log.info("labels: no data file for %s", net)
+            all_ok = False
             continue
         total += match(conn, net, todo, parse_rows(read_text(f), net))
-    if due:
+        meta_set(conn, f"labels_try_{net}", 0)   # success: no retry throttle
+    if due and all_ok:
         meta_set(conn, "labels_fetched_at", now_ts())
     conn.commit()
     if total:

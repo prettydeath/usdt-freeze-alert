@@ -1,4 +1,5 @@
 """HTTP with retries, base58check, time."""
+import functools
 import hashlib
 import logging
 import os
@@ -35,14 +36,31 @@ def throttle(key: str, interval: float) -> None:
         time.sleep(slot - now)
 
 
-def http_json(method, url, *, interval=0.0, retries=6, timeout=40, validate=None, **kw):
-    """JSON request with exponential backoff. validate(obj)->bool; False => retry."""
+CONNECT_TIMEOUT = 5
+READ_TIMEOUT = 20
+MAX_CALL_SEC = 90   # wall-clock cap for one http_json call including its retries and backoff sleeps
+
+
+def _timeout(t):
+    """Hard (connect, read) timeout: 5 s to connect, at most 30 s to read - no call may hang for minutes."""
+    if isinstance(t, tuple):
+        return t
+    return (CONNECT_TIMEOUT, min(30, t) if t else READ_TIMEOUT)
+
+
+def http_json(method, url, *, interval=0.0, retries=6, timeout=None, validate=None, max_total=MAX_CALL_SEC, **kw):
+    """JSON request with bounded retries and backoff. validate(obj)->bool; False => retry. Never waits longer than
+    `max_total` seconds overall, and stops at once when the run deadline / the active optional step budget is over."""
+    from . import deadline
     host = url.split("/")[2]
     last = None
+    t0 = time.monotonic()
     for attempt in range(retries):
+        if deadline.http_stop():
+            raise HttpError(f"{url.split('?')[0]}: run deadline reached")
         throttle(host, interval)
         try:
-            r = _session.request(method, url, timeout=timeout, **kw)
+            r = _session.request(method, url, timeout=_timeout(timeout), **kw)
             if r.status_code in (429, 500, 502, 503, 504, 522, 524):
                 last = f"HTTP {r.status_code}"
             elif r.status_code >= 400:
@@ -55,6 +73,10 @@ def http_json(method, url, *, interval=0.0, retries=6, timeout=40, validate=None
         except (requests.RequestException, ValueError) as e:
             last = repr(e)
         delay = min(2 ** attempt, 30)
+        left = max_total - (time.monotonic() - t0)
+        delay = min(delay, deadline.http_time_left(delay), max(0.0, left))
+        if attempt + 1 >= retries or left <= 0 or delay <= 0 and deadline.http_stop():
+            break
         log.debug("retry %s (%s) in %ss", host, last, delay)
         time.sleep(delay)
     raise HttpError(f"{url}: retries exhausted ({last})")
@@ -96,6 +118,7 @@ def b58check_decode(s: str) -> bytes:
     return payload
 
 
+@functools.lru_cache(maxsize=200_000)
 def tron_from_hex20(h: str) -> str:
     """20-byte hex -> T-address (0x41 prefix)."""
     h = h.lower().removeprefix("0x")
@@ -118,6 +141,7 @@ def iso(ts) -> str | None:
     return datetime.fromtimestamp(int(ts), timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
+@functools.lru_cache(maxsize=1_000_000)
 def parse_iso(s: str | None) -> int | None:
     if not s:
         return None

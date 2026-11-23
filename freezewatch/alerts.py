@@ -34,7 +34,7 @@ def configured():
 def send_message(text):
     r = requests.post(f"https://api.telegram.org/bot{env('TG_BOT_TOKEN')}/sendMessage",
                       json={"chat_id": env("TG_CHAT_ID"), "text": text, "parse_mode": "HTML",
-                            "disable_web_page_preview": True}, timeout=20)
+                            "disable_web_page_preview": True}, timeout=(5, 20))
     r.raise_for_status()
 
 

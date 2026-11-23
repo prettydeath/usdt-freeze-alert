@@ -1,5 +1,14 @@
 # Changelog
 
+## v2.0.1
+
+- Run deadline: one monotonic deadline per `run` (`FREEZEWATCH_RUN_DEADLINE_SEC`, default 420 s). Core proposal / freeze sync of every chain runs first; balances, inflows, outflows, signals, labels and history back-fills get what is left (a 60 s reserve is kept for render and publish) and stop inside their loops.
+- Hard HTTP timeouts (5 s connect, 20 s read), bounded retries and a wall-clock cap per call; no request starts once an optional step is over its budget.
+- Outflows: at most 60 s per address per run, with a saved cursor (block ranges / TronGrid fingerprint) so huge wallets finish over several runs.
+- NEAR: bounded listing and per-run cap on detail fetches (a rate-limited nearblocks held a run for tens of minutes); Ethereum re-reads stale proposals only every 6 hours.
+- Labels: streamed, time-bounded download (skipped for the run when slow); the cache lives outside `data/`.
+- Status tab shows per-step timings of the last run; `watch.yml` job timeout is 12 minutes (45 for manual back-fills).
+
 ## v2.0.0
 
 **Coverage**

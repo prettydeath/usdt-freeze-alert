@@ -26,7 +26,7 @@ concurrency:
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: ${{ github.event.inputs.backfill == 'true' && 45 || 12 }}   # a hang must never block the queue for long
     outputs:
       changed: ${{ steps.publish.outputs.changed }}
     steps:
@@ -58,6 +58,7 @@ jobs:
           TONAPI_KEY: ${{ secrets.TONAPI_KEY }}
           ETH_RPC_URL: ${{ secrets.ETH_RPC_URL }}
           SOLANA_RPC_URL: ${{ secrets.SOLANA_RPC_URL }}
+          FREEZEWATCH_RUN_DEADLINE_SEC: "420"
           FREEZEWATCH_BUDGET_SEC: "300"
           FREEZEWATCH_SOL_HISTORY_SEC: "60"
           ANALYTICS_BUDGET_SEC: "50"

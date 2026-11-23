@@ -129,13 +129,18 @@ def executions_by_confirm(creations, confirms, execs):
     return out
 
 
-def fetch_txns(max_pages=80):
+def fetch_txns(max_pages=80, budget=120):
+    import time
+    t0 = time.time()
     rows, cur = [], None
     for _ in range(max_pages):
+        if time.time() - t0 > budget:   # a slow / rate-limited listing must not hold the run
+            log.info("NEAR: listing stopped after %s transactions (time budget)", len(rows))
+            break
         p = {"per_page": 50}
         if cur:
             p["cursor"] = cur
-        o = http_json("GET", API, params=p, interval=1.0, retries=5, validate=lambda x: "txns" in x)
+        o = http_json("GET", API, params=p, interval=1.0, retries=4, max_total=40, validate=lambda x: "txns" in x)
         rows += o["txns"]
         cur = o.get("cursor")
         if not o["txns"] or not cur:
@@ -146,7 +151,7 @@ def fetch_txns(max_pages=80):
 DETAIL = "https://api.nearblocks.io/v1/txns/"
 
 
-def fill_args(conn, txns, budget=300):
+def fill_args(conn, txns, budget=90, max_fetch=40):
     """The nearblocks account listing no longer carries call arguments (args=None): fetch them per transaction from the
     detail endpoint and cache them in `near_args` (arguments never change, so each transaction is fetched once)."""
     import time
@@ -159,20 +164,22 @@ def fill_args(conn, txns, budget=300):
             return a0.get("method") in ("add_request_and_confirm", "add_request", "confirm")
         return t.get("predecessor_account_id") == MULTISIG and t.get("receiver_account_id") == TOKEN  # the executed call
     need = [t for t in txns if wanted(t)]
-    got = 0
+    got = fails = 0
     for t in need:
         h = t["transaction_hash"]
         r = conn.execute("SELECT args FROM near_args WHERE tx=?", (h,)).fetchone()
         args = r["args"] if r else None
         if args is None:
-            if time.time() - t0 > budget:
+            if time.time() - t0 > budget or got >= max_fetch or fails >= 3:   # bounded per run; the cache makes it resumable
                 continue
             try:
-                o = http_json("GET", DETAIL + h, interval=2.5, retries=5, validate=lambda x: "txns" in x)
+                o = http_json("GET", DETAIL + h, interval=2.5, retries=3, max_total=30, validate=lambda x: "txns" in x)
                 args = ((o["txns"] or [{}])[0].get("actions") or [{}])[0].get("args")
             except Exception as e:  # noqa: BLE001
+                fails += 1
                 log.info("NEAR: args of %s unavailable (%s)", h[:8], str(e)[:60])
                 continue
+            fails = 0
             if args:
                 conn.execute("INSERT OR IGNORE INTO near_args(tx,args) VALUES(?,?)", (h, args))
                 got += 1
@@ -183,7 +190,24 @@ def fill_args(conn, txns, budget=300):
         log.info("NEAR: fetched call arguments of %s transactions", got)
 
 
+def unchanged(conn, nonce, open_ids):
+    """Cheap RPC check first: same request count and same open set as stored (and the mapping was fine) = nothing new, so the
+    slow, rate-limited nearblocks listing is skipped this run."""
+    if meta_get(conn, "near_mapping_ok") != "1":
+        return False
+    n = conn.execute("SELECT COUNT(*) FROM proposals WHERE chain=?", (CHAIN,)).fetchone()[0]
+    db_open = {r[0] for r in conn.execute("SELECT tx_id FROM proposals WHERE chain=? AND executed=0 AND status IN ('pending','stale')",
+                                          (CHAIN,))}
+    return n == nonce and db_open == set(open_ids)
+
+
 def sync(conn, stale_days=7):
+    try:
+        if unchanged(conn, view("get_request_nonce"), view("list_request_ids")):
+            log.info("NEAR: nothing new on-chain, listing skipped")
+            return
+    except Exception as e:  # noqa: BLE001
+        log.info("NEAR: change check failed (%s), full sync", str(e)[:60])
     txns = fetch_txns()
     fill_args(conn, txns)
     creations, confirms, execs = parse_history(txns)

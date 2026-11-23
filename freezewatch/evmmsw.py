@@ -150,8 +150,8 @@ def sync_chain(conn, chain, stale_days=7):
         # advance the cursor only on new events or after a long quiet stretch (keeps the DB file stable)
         if logs:
             meta_set(conn, f"{chain}_next_block", max(eth._h(x["blockNumber"]) for x in logs) + 1)
-        elif scanned and scanned - cur > 500_000:
-            meta_set(conn, f"{chain}_next_block", scanned - 100_000)
+        elif scanned and scanned - cur > 60_000:   # keep the rescan window small (it was 100k-500k blocks = minutes on Kava)
+            meta_set(conn, f"{chain}_next_block", scanned - 20_000)
     except Exception as e:  # noqa: BLE001
         mode = "first_seen_poll"
         if "skipped" not in str(e):
