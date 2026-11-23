@@ -30,5 +30,14 @@ jobs:
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site
-      - id: deployment
+      - id: deploy1
         uses: actions/deploy-pages@v4
+        continue-on-error: true
+      # the artifact service is sometimes eventually consistent ("No artifacts named github-pages"): wait and retry
+      - if: steps.deploy1.outcome == 'failure'
+        run: sleep 45
+      - id: deploy2
+        if: steps.deploy1.outcome == 'failure'
+        uses: actions/deploy-pages@v4
+      - id: deployment
+        run: echo "page_url=${{ steps.deploy1.outputs.page_url || steps.deploy2.outputs.page_url }}" >> "$GITHUB_OUTPUT"
