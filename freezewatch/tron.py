@@ -5,8 +5,8 @@ import time
 from . import abi
 from .constants import (SEL_BALANCE_OF, SEL_CONF_COUNT, SEL_REQUIRED, SEL_TRANSACTIONS, SEL_TX_COUNT, TRON_DUMMY_CALLER,
                         TRON_MULTISIG, TRON_USDT, USDT_DECIMALS, SIG)
-from .db import add_event, ensure_proposal, events_grouped, meta_get, meta_set, update_proposal
-from .derive import derive_all, infer_exec
+from .db import add_event, ensure_proposal, meta_get, meta_set, update_proposal
+from .derive import derive_all
 from .util import HttpError, env, http_json, iso, key_pool, tron_from_hex20, tron_to_hex20
 
 log = logging.getLogger("freezewatch.tron")
@@ -163,23 +163,6 @@ def scan_calls(conn, since_ms=None):
 
 
 # ---------- proposal assembly ----------
-def _calibrate(conn, subs, count, n, sample=25):
-    """Choose offset k (Tronscan indexing lag) by matching data of the newest ids."""
-    ids = list(range(max(0, count - sample), count))
-    onchain = {i: read_transaction(i) for i in ids}
-    best, best_k = -1, 0
-    for k in range(0, 16):
-        off = count - n - k
-        score = 0
-        for i in ids:
-            r = i - off
-            if 0 <= r < n and subs[r]["data"] == onchain[i]["data"]:
-                score += 1
-        if score > best:
-            best, best_k = score, k
-    return best_k, best / max(1, len(ids)), onchain
-
-
 def _apply_onchain(conn, tid, d, required):
     dest = tron_from_hex20(d["destination_hex"])
     dec = abi.decode_calldata(d["data"], dest == TRON_USDT, tron_from_hex20)
@@ -188,118 +171,111 @@ def _apply_onchain(conn, tid, d, required):
                     chain_verified=1)
 
 
-def _apply_submit_data(conn, tid, sub, required):
-    """Fast path without reading from the chain: fields from submitTransaction parameters (Tronscan)."""
-    dest = sub["destination"]
-    dec = abi.decode_calldata(sub["data"], dest == TRON_USDT, tron_from_hex20)
-    update_proposal(conn, CHAIN, tid, destination=dest, function=dec["function"], target=dec["target"],
-                    amount=dec["amount"], raw_data="0x" + sub["data"], required=required)
-
-
 def _set_submit(conn, tid, s):
     conn.execute("DELETE FROM confirmations WHERE chain='tron' AND tx_id=? AND kind='submit'", (tid,))
     add_event(conn, CHAIN, tid, s["signer"], "submit", iso(s["ts_ms"] // 1000), s["tx_hash"])
+    update_proposal(conn, CHAIN, tid, submitted_at=iso(s["ts_ms"] // 1000), submit_tx=s["tx_hash"], submitter=s["signer"])
 
 
-def assemble(conn, since_ms=None, stale_days=7, budget_sec=None, touched=None):
-    """1) fast: all proposals from Tronscan data (submit/confirm/revoke), execution inferred from confirmations;
-    2) within budget: on-chain verification (executed flag, data), open ones first, then ambiguous
-       (several submits in one block), then the newest. After verification chain_verified=1."""
+def match_submissions(conn, ids=None):
+    """Attach Tronscan submitTransaction calls to ids PER ID (no global offset): a submission matches an id with the
+    same (destination, data); among unconsumed candidates take the latest one not after the id's first confirmation
+    (confirmTransaction carries the id explicitly); without confirmations take the earliest. Ids with no candidate
+    get submitted_at = first confirmation or first-seen time (flagged by submit_tx IS NULL). Returns (matched, unmatched)."""
+    rows = conn.execute("SELECT tx_id, destination, raw_data, first_seen_at FROM proposals WHERE chain='tron' AND destination IS NOT NULL "
+                        "AND submit_tx IS NULL ORDER BY tx_id").fetchall()
+    if ids is not None:
+        rows = [r for r in rows if r["tx_id"] in ids]
+    if not rows:
+        return 0, 0
+    used = {r[0] for r in conn.execute("SELECT submit_tx FROM proposals WHERE chain='tron' AND submit_tx IS NOT NULL")}
+    cands = {}
+    for s in conn.execute("SELECT * FROM tron_calls WHERE method='submit' ORDER BY ts_ms"):
+        if s["tx_hash"] not in used:
+            cands.setdefault((s["destination"], s["data"]), []).append(dict(s))
+    first_conf = {r["tx_id"]: r["ts"] for r in conn.execute(
+        "SELECT tx_id, MIN(ts_ms) ts FROM tron_calls WHERE method='confirm' GROUP BY tx_id")}
+    matched = unmatched = 0
+    for r in rows:
+        tid = r["tx_id"]
+        lst = cands.get((r["destination"], (r["raw_data"] or "")[2:].lower()), [])
+        fc = first_conf.get(tid)
+        pick = None
+        if lst:
+            ok = [c for c in lst if fc is None or c["ts_ms"] <= fc]
+            pick = (max(ok, key=lambda c: c["ts_ms"]) if fc is not None else min(ok, key=lambda c: c["ts_ms"])) if ok else None
+        if pick:
+            lst.remove(pick)
+            _set_submit(conn, tid, pick)
+            matched += 1
+        else:
+            unmatched += 1
+            # flagged fallback (submit_tx stays NULL): first confirmation, else the moment we first saw the id on-chain
+            update_proposal(conn, CHAIN, tid, submitted_at=iso(fc // 1000) if fc is not None else r["first_seen_at"])
+    return matched, unmatched
+
+
+def assemble(conn, since_ms=None, stale_days=7, budget_sec=None, touched=None, first_id=None):
+    """On-chain state is the primary source: every id up to transactionCount-1 is read (destination, data, executed) and
+    all open ids are refreshed every run. Tronscan only supplies timestamps (explicit ids for confirmations, per-id
+    matching for submissions); nothing here depends on a global submission order, and a low match rate degrades
+    gracefully instead of skipping the assembly."""
     t0 = time.time()
     count = read_count()
     required = read_required()
     meta_set(conn, "tron_tx_count", count)
     meta_set(conn, "tron_required", required)
-    subs = [dict(r) for r in conn.execute(
-        "SELECT * FROM tron_calls WHERE method='submit' ORDER BY ts_ms, block, tx_hash")]
-    n = len(subs)
-    if n == 0:
-        return
-    k, share, cache = _calibrate(conn, subs, count, n)
-    off = max(0, count - n - k)
-    log.info("TRON: count=%s, submit=%s, offset k=%s, data match=%.0f%%, first id=%s", count, n, k, share * 100, off)
-    if share < 0.8:
-        log.error("TRON: submit->id mapping mismatch (match %.0f%%), assembly skipped", share * 100)
-        return
-    # --- phase A: events and proposals from submit data ---
-    for r in conn.execute("SELECT * FROM tron_calls WHERE method!='submit' AND tx_id>=? AND tx_id<?",
-                          (off, count)).fetchall():
+    row = conn.execute("SELECT MIN(tx_id) lo, MAX(tx_id) hi FROM proposals WHERE chain='tron' AND destination IS NOT NULL").fetchone()
+    if row["lo"] is None:  # empty DB: start at first_id, else where Tronscan history starts
+        n_sub = conn.execute("SELECT COUNT(*) FROM tron_calls WHERE method='submit'").fetchone()[0]
+        lo = first_id if first_id is not None else max(0, count - n_sub)
+    else:
+        lo = row["lo"]
+    # explicit-id events (confirm / revoke / execute) for ids in range
+    for r in conn.execute("SELECT * FROM tron_calls WHERE method!='submit' AND tx_id>=? AND tx_id<?", (lo, count)).fetchall():
         ensure_proposal(conn, CHAIN, r["tx_id"])
         add_event(conn, CHAIN, r["tx_id"], r["signer"], r["method"], iso(r["ts_ms"] // 1000), r["tx_hash"])
-    have = {r["tx_id"]: r["chain_verified"] for r in conn.execute(
-        "SELECT tx_id, chain_verified FROM proposals WHERE chain='tron' AND destination IS NOT NULL")}
-    has_submit = {r["tx_id"] for r in conn.execute(
-        "SELECT tx_id FROM confirmations WHERE chain='tron' AND kind='submit'")}
-    for rk, s in enumerate(subs):
-        tid = off + rk
-        if tid >= count:
+    conn.commit()
+    # 1. ids we have never read from the chain (new ids and gaps), newest first
+    have = {r[0] for r in conn.execute("SELECT tx_id FROM proposals WHERE chain='tron' AND destination IS NOT NULL")}
+    missing = [i for i in range(count - 1, lo - 1, -1) if i not in have]
+    read_new = 0
+    for tid in missing:
+        if budget_sec and time.time() - t0 > budget_sec * 1.5:
+            log.warning("TRON: time budget used, %s ids still unread (they are read first next run)", len(missing) - read_new)
             break
+        d = read_transaction(tid)
         ensure_proposal(conn, CHAIN, tid)
-        if tid not in have:
-            _apply_submit_data(conn, tid, s, required)
-        if tid not in has_submit and have.get(tid, 0) == 0:
-            _set_submit(conn, tid, s)
-    conn.commit()
-    # executed flag for not-yet-verified ones - inferred from confirmations
-    evs = events_grouped(conn, CHAIN)
-    for r in conn.execute("SELECT tx_id, chain_verified FROM proposals WHERE chain='tron'").fetchall():
-        if r["chain_verified"]:
-            continue
-        ex = infer_exec(evs.get(r["tx_id"], []), required)
-        update_proposal(conn, CHAIN, r["tx_id"], executed=1 if ex else 0, required=required)
-    conn.commit()
-    derive_all(conn, CHAIN, stale_days=stale_days)
-    conn.commit()
-    # --- phase B: on-chain verification ---
-    block_cnt: dict = {}
-    for s in subs:
-        block_cnt[s["block"]] = block_cnt.get(s["block"], 0) + 1
-    refresh_ids = set(touched or ())
-    full = (time.time() - float(meta_get(conn, "tron_full_refresh_ts", 0) or 0)) > 86400
-    rows = conn.execute("SELECT tx_id, status, executed, chain_verified FROM proposals "
-                        "WHERE chain='tron' AND tx_id>=? AND tx_id<?", (off, count)).fetchall()
-    prio = []
-    for r in rows:
-        tid = r["tx_id"]
-        opened = not r["executed"]
-        if opened and (r["status"] == "pending" or full or tid in refresh_ids):
-            prio.append((0, -tid, tid))                 # open - every time
-        elif not r["chain_verified"]:
-            amb = block_cnt.get(subs[tid - off]["block"], 1) > 1
-            prio.append((1 if amb else 2, -tid, tid))   # ambiguous, then the newest
-    prio.sort()
-    log.info("TRON: on-chain verification queue: %s ids (open/refreshed %s)", len(prio),
-             sum(1 for p in prio if p[0] == 0))
-    override, done = {}, 0
-    for pr, _, tid in prio:
-        if budget_sec and pr > 0 and time.time() - t0 > budget_sec:
-            log.warning("TRON: time budget exhausted, %s ids left to verify", len(prio) - done)
-            break
-        d = cache.get(tid) or read_transaction(tid)
         _apply_onchain(conn, tid, d, required)
-        rk = tid - off
-        s = subs[rk]
-        if s["data"] != d["data"] or s["destination"] != tron_from_hex20(d["destination_hex"]):
-            found = None
-            for j in sorted(range(max(0, rk - 8), min(n, rk + 9)), key=lambda x: abs(x - rk)):
-                if subs[j]["data"] == d["data"] and subs[j]["destination"] == tron_from_hex20(d["destination_hex"]):
-                    found = subs[j]
-                    break
-            if found is not None:
-                _set_submit(conn, tid, found)
-                log.info("TRON: id %s - submit reassigned after on-chain reconciliation", tid)
         if not d["executed"]:
-            override[tid] = read_conf_count(tid)
-        done += 1
-        if done % 10 == 0:
-            derive_all(conn, CHAIN, stale_days=stale_days, conf_override=override)
+            update_proposal(conn, CHAIN, tid, confirmations=read_conf_count(tid))
+        read_new += 1
+        if read_new % 10 == 0:
             conn.commit()
-            if done % 100 == 0:
-                log.info("TRON: verified %s/%s", done, len(prio))
-    if full:
-        meta_set(conn, "tron_full_refresh_ts", time.time())
+    conn.commit()
+    # 2. refresh EVERY open id on-chain (executed flag; confirmations for the pending ones)
+    override = {}
+    open_rows = conn.execute("SELECT tx_id, status FROM proposals WHERE chain='tron' AND executed=0 AND destination IS NOT NULL "
+                             "ORDER BY tx_id DESC").fetchall()
+    for r in open_rows:
+        tid = r["tx_id"]
+        if budget_sec and time.time() - t0 > budget_sec * 3:
+            log.warning("TRON: time budget used while refreshing open ids")
+            break
+        d = read_transaction(tid)
+        update_proposal(conn, CHAIN, tid, executed=int(d["executed"]), required=required, chain_verified=1)
+        if not d["executed"] and r["status"] == "pending":
+            override[tid] = read_conf_count(tid)
+    conn.commit()
+    # 3. timestamps
+    matched, unmatched = match_submissions(conn)
+    if unmatched:
+        log.warning("TRON: %s proposals have no matching submitTransaction in Tronscan (submitted_at falls back to the first "
+                    "confirmation, %s matched this run)", unmatched, matched)
     derive_all(conn, CHAIN, stale_days=stale_days, conf_override=override)
     conn.commit()
+    log.info("TRON: count=%s, read %s new ids, refreshed %s open ids, submissions matched %s / unmatched %s", count, read_new,
+             len(open_rows), matched, unmatched)
 
 
 def sync(conn, since_ts=None, stale_days=7, budget_sec=None):

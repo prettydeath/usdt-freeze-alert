@@ -72,7 +72,7 @@ def derive_all(conn, chain, ids=None, stale_days=7, conf_override=None):
     """Recomputes derived fields for proposals (all or the given ids).
     conf_override: {tx_id: onchain_confirmation_count} for pending."""
     evs = events_grouped(conn, chain, set(ids) if ids is not None else None)
-    q = "SELECT tx_id, executed, required, confirmations FROM proposals WHERE chain=?"
+    q = "SELECT tx_id, executed, required, confirmations, submitted_at FROM proposals WHERE chain=?"
     rows = conn.execute(q, (chain,)).fetchall()
     for r in rows:
         tid = r["tx_id"]
@@ -89,7 +89,7 @@ def derive_all(conn, chain, ids=None, stale_days=7, conf_override=None):
         if conf_override and tid in conf_override and not executed:
             conf = conf_override[tid]
         vals["confirmations"] = conf
-        sub_ts = vals.get("submitted_at")
+        sub_ts = vals.get("submitted_at") or r["submitted_at"]  # fallback: stored time (e.g. first confirmation)
         if executed:
             ex = infer_exec(ev, r["required"])
             if ex is None and ev:

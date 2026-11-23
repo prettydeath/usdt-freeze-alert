@@ -128,3 +128,15 @@ def test_run_alerts_noop_without_config(tmp_path, monkeypatch):
 def test_sample_messages_render():
     msgs = alerts.sample_messages()
     assert len(msgs) == 10 and all(isinstance(m, str) and m for m in msgs)
+
+
+def test_new_proposal_without_tronscan_submit_still_alerts(tmp_path):
+    """TRON is on-chain first: a brand-new proposal may not be in Tronscan yet (no submitted_at) - it must still alert."""
+    conn = connect(tmp_path / "a.sqlite")
+    ensure_proposal(conn, "tron", 12000)
+    update_proposal(conn, "tron", 12000, destination="x", function="addBlackList", target=ADDR, executed=0,
+                    confirmations=1, required=2, status="pending", submitted_at=None, balance_now=1000.0)
+    conn.execute("UPDATE proposals SET first_seen_at=? WHERE tx_id=12000", (iso(NOW - 120),))
+    conn.commit()
+    ev = alerts.collect_events(conn, {("x", 1): (0, 0, 2, "f", "p")}, 0, set(), now=NOW, balances=NOBAL)
+    assert [e["kind"] for e in ev] == ["new"]

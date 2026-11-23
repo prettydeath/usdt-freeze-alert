@@ -253,7 +253,7 @@ def collect_events(conn, before, max_freeze_rowid, before_pairs, auth_changes=()
     for r in conn.execute(f"SELECT * FROM proposals WHERE function IN ({qm})", TRACKED).fetchall():
         key = (r["chain"], r["tx_id"])
         prev = before.get(key)
-        sub = parse_iso(r["submitted_at"])
+        sub = parse_iso(r["submitted_at"]) or parse_iso(r["first_seen_at"])
         exe = parse_iso(r["executed_at"])
         fn = r["function"]
         if fn in FREEZE_FUNCS and r["status"] == "pending" and prev is None and sub and now - sub <= FRESH_SEC \
