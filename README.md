@@ -7,59 +7,87 @@
   <img alt="chains" src="https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fprettydeath%2Fusdt-freeze-alert%2Fdata%2Fsite%2Fbadges%2Fchains.json">
   <img alt="python" src="https://img.shields.io/badge/python-3.11%2B-blue">
   <img alt="license" src="https://img.shields.io/badge/license-MIT-green">
+  <a href="https://t.me/usdt_freeze_alert"><img alt="telegram" src="https://img.shields.io/badge/telegram-alerts-26A5E4?logo=telegram&logoColor=white"></a>
 </p>
 
-Tether freezes USDT through multisig wallets. The proposal is public before it is executed - this project watches
-those queues across chains, stores everything in SQLite, measures how long proposals wait, and renders a static dashboard.
+<h3 align="center">Watch Tether's freeze queue on 30+ chains. See the proposal before the address is frozen.</h3>
 
-**Live dashboard: https://prettydeath.github.io/usdt-freeze-alert/**
+<p align="center"><b><a href="https://prettydeath.github.io/usdt-freeze-alert/">Live dashboard</a></b> · <a href="https://t.me/usdt_freeze_alert">Telegram alerts</a> · <a href="CHANGELOG.md">Changelog</a></p>
 
 <p align="center">
   <img alt="pending now" src="https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fprettydeath%2Fusdt-freeze-alert%2Fdata%2Fsite%2Fbadges%2Fpending.json&style=for-the-badge">
   <img alt="median delay" src="https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fprettydeath%2Fusdt-freeze-alert%2Fdata%2Fsite%2Fbadges%2Fmedian.json&style=for-the-badge">
   <img alt="freezes 7d" src="https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fprettydeath%2Fusdt-freeze-alert%2Fdata%2Fsite%2Fbadges%2Ffreezes7d.json&style=for-the-badge">
+  <img alt="open signals" src="https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fprettydeath%2Fusdt-freeze-alert%2Fdata%2Fsite%2Fbadges%2Fsignals.json&style=for-the-badge">
+  <img alt="OFAC-listed frozen" src="https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fprettydeath%2Fusdt-freeze-alert%2Fdata%2Fsite%2Fbadges%2Fofac.json&style=for-the-badge">
 </p>
 
-<p align="center">
-  <a href="assets/dashboard-dark.png"><img src="assets/dashboard-dark.png" alt="Dashboard (dark)" width="49%"></a>
-  <a href="assets/dashboard-light.png"><img src="assets/dashboard-light.png" alt="Dashboard (light)" width="49%"></a>
-</p>
+<p align="center"><img src="assets/demo.gif" alt="Demo: paste addresses, see BLOCKED banners, check live on-chain, open the address page" width="92%"></p>
 
-## How a freeze happens
+## Why
+
+- **See freezes before they execute.** Tether freezes through multisig wallets, and the proposal is public first. Every queue is polled, signatures are counted, and the wait between *proposed* and *executed* is measured.
+- **Early cross-chain signals.** An address frozen on one chain that still holds USDT, USDT0 or USDC on another chain where it is *not* blocked yet becomes a signal, with the lag until the second chain follows.
+- **Where the money went.** Outgoing transfers in the 72 hours before each freeze, split into funds that escaped, funds moved between addresses that were frozen too, and funds moved between proposal and execution (front-run).
+
+## What you get
+
+<table>
+<tr>
+<td width="50%"><a href="assets/dashboard-dark.png"><img src="assets/dashboard-dark.png" alt="Live tab (dark)"></a><br><sub><b>Live</b>: pending queue, at-risk signals, recent executions</sub></td>
+<td width="50%"><a href="assets/dashboard-light.png"><img src="assets/dashboard-light.png" alt="Live tab (light)"></a><br><sub>Light theme, same data</sub></td>
+</tr>
+<tr>
+<td><a href="assets/analytics-dark.png"><img src="assets/analytics-dark.png" alt="Analytics (dark)"></a><br><sub><b>Analytics</b>: frozen / burned / sent after freeze, by chain and period</sub></td>
+<td><a href="assets/pulse-dark.png"><img src="assets/pulse-dark.png" alt="Pulse heatmap (dark)"></a><br><sub><b>Pulse</b>: execution heatmap, signer speed, median delay, queue length</sub></td>
+</tr>
+<tr>
+<td><a href="assets/outflows-dark.png"><img src="assets/outflows-dark.png" alt="Moved out before the freeze (dark)"></a><br><sub><b>Funds moved before the freeze</b>: escaped vs internal, front-run list, cross-chain lag</sub></td>
+<td><a href="assets/clusters-dark.png"><img src="assets/clusters-dark.png" alt="Clusters (dark)"></a><br><sub><b>Clusters</b>: batches, cross-chain and shared-counterparty groups</sub></td>
+</tr>
+<tr>
+<td colspan="2"><a href="assets/watchlist-states-dark.png"><img src="assets/watchlist-states-dark.png" alt="Watchlist states: blocked, pending, unfrozen, clean" width="62%"></a><br><sub><b>Watchlist</b>: ⛔ blocked · ⏳ proposed · 🔓 unfrozen · ✅ clean, with an opt-in live on-chain check (everything runs in your browser)</sub></td>
+</tr>
+<tr>
+<td><a href="assets/address-dark.png"><img src="assets/address-dark.png" alt="Address page (dark)"></a><br><sub><b>Address page</b> (<code>#addr=&lt;address&gt;</code>): shareable, with a copyable Markdown / JSON report</sub></td>
+<td><a href="assets/status-dark.png"><img src="assets/status-dark.png" alt="Status page (dark)"></a><br><sub><b>Status</b>: per-source health and coverage</sub></td>
+</tr>
+</table>
+
+<p align="center"><img src="assets/mobile-strip.png" alt="Mobile: live, watchlist, address page" width="86%"></p>
+
+Also: ⚖ **OFAC SDN** flag and reason hints (hack, scam, ransomware) from [wallet-attribution](https://github.com/prettydeath/wallet-attribution) labels, treasury / supply operations kept apart from freezes, tooltips and a glossary on every action, CSV / JSON export on every table, light and dark themes.
+
+## How it works
 
 ```mermaid
 flowchart LR
-  A[Owner submits<br/>addBlackList] --> B[Other owners sign<br/>3 of 6 / 2 of 3]
-  B --> C{Threshold<br/>reached?}
-  C -- yes --> D[Executed: address frozen]
-  C -- no --> B
-  A -. visible here .-> B
+  O["Tether owners<br/>submit a proposal"] --> Q{"Queue"}
+  Q -->|on-chain multisig| P1["Poll contract<br/>ETH · TRON · AVAX ..."]
+  Q -->|Safe API, off-chain| P2["Safe Transaction Service<br/>USDT0 chains"]
+  Q -->|executed only| P3["Token events<br/>BlockPlaced · BlockReleased · Destroyed"]
+  P1 --> DB[("SQLite")]
+  P2 --> DB
+  P3 --> DB
+  DB --> A["Analytics<br/>inflows · outflows · clusters"]
+  DB --> S["Cross-chain signals"]
+  L["wallet-attribution<br/>labels · OFAC SDN"] --> A
+  A --> W["Static dashboard<br/>GitHub Pages"]
+  S --> W
+  S --> T["Telegram alerts"]
 ```
 
-The window between *submitted* and *executed* is the early warning. Median is hours on Ethereum and TRON; about 3% of
-Ethereum executions land in the same block and cannot be seen coming.
+The window between **submitted** and **executed** is the early warning. The median is minutes to hours, and some freezes execute in the same block.
 
 ## Coverage
 
 | Mechanism | Chains |
 |---|---|
-| **On-chain pending** (multisig contract) | Ethereum, TRON, Avalanche, Celo, Kaia, Kava, NEAR, Aptos, TON, Arbitrum USDT (pre-2025, Tether MSW 3/6) |
-| **Safe API pending** (off-chain, not guaranteed) | USDT0 on Arbitrum, Polygon, Plasma, Mantle, Optimism, Monad, Unichain, Stable, Morph, Ink, HyperEVM, Berachain |
-| **Executed only** (no queue exists) | USDC on Ethereum, USDC and USDT on Solana; USDT0 on Flare, Conflux, Sei, MegaETH, Rootstock (from token events) |
+| **On-chain queue** (multisig contract, visible before execution) | Ethereum, TRON, Avalanche, Celo, Kaia, Kava, NEAR, Aptos, TON, Arbitrum USDT (before 2025) |
+| **Safe API queue** (off-chain, a signer can skip it) | USDT0 on Arbitrum, Polygon, Plasma, Mantle, Optimism, Monad, Unichain, Stable, Morph, Ink, HyperEVM, Berachain |
+| **Executed only** (no public queue) | USDC on Ethereum, USDC and USDT on Solana, USDT0 on Flare, Conflux, Sei, MegaETH, Rootstock, X Layer |
 
-For **USDT0** the token's own `BlockPlaced` / `BlockReleased` / `DestroyedBlockedFunds` events are the source of truth for executed freezes, unfreezes and burns (Etherscan V2 or Blockscout APIs). Each event is linked to the Safe transaction that executed it (same tx hash and address) to get the proposal time and a real delay; events without a published Safe proposal are counted as **no public proposal** (delay n/a), e.g. 1 of 10 Arbitrum USDT0 freezes. Events from before an owner change are attributed to the previous owner (Arbitrum: 31 freezes and 5 burns in 2022-2024 were executed by Tether's Gnosis MSW 3/6 and are tracked as "Arbitrum USDT", with real proposal times). Optimism and X Layer have no usable explorer API, so their events are read with `eth_getLogs` from the public RPC in a resumable scan (new blocks first, then history backwards within a time budget on every run); the **Status** tab shows how far the scan has got. Other chains returned no events.
-
-## Analytics
-
-<p align="center"><img src="assets/analytics-dark.png" alt="Analytics tab" width="80%"></p>
-
-The **Analytics** tab (period 30d / 90d / 12m / all, token filter) answers "how much money is behind the freezes":
-
-- **Frozen $**: burned amount if the address was later destroyed, otherwise its current balance (frozen funds cannot move).
-- **Burned $**: exact amount of the `DestroyedBlackFunds` / `DestroyedBlockedFunds` event.
-- **Sent after freeze**: transfers to an address *while it was blacklisted* (ETH, USDC, Celo, Avalanche, TRON), with the part **later burned**. Broader than "sent to a blacklisted address and burned at the next destroy" (e.g. BitOK's count), because we count every inflow during the frozen interval. The zero address and token contracts, which Tether blacklists to burn mistaken sends, are excluded. (USDC rejects transfers to blacklisted addresses, so it shows none.)
-- **Unfrozen**: count, and $ only where a balance was observed while frozen.
-- Balances are filled gradually (`ANALYTICS_BUDGET_SEC` per run); the page shows "balances checked N of M" until complete. Reissue to victims happens off-chain / through treasury transfers and is not tracked.
+For USDT0 the token's own `BlockPlaced` / `BlockReleased` / `DestroyedBlockedFunds` events are the source of truth; they are linked to the Safe transaction that executed them to get the real delay.
 
 ## Quick start
 
@@ -69,93 +97,82 @@ export ETHERSCAN_API_KEY=...        # required for Ethereum history
 python -m freezewatch run           # update + stats + site/index.html
 ```
 
-`python -m freezewatch backfill --chain all` fetches full history (resumable). `run --loop --interval 60` is a local daemon.
-`python -m pytest` runs the offline test-suite.
+`backfill --chain all` fetches full history (resumable), `run --loop --interval 60` is a local daemon, `python -m pytest` runs the offline tests.
 
-## Run it on GitHub Actions
+### Run it on GitHub Actions
 
-Fork, add secrets, enable Actions. A cron job runs every 10 minutes and force-pushes **one orphan commit** with
-`data/` and `site/` to the `data` branch, so `main` stays code-only and history never grows. The dashboard is
-published to Pages from that branch only when something changed.
+1. **Fork**, then add the secrets below (*Settings → Secrets and variables → Actions*).
+2. Enable **Actions** and **Pages** (*Settings → Pages → Source: GitHub Actions*).
+3. The `watch` job runs every ~10 minutes and force-pushes **one orphan commit** with `data/` and `site/` to the `data` branch, so `main` stays code-only. Pages is published from that branch when something changed.
+4. **GitHub's cron is unreliable** (runs get delayed or skipped). For steady updates, add an external scheduler such as [cron-job.org](https://cron-job.org) that calls the dispatch API every few minutes:
+
+```bash
+curl -X POST \
+  -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+  https://api.github.com/repos/<you>/usdt-freeze-alert/actions/workflows/watch.yml/dispatches \
+  -d '{"ref":"main"}'
+```
+
+`GH_TOKEN` is a fine-grained token with *Actions: Read and write* on the fork only.
 
 | Secret | Required | Purpose |
 |---|---|---|
-| `ETHERSCAN_API_KEY` | for Ethereum | Ethereum and USDC logs (Etherscan V2). Without it Ethereum is skipped with a warning. Comma-separated list allowed |
-| `TRONGRID_API_KEY` | no | faster TRON reads (public limit is 3 req/s). Comma-separated list allowed |
+| `ETHERSCAN_API_KEY` | for Ethereum | Ethereum, USDC and USDT0 logs (Etherscan V2). Several keys can be comma-separated; a rate-limited or invalid key is cooled down and the next one is used |
+| `TRONGRID_API_KEY` | no | faster TRON reads. Comma-separated list allowed |
 | `SAFE_API_KEY` | no | Safe Transaction Service. Comma-separated list allowed |
 | `TONAPI_KEY` | no | tonapi.io. Comma-separated list allowed |
 | `ETH_RPC_URL`, `SOLANA_RPC_URL` | no | your own RPCs (the public Solana RPC is very slow) |
 | `TG_BOT_TOKEN`, `TG_CHAT_ID` | no | [Telegram alerts](#telegram-alerts) |
 
-Seed the `data` branch once from a local run (see the commands in the release notes), or let the first runs build it.
-
-Several keys are used round-robin; a rate-limited or invalid key is cooled down and the next one is tried (key values are never logged).
+Key values are never logged. The first runs build the `data` branch; a long first backfill can be started from the *Actions* tab (`watch` → *Run workflow* → backfill).
 
 ## Telegram alerts
 
-Follow the channel: **[t.me/usdt_freeze_alert](https://t.me/usdt_freeze_alert)**. Alerts are sent by the GitHub Actions job
-only (no interactive bot): `TG_BOT_TOKEN` + `TG_CHAT_ID` secrets, nothing is sent without them.
+**[t.me/usdt_freeze_alert](https://t.me/usdt_freeze_alert)**. Sent by the Actions job only (no interactive bot), once per event, at most 20 per run, never replayed.
 
 | | Alert |
 |---|---|
-| 🚨 | **Freeze incoming**: new addBlackList / addToBlockedList proposal with balance, signature bar and usual time-to-execution |
-| ⚠️ | **Last signature pending** (needs `required` > 2 or progress beyond the initial signature) |
-| 🧊 | **Frozen**: executed, with delay or "no advance notice" |
-| 💸 | **Sent to a frozen address**: a transfer (>= `ALERT_MIN_INFLOW`, default $1,000) to an already-blacklisted address; the funds are locked at once |
-| 🔥 | **Funds burned**: destroyBlackFunds / destroyBlockedFunds executed |
-| 🔗 | **Cross-chain signal**: an address frozen on one chain still holds >= $1,000 on another |
+| 🚨 | **Freeze incoming**: new proposal with balance, signature bar and the usual time to execution |
+| ⚠️ | **Last signature pending** |
+| 🧊 | **Frozen**: executed, with the delay or "no advance notice" |
+| 🔗 | **Cross-chain signal**: frozen on one chain, still holds ≥ $1,000 elsewhere, not blocked there |
+| 💸 | **Sent to a frozen address**: funds locked at once |
+| 🔥 | **Funds burned** |
 | 🟢 | **Unfrozen** |
 
-Each event is sent once (dedupe table), at most 20 messages per run then one `+N more events` summary, history is never
-replayed (the first run on an empty database sends nothing). Optional `ALERT_MIN_BALANCE` filters small proposals.
-Preview every template without sending: `python -m freezewatch alert-test` (`--send` posts one test message).
+Preview every template without sending: `python -m freezewatch alert-test`.
 
-## Limits worth knowing
+## Data and export
 
-- **Speed.** Tether now often executes a freeze within 1–2 minutes of the proposal. The GitHub Actions job runs every ~10 minutes, so some proposals reach the channel already executed. True early warning needs a self-hosted poller checking every 10–20 seconds.
-- TRON execution time is inferred from confirmations (the multisig emits no queryable events); every proposal is cross-checked against on-chain `executed`.
-- Safe queues live off-chain: a signer can skip them, so "no proposal" does not mean "no freeze".
-- Solana freezes a token account, not the wallet; Solana USDT history fills gradually on the public RPC.
-- Not financial advice.
-
-## Data & export
-
-Everything is on the `data` branch (CI refreshes it every few minutes); raw URLs under
-`https://raw.githubusercontent.com/prettydeath/usdt-freeze-alert/data/`:
+Everything is on the `data` branch (`https://raw.githubusercontent.com/prettydeath/usdt-freeze-alert/data/`):
 
 | File | Content |
 |---|---|
-| `data/proposals.csv`, `data/blacklist.csv` | all proposals and the current blacklist |
-| `data/inflows.csv` | transfers sent to already-frozen addresses |
-| `site/analytics.json` | aggregates behind the Analytics tab |
-| `site/addresses.json` | compact per-address index used by the dashboard's lookup |
+| `data/proposals.csv`, `data/blacklist.csv` | all proposals (with a `category` column) and the current blacklist |
+| `data/inflows.csv`, `data/outflows.csv` | transfers to frozen addresses and the 72 h before each freeze (with labels, internal / truncated flags) |
+| `data/signals.csv` | cross-chain signals |
+| `site/analytics.json`, `site/health.json`, `site/addresses.json` | aggregates, per-source health, per-address index |
 | `data/freezewatch.sqlite` | the full database |
 
-Every table on the dashboard has **⬇ CSV / ⬇ JSON** buttons that export exactly the rows currently shown (chain pills, period and token filters apply).
+Every dashboard table has **CSV / JSON** buttons for exactly the rows shown. Curated reasons live in [`config/reasons.yaml`](config/reasons.yaml) (public source required; empty on purpose until verified).
 
-The **Watchlist** tab and the header search look addresses up (EVM, TRON, Solana, NEAR, Aptos, TON) in `addresses.json`. It runs entirely in the browser: addresses are never sent anywhere, the saved list lives in `localStorage`, and `#watch=addr1,addr2` in the URL pre-fills it. Results export as CSV / JSON.
+## Limits
 
-**Status tab.** Every run records, per source, the last success, the last error (sanitised), consecutive failures, rows added and a coverage note (history back to a date, `balances N/M`, `inflows N/M`, on-chain vs DB gap); `site/health.json` has the same data. The header pill turns amber/red when a source is degraded or failed 3 runs in a row.
+- **Speed.** Tether often executes within 1–2 minutes of the proposal and the job runs every ~10 minutes, so some proposals arrive already executed. True early warning needs a self-hosted poller every 10–20 seconds.
+- **Safe queues are off-chain.** A signer can skip them, so "no public proposal" does not mean "no freeze".
+- **TRON execution time is inferred** from confirmations; every proposal is cross-checked against the on-chain `executed` flag.
+- **Coverage gaps.** X Layer history is scanned in small resumable steps (no free log API); Solana history fills gradually on the public RPC; outflow and balance scans are budgeted per run (see the *Status* tab for N/M).
+- Labels, reasons and clusters are third-party hints and leads, not findings. Not financial or legal advice.
 
-**Cross-chain signals.** On every run each fresh freeze (executed or still a proposal) is checked on all other tracked chains: blocked or not, and the current balance. If the address is not blocked there and holds at least $1,000, a signal opens ("At risk on other chains" on the Live tab, a Telegram "CROSS-CHAIN SIGNAL" alert once). Open signals are re-checked until the other chain blocks the address; the lag and whether the balance dropped first ("moved before") feed the Analytics "Cross-chain lag" block. Signals expire after 14 days (`data/signals.csv`).
+## Sources and attribution
 
-**Funds moved before the freeze.** For each executed freeze (newest first, budgeted and resumable) the outgoing USDT transfers of the address in the 72 hours before execution are stored, with the transfers between proposal submission and execution marked "in-window" (Ethereum, USDC, Celo, Avalanche and TRON; `data/outflows.csv`). Analytics shows the 12-month totals, the top recipient entities and the freezes where at least half was moved inside the window.
+- Chain data: Etherscan V2, public RPCs, TronGrid / Tronscan, Safe Transaction Service, nearblocks, Aptos Indexer, tonapi, Solana RPC.
+- Labels, exchange / bridge entities, reason hints and **OFAC SDN** addresses: [prettydeath/wallet-attribution](https://github.com/prettydeath/wallet-attribution) (MIT) and its upstream sources.
+- Delays were cross-checked against [BitOK's tether-blacklist-research](https://github.com/BitOKorg/tether-blacklist-research) (CC BY 4.0): Ethereum matches 2251 of 2251 shared proposals, TRON 7204 of 7204. No BitOK data is included here.
 
-**Clusters.** Batch (freezes on one chain within 10 minutes), cross-chain (one address frozen on several chains) and counterparty clusters (frozen addresses sharing senders or recipients; labelled exchanges, bridges, protocols and hubs touching more than 6 addresses never connect clusters). A cluster is a lead, not proof of a common owner.
+## Development
 
-**Labels.** Entity, sanctions and reason labels come from the public [wallet-attribution](https://github.com/prettydeath/wallet-attribution) dataset (MIT) and its upstream sources (DefiLlama CEX lists, GraphSense TagPacks, Forta, etherscan-labels, OFAC SDN and others). The needed networks are fetched at most once a day (ETag cache) and only the labels of addresses that appear in our data are kept; they are always shown as "label from wallet-attribution" with the upstream source link, never as our own claim.
-
-**Address page and report.** `#addr=<address>` opens a shareable full-page view of one address (status, timeline, balances, funds moved before and after, labels, clusters, signals, reason / OFAC flag) with "Copy report", ".md" / ".json" download and a print-friendly layout (Print to PDF). Watchlist cards link to it ("Open page").
-
-**Reasons and sanctions.** `config/reasons.yaml` (tracked on main, `data/` lives on the data branch) holds curated entries `{title, category, date, source_url, chain?, addresses[]}`; an entry without a public https source is rejected, and the file ships empty on purpose. Automatic hints come from wallet-attribution categories (hack, ransomware, scam, darknet, terrorism, mixer, sanctioned). "⚖ OFAC SDN" means a wallet-attribution label whose sources include `ofac-sdn`. Analytics shows known vs unknown reasons and the OFAC-listed frozen addresses and value.
-
-**Pulse.** Heatmap of executions (hour of day x weekday, UTC, per chain group), per-signer confirmations, median time to confirm and share of last signatures, monthly median delay per chain, and the open-proposal queue over time.
-
-**Live check (opt-in).** Each result has a "Check live on-chain" button (and "Check all"). It asks the chains directly from your browser - `isBlackListed` / `isBlacklisted` / `isBlocked` plus `balanceOf` on ETH USDT and USDC, TRON, Avalanche, Celo, Kaia, Kava, 18 USDT0 chains, Solana token accounts, NEAR (`get_blacklist_status`), Aptos (`usdt::is_frozen`) and TON (jetton wallet `get_status`) - so it also works for addresses that are not in our index, and merges the answer with the index (freeze time, tx, proposal, delay, signers, burns, inflows, timeline). Privacy: **this does send the address to public RPC providers** (listed next to the button); the index lookup does not, and the live check never runs automatically or from a `#watch=` link. Every RPC used was tested for browser CORS access.
-
-Everything is read from public chain data and APIs. Delays were cross-checked against
-[BitOK's tether-blacklist-research](https://github.com/BitOKorg/tether-blacklist-research) (bitok.org, CC BY 4.0):
-Ethereum matches on 2251 of 2251 shared proposals, TRON on 7204 of 7204. No BitOK data is included in this repository.
+`python -m pytest` (offline). README images and the demo GIF are generated from a fresh render with `python tools/make_assets.py` (needs `playwright` and `pillow`).
 
 ## License
 
