@@ -118,6 +118,15 @@ def build(conn, labels=None):
         if k:
             xrows.append(("arb1" if r["chain"] == "arb_usdt" else r["chain"], k, ts))
 
+    for r in conn.execute("SELECT source, subject, ts, tx_hash FROM freezes WHERE action='freeze'"):
+        a = analytics.norm(r["source"], r["subject"])
+        if a and a not in analytics.special_sinks(r["source"]):
+            ts = parse_iso(r["ts"])
+            rows.append((r["source"], a, ts, r["tx_hash"]))
+            k = crosschain.norm_addr(r["source"], r["subject"])
+            if k:
+                xrows.append((r["source"], k, ts))
+
     def connector(chain, cp):
         net = NETWORK_OF.get(chain)
         if not net:
@@ -158,13 +167,26 @@ def save(conn, clusters):
     return True
 
 
-def payload(clusters, limit=40, member_sample=25):
-    """Dashboard JSON: biggest clusters first (batches of 2 are noise on a top list)."""
+def _member(m, labels):
+    """[chain, address, label?] - a labelled member (e.g. an exchange hot wallet that was itself frozen) keeps its label."""
+    net = NETWORK_OF.get(m[0])
+    x = labels.get((net, key_of(net, m[1]))) if net and labels else None
+    return [m[0], m[1]] + ([[x["entity"], x["label"], x["category"], x["source"], x["source_url"], x["confidence"]]] if x else [])
+
+
+def payload(clusters, limit=40, member_sample=25, labels=None):
+    """Dashboard JSON: biggest clusters first (batches of 2 are noise on a top list). Labelled members are listed first, so a
+    labelled frozen wallet is visible as a member even though labelled addresses never act as connectors."""
     keep = [c for c in clusters if c["size"] >= 3 or c["kind"] != "batch"]
+    def has_label(c):
+        return bool(labels) and any(labels.get((NETWORK_OF.get(m[0]), key_of(NETWORK_OF.get(m[0]), m[1]))) for m in c["members"])
+    # the top list, plus clusters that contain a labelled (e.g. exchange) wallet even if they rank lower
+    extra = [c for c in keep[limit:] if has_label(c)][:80]
     out = []
-    for c in keep[:limit]:
+    for c in keep[:limit] + extra:
+        mem = sorted(c["members"], key=lambda m: 0 if (labels and labels.get((NETWORK_OF.get(m[0]), key_of(NETWORK_OF.get(m[0]), m[1])))) else 1)
         out.append({"id": c["id"], "kind": c["kind"], "size": c["size"], "chains": c["chains"], "usd": c["total_usd"],
-                    "first": c["first"], "last": c["last"], "members": [list(m) for m in c["members"][:member_sample]]})
+                    "first": c["first"], "last": c["last"], "members": [_member(m, labels) for m in mem[:member_sample]]})
     kinds = {}
     for c in clusters:
         kinds[c["kind"]] = kinds.get(c["kind"], 0) + 1

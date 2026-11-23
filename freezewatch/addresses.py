@@ -152,8 +152,10 @@ def _add_insights(idx, rec, extras):
             continue
         lst = []
         for f in freezes[-3:]:
-            lst.append([parse_iso(f["freeze_ts"]), round(f["total"], 2), round(f["window"], 2),
-                        [[x["to"], round(x["usd"], 2), round(x["w"], 2), _label_arr(x["label"])] for x in f["recipients"][:6]]])
+            # freeze time, escaped $, escaped in-window $, recipients [to, $, in-window $, label, internal], internal $, truncated
+            lst.append([parse_iso(f["freeze_ts"]), round(f["escaped"], 2), round(f["window"], 2),
+                        [[x["to"], round(x["usd"], 2), round(x["w"], 2), _label_arr(x["label"]), int(x["internal"])]
+                         for x in f["recipients"][:8]], round(f["internal"], 2), int(f["truncated"]), int(f["service"])])
         rec(key).setdefault("o", {})[chain] = lst
     big = {c["id"] for c in extras.get("cluster_list", []) if c["size"] >= 3 or c["kind"] != "batch"}
     for (chain, addr), ids in extras.get("cluster_index", {}).items():

@@ -187,6 +187,8 @@ CREATE TABLE IF NOT EXISTS outflow_done (
     checked_at TEXT,
     total_out REAL,
     window_out REAL,
+    n_transfers INTEGER,
+    truncated INTEGER,           -- 1 = the transfer list hit a cap; NULL = scanned before this was tracked
     PRIMARY KEY (chain, frozen_address, freeze_ts)
 );
 
@@ -250,6 +252,11 @@ def connect(path: Path | str | None = None) -> sqlite3.Connection:
     if sc and "stage" not in sc:  # pre-release shape of the signals table (never populated)
         conn.execute("DROP TABLE signals")
     conn.executescript(SCHEMA)
+    od = {r["name"] for r in conn.execute("PRAGMA table_info(outflow_done)")}
+    if "truncated" not in od:  # migration: truncation tracking
+        conn.execute("ALTER TABLE outflow_done ADD COLUMN n_transfers INTEGER")
+        conn.execute("ALTER TABLE outflow_done ADD COLUMN truncated INTEGER")
+        conn.commit()
     cols = {r["name"] for r in conn.execute("PRAGMA table_info(proposals)")}
     if "public_proposal" not in cols:  # migration of old DBs
         conn.execute("ALTER TABLE proposals ADD COLUMN public_proposal INTEGER NOT NULL DEFAULT 1")

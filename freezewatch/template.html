@@ -1191,16 +1191,17 @@ function renderSignals(){
 function renderInsights(){
   const O = D.outflows, S = D.signals, C = D.clusters;
   if(O){
-    $('onote').textContent = 'Last 12 months, ' + (O.checked || 0).toLocaleString('en-US') + ' executed freezes checked so far (Ethereum, USDC, Celo, Avalanche, TRON; the scan is budgeted per run and continues). Window = 72 h before execution.';
-    const pct = O.moved_12m + O.frozen_12m > 0 ? (100 * O.moved_12m / (O.moved_12m + O.frozen_12m)).toFixed(1) + '% of moved + frozen (' + usdS(O.frozen_12m) + ' frozen)' : 'amount frozen unknown';
+    $('onote').textContent = 'Last 12 months, ' + (O.checked || 0).toLocaleString('en-US') + ' executed freezes checked so far (Ethereum, USDC, Celo, Avalanche, TRON; the scan is budgeted per run and continues). Window = 72 h before execution. "Escaped" excludes transfers to addresses that were (or became) frozen too and moves inside one cluster' + (O.truncated ? '; ' + O.truncated + ' freezes with very many transfers are marked truncated and never counted as front-run' : '') + (O.service_n ? '. ' + O.service_n + ' labelled exchange / service wallets (' + usdS(O.service_12m) + ' of routine transfers) are reported apart and not counted' : '') + '.';
+    const pct = O.moved_12m + O.frozen_12m > 0 ? (100 * O.moved_12m / (O.moved_12m + O.frozen_12m)).toFixed(1) + '% of escaped + frozen (' + usdS(O.frozen_12m) + ' frozen)' : 'amount frozen unknown';
     $('okpis').innerHTML = [
-      ['📤 Moved out, 72 h before', usdS(O.moved_12m), pct + ' · ' + O.with_out + ' of ' + O.checked + ' freezes had outgoing transfers'],
-      ['⏱ In the window', usdS(O.window_12m), 'between proposal and execution'],
-      ['🏃 Front-run', String(O.n_frontrun), 'freezes where in-window outflow was at least half of (outflow + frozen)'],
+      ['📤 Escaped, 72 h before', usdS(O.moved_12m), pct + ' · ' + O.with_out + ' of ' + O.checked + ' freezes had outgoing transfers'],
+      ['🔁 Moved between frozen addresses', usdS(O.internal_12m), 'not an escape: the recipients were also frozen, or the same entity or cluster (kept out of the totals)'],
+      ['⏱ Escaped in the window', usdS(O.window_12m), 'between proposal and execution'],
+      ['🏃 Front-run', String(O.n_frontrun), 'escaped in-window outflow was at least half of (outflow + frozen); truncated freezes excluded'],
     ].map(([l, v, s]) => `<div class="kpi"><div class="l">${l}</div><div class="v">${v}</div><div class="s">${s}</div></div>`).join('');
     $('oent').innerHTML = O.top_entities.length ? '<tr><th>Entity</th><th>Category</th><th>Received</th><th>Transfers</th><th>Source</th></tr>' + O.top_entities.map(e => `<tr><td><b>${esc(e.entity)}</b></td><td>${esc(e.category)}</td><td>${usd(e.usd)}</td><td>${e.n}</td><td>${e.url ? '<a href="' + esc(e.url) + '" target="_blank" rel="noopener">wallet-attribution ↗</a>' : ''}</td></tr>`).join('') : '<tr><td class="empty">No labelled recipients yet.</td></tr>';
     $('ofnote').textContent = 'Shown: the 25 largest.';
-    $('ofront').innerHTML = O.frontrun.length ? '<tr><th>Chain</th><th>Address</th><th>Frozen (UTC)</th><th>Moved in window</th><th>Frozen</th><th>Share</th></tr>' + O.frontrun.map(f => `<tr><td class="ch">${esc(cshort(f.chain))}</td><td class="m addr">${addrL(f.chain, f.address)}</td><td class="m">${esc(dt(f.freeze_ts))}</td><td>${usd(f.window_out)}</td><td>${usd(f.frozen_usd)}</td><td>${Math.round(100 * f.share)}%</td></tr>`).join('') : '<tr><td class="empty">None yet.</td></tr>';
+    $('ofront').innerHTML = O.frontrun.length ? '<tr><th>Chain</th><th>Address</th><th>Frozen (UTC)</th><th>Escaped in window</th><th>Frozen</th><th>Share</th></tr>' + O.frontrun.map(f => `<tr><td class="ch">${esc(cshort(f.chain))}</td><td class="m addr">${addrL(f.chain, f.address)}${f.label ? ' <span class="tag t-des" title="label from wallet-attribution">' + esc(f.label) + '</span>' : ''}</td><td class="m">${esc(dt(f.freeze_ts))}</td><td>${usd(f.window_out)}</td><td>${usd(f.frozen_usd)}</td><td>${Math.round(100 * f.share)}%</td></tr>`).join('') : '<tr><td class="empty">None yet.</td></tr>';
   }
   if(S){
     const st = S.stats;
@@ -1220,7 +1221,7 @@ function renderInsights(){
     let h = '<tr><th>Cluster</th><th>Type</th><th>Addresses</th><th>Chains</th><th>Frozen</th><th>Span</th><th>Members</th></tr>';
     for(const c of C.top){
       const span = c.first ? esc(dstr(c.first).slice(0, 10)) + (c.last && c.last !== c.first ? ' → ' + esc(dstr(c.last).slice(0, 10)) : '') : '-';
-      const mem = c.members.map(m => '<div class="m">' + esc(cshort(m[0])) + ' ' + addrL(m[0], m[1]) + '</div>').join('') + (c.size > c.members.length ? '<div class="mut">+' + (c.size - c.members.length) + ' more (see addresses.json / proposals.csv)</div>' : '');
+      const mem = c.members.map(m => '<div class="m">' + esc(cshort(m[0])) + ' ' + addrL(m[0], m[1]) + (m[2] ? ' ' + labelHtml(m[2], false) : '') + '</div>').join('') + (c.size > c.members.length ? '<div class="mut">+' + (c.size - c.members.length) + ' more (see addresses.json / proposals.csv)</div>' : '');
       h += `<tr id="cl-${esc(c.id)}"><td class="m">${esc(c.id)}</td><td>${esc(c.kind)}</td><td>${c.size}</td><td>${c.chains.map(cshort).map(esc).join(', ')}</td><td>${usd(c.usd)}</td><td>${span}</td><td class="wide"><details><summary>${c.size} address${c.size > 1 ? 'es' : ''}</summary>${mem}</details></td></tr>`;
     }
     $('aclusters').innerHTML = C.top.length ? h : '<tr><td class="empty">No clusters yet.</td></tr>';
@@ -1363,7 +1364,7 @@ function renderCard(r, i){
   } else h += `<div class="mut" style="margin-top:6px">Not in our freeze index (as of ${esc(dt(D.generated_at))}). Only addresses with a proposal, freeze, unfreeze or burn are indexed.</div>`;
   if(rec){
     const lbs = Object.entries(rec.l || {});
-    if(lbs.length) h += lbs.map(([c, l]) => `<div class="keyl">🏷 label from wallet-attribution (${esc(cshort(c))}): ${labelHtml(l, true)}</div>`).join('');
+    if(lbs.length) h += lbs.map(([c, l]) => `<div class="keyl" style="font-size:14px">🏷 <b>frozen address labeled:</b> ${labelHtml(l, true)} <span class="mut">(${esc(cshort(c))}, label from wallet-attribution)</span></div>`).join('');
     if((rec.x || []).length) h += rec.x.map(x => `<div class="keyl">🔗 ${x[1] === 'proposed' ? 'freeze proposed' : 'frozen'} on ${esc(cshort(x[0]))}, still unblocked: ${x[3].map(e => '<b>' + usd(e[3]) + '</b> on ' + esc(cshort(e[0]))).join(', ')}</div>`).join('');
     if((rec.c || []).length){
       const have = new Set(((D.clusters || {}).top || []).map(c => c.id));
@@ -1380,7 +1381,7 @@ function renderCard(r, i){
     if((rec.e || []).length) sec.push(det('Executed actions (' + rec.e.length + ')', '<div class="tw"><table><tr><th>Chain</th><th>Action</th><th>When (UTC)</th><th>Delay</th><th>Amount</th><th>Tx</th></tr>' +
       rec.e.map(x => `<tr><td class="ch">${esc(cshort(x[0]))}</td><td>${actHtml(x[1], x[6] ? ' <span class="mut">token account ' + esc(x[6]) + '</span>' : '')}</td><td class="m">${dstr(x[2])}</td><td>${x[5] == null ? '<span class="mut">n/a</span>' : x[5] === 0 ? '<span class="warn">no warning</span>' : dur(x[5])}</td><td>${x[4] != null ? usd(x[4]) : '-'}</td><td class="m">${txL(x[0], x[3])}</td></tr>`).join('') + '</table></div>'));
     const outf = Object.entries(rec.o || {});
-    if(outf.length) sec.push(det('Funds moved before the freeze', outf.map(([c, fl]) => fl.map(f => `<div class="mut">${esc(cshort(c))} · frozen ${esc(dstr(f[0]))}: <b>${usd(f[1])}</b> left in the 72 h before, of which <b>${usd(f[2])}</b> between proposal and execution</div><div class="tw"><table><tr><th>Recipient</th><th>72 h</th><th>In-window</th><th>Label</th></tr>` + f[3].map(x => `<tr><td class="m addr">${addrL(c, x[0])}</td><td>${usd(x[1])}</td><td>${x[2] > 0 ? '<span class="warn">' + usd(x[2]) + '</span>' : '-'}</td><td>${labelHtml(x[3], true) || '<span class="mut">unlabelled</span>'}</td></tr>`).join('') + '</table></div>').join('')).join('')));
+    if(outf.length) sec.push(det('Funds moved before the freeze', outf.map(([c, fl]) => fl.map(f => `<div class="mut">${esc(cshort(c))} · frozen ${esc(dstr(f[0]))}: <b>${usd(f[1])}</b> escaped in the 72 h before${f[6] ? ' <span class="tag" title="This frozen address is a labelled exchange / service wallet: its transfers are routine operations, not counted in the escape totals">service wallet, not counted</span>' : ''}${f[5] ? ' <span class="tag t-des" title="This address has so many transfers that the list hit a cap; totals are a lower bound and it is never flagged as front-run.">truncated: at least these</span>' : ''}, of which <b>${usd(f[2])}</b> between proposal and execution${f[4] > 0 ? '<br>+ ' + usd(f[4]) + ' moved between addresses that were also frozen (not counted)' : ''}</div><div class="tw"><table><tr><th>Recipient</th><th>72 h</th><th>In-window</th><th>Label</th></tr>` + f[3].map(x => `<tr><td class="m addr">${addrL(c, x[0])}${x[4] ? ' <span class="tag" title="This recipient was (or became) frozen too">also frozen</span>' : ''}</td><td>${usd(x[1])}</td><td>${x[2] > 0 ? '<span class="warn">' + usd(x[2]) + '</span>' : '-'}</td><td>${labelHtml(x[3], true) || '<span class="mut">unlabelled</span>'}</td></tr>`).join('') + '</table></div>').join('')).join('')));
     const bal = Object.entries(rec.b || {}).filter(([c, v]) => v > 0);
     if(bal.length) sec.push(det('Current balances', '<div class="mut">Frozen funds cannot move.</div><div class="chips">' + bal.map(([c, v]) => '<span class="tag">' + esc(cshort(c)) + ' ' + usd(v) + '</span>').join(' ') + '</div>'));
     const inf = Object.entries(rec.i || {});

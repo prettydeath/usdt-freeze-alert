@@ -80,7 +80,8 @@ def test_outflow_stats_frontrun_and_entities(tmp_path):
     rows = [("eth", A1, "0x" + "aa" * 20, 9000.0, iso(fz - 60), "t1", 0, 1, f_iso),
             ("eth", A1, "0x" + "ee" * 20, 500.0, iso(fz - 7200), "t2", 0, 0, f_iso)]
     conn.executemany("INSERT INTO outflows VALUES(?,?,?,?,?,?,?,?,?)", rows)
-    conn.execute("INSERT INTO outflow_done VALUES('eth',?,?,?,?,?)", (A1, f_iso, f_iso, 9500.0, 9000.0))
+    conn.execute("INSERT INTO outflow_done(chain,frozen_address,freeze_ts,checked_at,total_out,window_out,n_transfers,truncated) "
+                 "VALUES('eth',?,?,?,?,?,2,0)", (A1, f_iso, f_iso, 9500.0, 9000.0))
     lab = {("ethereum", "0x" + "aa" * 20): {"entity": "Binance", "label": "Binance 14", "category": "exchange", "source_url": "https://x/1",
                                             "source": "s", "confidence": "high", "categories": "exchange"}}
     st = outflows.stats(conn, lab, frozen_usd={("eth", A1, f_iso): 1000.0})
@@ -88,7 +89,8 @@ def test_outflow_stats_frontrun_and_entities(tmp_path):
     assert st["top_entities"][0]["entity"] == "Binance" and st["top_entities"][0]["usd"] == 9000.0  # unlabelled recipient not listed
     assert st["n_frontrun"] == 1 and st["frontrun"][0]["share"] == 0.9
     pa = outflows.per_address(conn, lab)[("eth", A1)][0]
-    assert pa["total"] == 9500.0 and pa["window"] == 9000.0 and pa["recipients"][0]["label"]["entity"] == "Binance"
+    assert pa["escaped"] == 9500.0 and pa["window"] == 9000.0 and pa["internal"] == 0.0
+    assert pa["recipients"][0]["label"]["entity"] == "Binance" and pa["truncated"] is False
 
 
 # ---------------- signals ----------------
@@ -200,3 +202,102 @@ def test_near_executions_matched_by_confirm_tx():
     ex = [{"ts": 5, "tx": "H2", "function": "add_to_blacklist", "target": None}, {"ts": 6, "tx": "H0", "function": "mint", "target": None}]
     out = near.executions_by_confirm(cr, cf, ex)
     assert out[1]["tx"] == "H2" and out[0]["tx"] == "H0"   # exact request ids, in spite of the swapped order
+
+
+# ---------------- audit: escaped vs internal, truncation ----------------
+def _outflow(conn, chain, frozen, fts, rcp, amt, ts, inw, tx):
+    conn.execute("INSERT INTO outflows VALUES(?,?,?,?,?,?,0,?,?)", (chain, frozen, rcp, amt, iso(ts), tx, inw, iso(fts)))
+
+
+def test_internal_moves_between_frozen_addresses_are_not_escapes(tmp_path):
+    conn = connect(tmp_path / "i.sqlite")
+    fz = NOW - 86400
+    mk(conn, "eth", 1, A1, executed_at=fz, submitted_at=fz - 600)
+    mk(conn, "eth", 2, A2, executed_at=fz + 60)                 # recipient frozen a minute AFTER the transfer: internal
+    mk(conn, "eth", 3, A3, executed_at=fz - 40 * 86400)         # recipient frozen long before ...
+    mk(conn, "eth", 4, A3, executed_at=fz - 30 * 86400, fn="removeBlackList")  # ... and unfrozen before the transfer: escaped
+    _outflow(conn, "eth", A1, fz, A2, 1000.0, fz - 300, 1, "t1")
+    _outflow(conn, "eth", A1, fz, A3, 400.0, fz - 200, 1, "t2")
+    _outflow(conn, "eth", A1, fz, "0x" + "99" * 20, 50.0, fz - 100, 0, "t3")
+    conn.execute("INSERT INTO outflow_done(chain,frozen_address,freeze_ts,checked_at,total_out,window_out,n_transfers,truncated) "
+                 "VALUES('eth',?,?,?,1450,1400,3,0)", (A1, iso(fz), iso(fz)))
+    st = outflows.stats(conn, {}, now=NOW, frozen_usd={("eth", A1, iso(fz)): 100.0})
+    assert st["internal_12m"] == 1000.0 and st["moved_12m"] == 450.0 and st["window_12m"] == 400.0
+    assert st["n_frontrun"] == 1 and st["frontrun"][0]["window_out"] == 400.0   # 400 / (400 + 100) = 80% - internal 1000 ignored
+    pa = outflows.per_address(conn, {})[("eth", A1)][0]
+    assert pa["escaped"] == 450.0 and pa["internal"] == 1000.0
+    assert {r["to"]: r["internal"] for r in pa["recipients"]}[A2] is True
+
+
+def test_same_cluster_hop_is_internal(tmp_path):
+    conn = connect(tmp_path / "i.sqlite")
+    fz = NOW - 3600
+    _outflow(conn, "eth", A1, fz, A2, 700.0, fz - 100, 0, "t1")
+    idx = {("eth", A1): ["b-1"], ("eth", A2): ["b-1"]}
+    assert outflows.freeze_totals(outflows.classify(conn, None, idx))[("eth", A1, iso(fz))]["internal"] == 700.0
+    assert outflows.freeze_totals(outflows.classify(conn, None, None))[("eth", A1, iso(fz))]["escaped"] == 700.0
+
+
+def test_truncated_freeze_is_never_frontrun_and_is_flagged(tmp_path):
+    conn = connect(tmp_path / "i.sqlite")
+    fz = NOW - 86400
+    _outflow(conn, "eth", A1, fz, "0x" + "77" * 20, 5000.0, fz - 60, 1, "t1")
+    conn.execute("INSERT INTO outflow_done(chain,frozen_address,freeze_ts,checked_at,total_out,window_out,n_transfers,truncated) "
+                 "VALUES('eth',?,?,?,5000,5000,2000,1)", (A1, iso(fz), iso(fz)))
+    st = outflows.stats(conn, {}, now=NOW, frozen_usd={("eth", A1, iso(fz)): 1.0})
+    assert st["truncated"] == 1 and st["n_frontrun"] == 0
+    assert outflows.per_address(conn, {})[("eth", A1)][0]["truncated"] is True
+
+
+def test_evm_fetch_splits_ranges_instead_of_capping():
+    transfers = {b: {"topics": [outflows.TRANSFER_TOPIC, "0x" + "0" * 24 + "11" * 20, "0x" + "0" * 24 + "22" * 20], "data": hex(1_000_000),
+                     "timeStamp": hex(b), "transactionHash": f"0x{b:x}", "logIndex": "0x0", "blockNumber": hex(b)} for b in range(0, 3000)}
+
+    def page(chain, addr, a, b):  # the explorer returns at most 1000 logs
+        return [transfers[n] for n in range(a, min(b, 2999) + 1)][:1000]
+    rows, trunc = outflows.fetch_evm_out("eth", A1, 0, 2999, page=page)
+    assert trunc is False and len(rows) == 3000 and len({r[3] for r in rows}) == 3000   # nothing lost beyond the 1000-row page
+    rows, trunc = outflows.fetch_evm_out("eth", A1, 0, 2999, page=page, max_queries=3)
+    assert trunc is True and len(rows) < 3000                                              # budget exhausted -> flagged
+    dense = lambda chain, addr, a, b: [transfers[0]] * 1000  # noqa: E731  one block alone overflows a page
+    assert outflows.fetch_evm_out("eth", A1, 5, 5, page=dense)[1] is True
+
+
+def test_tron_fetch_marks_truncation():
+    def get(url, params):
+        return {"data": [{"type": "Transfer", "value": "1000000", "to": "Tx", "block_timestamp": 1000, "transaction_id": "a"}],
+                "meta": {"fingerprint": "more"}}
+    rows, trunc = outflows.fetch_tron_out("Tfrom", 0, 10_000, get=get, max_pages=3)
+    assert trunc is True and len(rows) == 3
+    done = lambda url, params: {"data": [], "meta": {}}  # noqa: E731
+    assert outflows.fetch_tron_out("Tfrom", 0, 10_000, get=done)[1] is False
+
+
+def test_same_entity_hop_and_service_wallet(tmp_path):
+    conn = connect(tmp_path / "i.sqlite")
+    fz = NOW - 86400
+    hot1, hot2, other = "0x" + "a1" * 20, "0x" + "a2" * 20, "0x" + "a3" * 20
+    mkl = lambda cat: {"entity": "Binance", "label": "Binance hot", "category": cat, "categories": cat, "source": "s",  # noqa: E731
+                       "source_url": "u", "confidence": "high"}
+    lab = {("ethereum", hot1): mkl("exchange"), ("ethereum", hot2): mkl("exchange")}
+    _outflow(conn, "eth", hot1, fz, hot2, 5000.0, fz - 100, 0, "t1")       # Binance -> Binance: internal
+    _outflow(conn, "eth", hot1, fz, other, 300.0, fz - 90, 1, "t2")        # to an unlabelled wallet
+    _outflow(conn, "eth", A1, fz, other, 80.0, fz - 80, 1, "t3")           # a normal frozen address
+    for a in (hot1, A1):
+        conn.execute("INSERT INTO outflow_done(chain,frozen_address,freeze_ts,checked_at,n_transfers,truncated) VALUES('eth',?,?,?,1,0)",
+                     (a, iso(fz), iso(fz)))
+    rows = outflows.classify(conn, None, None, lab)
+    assert {r["recipient"]: r["internal"] for r in rows if r["frozen"] == hot1} == {hot2: True, other: False}
+    st = outflows.stats(conn, lab, now=NOW, frozen_usd={("eth", A1, iso(fz)): 10.0})
+    assert st["service_n"] == 1 and st["service_12m"] == 5300.0       # the labelled exchange wallet is reported apart ...
+    assert st["moved_12m"] == 80.0 and st["internal_12m"] == 0.0       # ... and never inflates the totals
+    assert outflows.per_address(conn, lab)[("eth", hot1)][0]["service"] is True
+
+
+def test_usdc_freezes_join_cross_chain_clusters(tmp_path):
+    conn = connect(tmp_path / "c.sqlite")
+    mk(conn, "eth", 1, A1, executed_at=NOW - 100)
+    conn.execute("INSERT INTO freezes(source,subject,owner,action,ts,tx_hash,first_seen_at) VALUES('usdc_eth',?,NULL,'freeze',?,?,?)",
+                 (A1, iso(NOW - 90), "0xabc", iso(NOW)))
+    cl, _ = clusters.build(conn, {})
+    assert any(c["kind"] == "crosschain" and set(c["chains"]) == {"eth", "usdc_eth"} for c in cl)

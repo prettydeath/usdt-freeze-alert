@@ -204,13 +204,13 @@ def compute_extras(conn):
     lab = lb.load_map(conn)
     cl, cl_index = clusters.build(conn, lab)
     clusters.save(conn, cl)
-    cp = clusters.payload(cl, limit=120, member_sample=12)
+    cp = clusters.payload(cl, limit=120, member_sample=12, labels=lab)
     shown = {c["id"] for c in cp["top"]}
     cl_shown = [c for c in cl if c["id"] in shown]
     idx_shown = {m: [i for i in ids if i in shown] for m, ids in cl_index.items()}
-    return {"labels": lab, "cluster_list": cl_shown, "cluster_index": idx_shown, "clusters": cp,
-            "outflow_stats": outflows.stats(conn, lab, frozen_usd=analytics.frozen_usd_map(conn)),
-            "outflow_addr": outflows.per_address(conn, lab), "signals": signals.payload(conn)}
+    return {"labels": lab, "cluster_list": cl_shown, "cluster_index": idx_shown, "cluster_index_full": cl_index, "clusters": cp,
+            "outflow_stats": outflows.stats(conn, lab, frozen_usd=analytics.frozen_usd_map(conn), cluster_index=cl_index),
+            "outflow_addr": outflows.per_address(conn, lab, cl_index), "signals": signals.payload(conn)}
 
 
 def export_insights(conn, extras):
@@ -219,14 +219,20 @@ def export_insights(conn, extras):
     lab = extras["labels"]
     with open(DATA_DIR / "outflows.csv", "w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
-        w.writerow(["chain", "frozen_address", "freeze_ts", "recipient", "amount", "ts", "tx_hash", "in_window", "label_entity",
-                    "label_category", "label_source", "label_source_url"])
+        w.writerow(["chain", "frozen_address", "freeze_ts", "recipient", "amount", "ts", "tx_hash", "in_window", "internal",
+                    "freeze_truncated", "label_entity", "label_category", "label_source", "label_source_url"])
+        from . import outflows
+        internal = {(r["chain"], r["frozen"], r["freeze_ts"], r["recipient"], round(r["amount"], 6)): r["internal"]
+                    for r in outflows.classify(conn, None, extras.get("cluster_index_full"), lab)}
+        trunc = {(r[0], r[1], r[2]) for r in conn.execute("SELECT chain, frozen_address, freeze_ts FROM outflow_done WHERE truncated=1")}
         for r in conn.execute("SELECT chain, frozen_address, freeze_ts, recipient, amount, ts, tx_hash, in_window FROM outflows "
                               "ORDER BY freeze_ts DESC, amount DESC"):
             net = NETWORK_OF.get(r["chain"])
             x = lab.get((net, key_of(net, r["recipient"]))) if net else None
-            w.writerow([*list(r), x["entity"] if x else "", x["category"] if x else "", x["source"] if x else "",
-                        x["source_url"] if x else ""])
+            w.writerow([*list(r), int(bool(internal.get((r["chain"], r["frozen_address"], r["freeze_ts"], r["recipient"],
+                                                         round(r["amount"], 6))))),
+                        int((r["chain"], r["frozen_address"], r["freeze_ts"]) in trunc), x["entity"] if x else "",
+                        x["category"] if x else "", x["source"] if x else "", x["source_url"] if x else ""])
     with open(DATA_DIR / "signals.csv", "w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
         w.writerow(["address", "frozen_on", "frozen_at", "stage", "status", "at_risk", "resolutions"])
