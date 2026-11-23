@@ -203,12 +203,12 @@ const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const NOW = Date.now() / 1000;
 const CH = D.chains;
-const ORDER = ['eth','tron','avax','celo','kaia','kava','near','aptos','ton','arb1','pol','plasma','mantle','oeth','monad','unichain','stable','morph','ink','hyper','berachain','usdc_eth','sol_usdc','sol_usdt'];
+const ORDER = ['eth','tron','avax','celo','kaia','kava','near','aptos','ton','arb1','pol','plasma','mantle','oeth','monad','unichain','stable','morph','ink','hyper','berachain','xlayer','flare','conflux','sei','megaeth','rootstock','usdc_eth','sol_usdc','sol_usdt'];
 const COLORS = ['#2a78d6','#eb6834','#2a9d8f','#8e5bd6','#c99a1b','#d6558b','#4f8a3c','#7a8594','#b0524a','#3d9bd6'];
 const NO_DELAY = ['usdc_eth','sol_usdc','sol_usdt'];
 const cname = c => (CH[c] && CH[c].label) || c;
 const cshort = c => ({eth:'ETH',tron:'TRON',avax:'AVAX',celo:'CELO',kaia:'KAIA',kava:'KAVA',near:'NEAR',aptos:'APT',ton:'TON',usdc_eth:'USDC-ETH',sol_usdc:'USDC-SOL',sol_usdt:'USDT-SOL'}[c] || c.toUpperCase());
-const SAFE = Object.keys(CH).filter(c => CH[c].mech === 'safe_api');
+const SAFE = Object.keys(CH).filter(c => CH[c].family === 'usdt0');
 const GROUPS = [
   {id:'eth', label:'ETH', ch:['eth']}, {id:'tron', label:'TRON', ch:['tron']}, {id:'avax', label:'AVAX', ch:['avax']},
   {id:'usdt0', label:'USDT0/ARB…', ch:SAFE},
@@ -401,7 +401,8 @@ function renderBadges(){
   $('badges').innerHTML = Object.keys(CH).sort((a,b)=>ORDER.indexOf(a)-ORDER.indexOf(b)).filter(c => active(c)).map(c => {
     const m = CH[c], cv = cov[c], o = (D.others||{})[c];
     const note = '';
-    const extra = cv ? cv.proposals + ' proposals, ' + cv.executed + ' executed' : o ? o.freezes + ' freezes' + (o.coverage.complete ? '' : ', partial history') : '';
+    const nopub = (cv && cv.freezes && CH[c].family === 'usdt0') ? ' · ' + cv.no_public + ' of ' + cv.freezes + ' freezes had no public Safe proposal' : '';
+    const extra = cv ? cv.proposals + ' proposals, ' + cv.executed + ' executed' + nopub : o ? o.freezes + ' freezes' + (o.coverage.complete ? '' : ', partial history') : '';
     return `<div class="badge ${cls[m.mech]||''}"><b>${esc(m.label)}</b><div class="bm">${lbl[m.mech]||m.mech} · ${esc((m.threshold||''))}</div><div class="bm">${esc(extra)}${note ? ' · ' + note : ''}</div></div>`;
   }).join('');
 }

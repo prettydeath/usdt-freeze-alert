@@ -84,8 +84,8 @@ def tag(s):
 
 
 def token_of(chain):
-    from .registry import SAFE_CHAINS
-    if chain in SAFE_CHAINS:
+    from .registry import EVENT_CHAINS, SAFE_CHAINS
+    if chain in SAFE_CHAINS or chain in EVENT_CHAINS:
         return "USDT0"
     return "USDC" if chain in ("usdc_eth", "sol_usdc") else "USDT"
 
@@ -157,12 +157,16 @@ def fmt_frozen(r, advance=True):
     lines = [f"🧊 <b>FROZEN</b> · {e(short(ch))}", f"<code>{e(r['target'])}</code>"]
     if bal is not None:
         lines.append(f"💰 {num(bal)} {token_of(ch)} locked")
-    if r["delay_seconds"] in (None, 0) or not advance:
+    nopub = ("public_proposal" in r.keys()) and r["public_proposal"] == 0
+    if nopub:
+        lines.append("⚡ <b>no public proposal</b>")
+    elif r["delay_seconds"] in (None, 0) or not advance:
         if r["delay_seconds"] is not None or not advance:
             lines.append("⚡ <b>no advance notice</b>")
     else:
         lines.append(f"⚡ executed in <b>{human(r['delay_seconds'], approx=False)}</b>")
-    lines.append(f"<blockquote>{r['confirmations']}/{r['required']} signed · tx {e(r['exec_tx'] or 'n/a')}</blockquote>")
+    signed = f"{r['confirmations']}/{r['required']} signed · " if r["required"] else ""
+    lines.append(f"<blockquote>{signed}tx {e(r['exec_tx'] or 'n/a')}</blockquote>")
     lines += [f"{tag(short(ch))} #frozen", footer_links(ch, r["target"]).replace("explorer", "explorer")]
     return NL.join(lines)
 
