@@ -22,6 +22,9 @@ NOTES = {
     "sol_usdt": "The public Solana RPC is slow and rate-limited; history is back-filled a few pages per run.",
     "tron": "TronGrid and Tronscan are rate-limited; the on-chain queue is read first, timestamps may arrive a run later.",
     "inflows": "Transfers to frozen addresses are scanned address by address; TronGrid is the slow part.",
+    "outflows": "Outgoing transfers before each freeze (72 h window); TronGrid and Etherscan limits make this a slow, resumable scan.",
+    "labels": "Labels come from the public wallet-attribution dataset (MIT) and its upstream sources, refreshed once a day.",
+    "signals": "Cross-chain signals: other chains are re-checked on every run while a signal is open.",
     "balances": "Current balances of frozen addresses, refreshed once a day per address.",
 }
 
@@ -118,6 +121,16 @@ def pseudo_sources(conn):
         for c in sorted(tot):
             per.append(f"{c} {min(have.get(c, 0), tot[c])}/{tot[c]}")
         out["inflows"] = (f"inflows {done}/{total}" + (" (" + ", ".join(per) + ")" if per else ""), done < total)
+    except Exception:  # noqa: BLE001
+        pass
+    try:
+        from . import outflows
+        done, total = outflows.coverage(conn)
+        out["outflows"] = (f"outflows {done}/{total} freezes scanned (newest first)", done < total)
+        n = conn.execute("SELECT COUNT(*) FROM label_checked").fetchone()[0]
+        out["labels"] = (f"{n} addresses matched against wallet-attribution", False)
+        s = conn.execute("SELECT SUM(status='open'), COUNT(*) FROM signals").fetchone()
+        out["signals"] = (f"{s[0] or 0} open / {s[1]} cross-chain signals", False)
     except Exception:  # noqa: BLE001
         pass
     try:

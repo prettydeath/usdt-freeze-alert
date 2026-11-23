@@ -54,7 +54,7 @@ def export_files(conn):
                                 ensure_ascii=False, indent=1))
 
 
-def build_payload(conn, stats, stale_days):
+def build_payload(conn, stats, stale_days, extras=None):
     """Dashboard data. ex - compact executed actions over ~400 days: [chain, exec_epoch, delay|-1, class(1 freeze,2 destroy,
     3 unfreeze)] - the browser computes KPIs, the histogram and weekly series from them (respecting the network filter)."""
     from . import crosschain
@@ -134,10 +134,13 @@ def build_payload(conn, stats, stale_days):
     from .registry import chain_meta
     labels = {k: v["label"] for k, v in chain_meta().items()}
     labels.update(SOURCE_LABELS)
-    labels.update({"inflows": "Transfers to frozen addresses", "balances": "Balances of frozen addresses"})
+    labels.update({"inflows": "Transfers to frozen addresses", "balances": "Balances of frozen addresses", "outflows": "Funds moved before freezes",
+                   "labels": "Address labels (wallet-attribution)", "signals": "Cross-chain signals"})
     src_status = status.build(conn, stats.get("health"), labels)
     write_if_changed(SITE_DIR / "health.json", json.dumps(src_status, ensure_ascii=False, indent=1, sort_keys=True))
-    return {"status": src_status, "generated_at": iso(now), "stale_days": stale_days, "live": livecheck.targets(), "stale_total": stale_total, "chains": chains,
+    ex2 = extras or {}
+    return {"signals": ex2.get("signals"), "clusters": ex2.get("clusters"), "outflows": ex2.get("outflow_stats"),
+            "status": src_status, "generated_at": iso(now), "stale_days": stale_days, "live": livecheck.targets(), "stale_total": stale_total, "chains": chains,
             "pending": kept, "supply": supply, "stale": stale, "stale_by_chain": stale_by_chain, "ex": ex, "recent": recent[:200], "signers": signers, "coverage": stats.get("coverage", {}),
             "others": stats.get("others", {}), "health": stats.get("health"), "authority": auth, "cross": xt, "cross_total": xn,
             "analytics": an if len(an_json) < 1_200_000 else None, "analytics_url": "analytics.json",
@@ -145,8 +148,8 @@ def build_payload(conn, stats, stale_days):
                         "Aptos Indexer", "tonapi", "Solana RPC"]}
 
 
-def render_site(conn, stats, stale_days=7):
-    payload = build_payload(conn, stats, stale_days)
+def render_site(conn, stats, stale_days=7, extras=None):
+    payload = build_payload(conn, stats, stale_days, extras)
     blob = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
     tpl = (Path(__file__).parent / "template.html").read_text(encoding="utf-8")
     SITE_DIR.mkdir(parents=True, exist_ok=True)
@@ -195,9 +198,47 @@ def write_badges(payload):
         write_if_changed(out / f"{k}.json", json.dumps({"schemaVersion": 1, "label": label, "message": msg, "color": color}))
 
 
+def compute_extras(conn):
+    """Signals, clusters, outflow statistics and labels for the dashboard / address index (computed once per render)."""
+    from . import analytics, clusters, labels as lb, outflows, signals
+    lab = lb.load_map(conn)
+    cl, cl_index = clusters.build(conn, lab)
+    clusters.save(conn, cl)
+    cp = clusters.payload(cl, limit=120, member_sample=12)
+    shown = {c["id"] for c in cp["top"]}
+    cl_shown = [c for c in cl if c["id"] in shown]
+    idx_shown = {m: [i for i in ids if i in shown] for m, ids in cl_index.items()}
+    return {"labels": lab, "cluster_list": cl_shown, "cluster_index": idx_shown, "clusters": cp,
+            "outflow_stats": outflows.stats(conn, lab, frozen_usd=analytics.frozen_usd_map(conn)),
+            "outflow_addr": outflows.per_address(conn, lab), "signals": signals.payload(conn)}
+
+
+def export_insights(conn, extras):
+    """data/outflows.csv and data/signals.csv."""
+    from .labels import NETWORK_OF, key_of
+    lab = extras["labels"]
+    with open(DATA_DIR / "outflows.csv", "w", newline="", encoding="utf-8") as f:
+        w = csv.writer(f)
+        w.writerow(["chain", "frozen_address", "freeze_ts", "recipient", "amount", "ts", "tx_hash", "in_window", "label_entity",
+                    "label_category", "label_source", "label_source_url"])
+        for r in conn.execute("SELECT chain, frozen_address, freeze_ts, recipient, amount, ts, tx_hash, in_window FROM outflows "
+                              "ORDER BY freeze_ts DESC, amount DESC"):
+            net = NETWORK_OF.get(r["chain"])
+            x = lab.get((net, key_of(net, r["recipient"]))) if net else None
+            w.writerow([*list(r), x["entity"] if x else "", x["category"] if x else "", x["source"] if x else "",
+                        x["source_url"] if x else ""])
+    with open(DATA_DIR / "signals.csv", "w", newline="", encoding="utf-8") as f:
+        w = csv.writer(f)
+        w.writerow(["address", "frozen_on", "frozen_at", "stage", "status", "at_risk", "resolutions"])
+        for r in conn.execute("SELECT address, frozen_on, frozen_at, stage, status, at_risk, resolutions FROM signals ORDER BY id"):
+            w.writerow(list(r))
+
+
 def render_all(conn, stats, stale_days=7):
     export_files(conn)
-    payload = render_site(conn, stats, stale_days)
+    extras = compute_extras(conn)
+    export_insights(conn, extras)
+    payload = render_site(conn, stats, stale_days, extras)
     write_badges(payload)
     from . import addresses
-    addresses.write(SITE_DIR, addresses.build(conn))
+    addresses.write(SITE_DIR, addresses.build(conn, extras))

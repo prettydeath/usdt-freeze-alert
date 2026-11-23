@@ -157,6 +157,14 @@ def load_events(conn):
     return ev, never, proposed
 
 
+def frozen_usd_map(conn):
+    """{(chain, address, freeze_time_iso): usd} - the amount frozen / burned per executed freeze (None when unknown)."""
+    from .util import iso
+    events, _never, _proposed = load_events(conn)
+    freezes, _d, _u = attribute(events, load_balances(conn))
+    return {(f[1], f[2], iso(f[0])): f[4] for f in freezes if f[3] != "dup"}
+
+
 def load_balances(conn):
     return {(r["chain"], r["address"]): (r["balance"], r["frozen_balance"])
             for r in conn.execute("SELECT chain, address, balance, frozen_balance FROM balances")}

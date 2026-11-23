@@ -5,6 +5,7 @@ cross-chain balance, unfrozen, SPL multisig change. Each event is sent at most o
 MAX_PER_RUN messages are sent per run (the rest become one summary line), and history is never replayed:
 nothing is sent on the first run against an empty DB, and only events younger than the freshness window qualify."""
 import html
+import json
 import logging
 import time
 from urllib.parse import urlparse
@@ -211,6 +212,20 @@ def fmt_xchain(addr, chain, have, elsewhere):
     return NL.join(lines)
 
 
+def fmt_signal(s):
+    """Cross-chain signal row (signals table) -> Radar message."""
+    from .signals import display
+    risk = json.loads(s["at_risk"]) if isinstance(s["at_risk"], str) else s["at_risk"]
+    when = (parse_iso(s["frozen_at"]) and time.strftime("%H:%M", time.gmtime(parse_iso(s["frozen_at"])))) or "?"
+    verb = "frozen on" if s.get("stage", "frozen") == "frozen" else "freeze proposed on"
+    lines = ["🔗 <b>CROSS-CHAIN SIGNAL</b>", f"<code>{e(display(s['address'], s['frozen_on']))}</code>",
+             f"{verb} <b>{e(short(s['frozen_on']))}</b> at {when} UTC"]
+    held = ", ".join(f"<b>${num(x[3])}</b> {e(x[1])} on {e(short(x[0]))}" for x in sorted(risk, key=lambda x: -x[3]))
+    lines.append(f"still holds 💰 {held} — not blocked there")
+    lines.append(f"#crosschain {tag(short(s['frozen_on']))}")
+    return NL.join(lines)
+
+
 def fmt_authority(ch):
     return (f"⚠️ <b>SPL MULTISIG CHANGED</b> · {e(ch['source'])}" + NL +
             f"was {e(ch['old'])}" + NL + f"now {e(ch['new'])}")
@@ -287,7 +302,11 @@ def collect_events(conn, before, max_freeze_rowid, before_pairs, auth_changes=()
                               (max_inflow_rowid, min_inflow)).fetchall():
             if now - (parse_iso(r["ts"]) or 0) <= FRESH_SEC:
                 ev.append({"kind": "inflow", "chain": r["chain"], "id": r["rid"], "key_kind": "inflow", "text": fmt_inflow(r)})
-    ev += crosschain_events(conn, before_pairs, now, balances)
+    if balances is not None:  # legacy path (tests inject balances); production uses the signals table
+        ev += crosschain_events(conn, before_pairs, now, balances)
+    else:
+        from . import signals
+        ev += signals.events(conn, now)
     for ch in auth_changes:
         ev.append({"kind": "authority", "chain": "authority", "id": int(now) // 3600, "key_kind": "authority:" + ch["source"],
                    "text": fmt_authority(ch)})
@@ -375,4 +394,6 @@ def sample_messages():
             fmt_inflow({"chain": "tron", "token": "USDT", "amount": 48250.0, "sender": "TXyz5S4fRrYJm3LPrAfF2wGZvz8xA1aBcD",
                         "frozen_address": "TCKiW9WztxAWa6shxdoWn4L4wiKrHeokmd", "tx_hash": "ab" * 32}),
             fmt_xchain("0xe485e7a70b1131216cb47ca4555c4bbb2c742478", "pol", {"pol", "arb1"}, {"eth": 25000.0}),
+            fmt_signal({"address": "0xe485e7a70b1131216cb47ca4555c4bbb2c742478", "frozen_on": "eth", "stage": "frozen",
+                        "frozen_at": iso(now_ts()), "at_risk": [["pol", "USDT0", 25000.0, 25000.0], ["arb1", "USDT0", 3100.0, 3100.0]]}),
             fmt_summary(7)]

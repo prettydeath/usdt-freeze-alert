@@ -161,6 +161,79 @@ CREATE TABLE IF NOT EXISTS source_health (
     updated_at TEXT
 );
 
+CREATE TABLE IF NOT EXISTS near_args (
+    tx TEXT PRIMARY KEY,
+    args TEXT
+);
+
+CREATE TABLE IF NOT EXISTS outflows (
+    chain TEXT NOT NULL,
+    frozen_address TEXT NOT NULL,
+    recipient TEXT NOT NULL,
+    amount REAL NOT NULL,
+    ts TEXT NOT NULL,
+    tx_hash TEXT NOT NULL,
+    log_index INTEGER NOT NULL DEFAULT 0,
+    in_window INTEGER NOT NULL DEFAULT 0,   -- 1 = between proposal submission and execution
+    freeze_ts TEXT NOT NULL,
+    PRIMARY KEY (chain, tx_hash, log_index, frozen_address)
+);
+CREATE INDEX IF NOT EXISTS ix_outflow_addr ON outflows(chain, frozen_address);
+
+CREATE TABLE IF NOT EXISTS outflow_done (
+    chain TEXT NOT NULL,
+    frozen_address TEXT NOT NULL,
+    freeze_ts TEXT NOT NULL,
+    checked_at TEXT,
+    total_out REAL,
+    window_out REAL,
+    PRIMARY KEY (chain, frozen_address, freeze_ts)
+);
+
+CREATE TABLE IF NOT EXISTS address_labels (
+    network TEXT NOT NULL,
+    key TEXT NOT NULL,
+    entity TEXT, label TEXT, category TEXT, categories TEXT, source TEXT, source_url TEXT, confidence TEXT,
+    PRIMARY KEY (network, key)
+);
+CREATE TABLE IF NOT EXISTS label_checked (
+    network TEXT NOT NULL,
+    key TEXT NOT NULL,
+    checked_at TEXT,
+    PRIMARY KEY (network, key)
+);
+
+CREATE TABLE IF NOT EXISTS signals (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    address TEXT NOT NULL,
+    frozen_on TEXT NOT NULL,
+    frozen_at TEXT NOT NULL,
+    first_seen TEXT NOT NULL,
+    at_risk TEXT NOT NULL,        -- JSON [[chain, token, balance_at_signal, balance_last_seen]]
+    status TEXT NOT NULL,         -- open | resolved | expired
+    stage TEXT NOT NULL DEFAULT 'frozen',  -- proposed | frozen
+    resolutions TEXT,             -- JSON [{chain, blocked_at, lag_s, moved_before}]
+    updated_at TEXT,
+    UNIQUE (address, frozen_on)
+);
+CREATE TABLE IF NOT EXISTS signal_checked (
+    address TEXT NOT NULL,
+    trigger_ref TEXT NOT NULL,
+    checked_at TEXT,
+    PRIMARY KEY (address, trigger_ref)
+);
+
+CREATE TABLE IF NOT EXISTS clusters (
+    id TEXT PRIMARY KEY,
+    kind TEXT NOT NULL,
+    size INTEGER NOT NULL,
+    chains TEXT,
+    total_usd REAL,
+    first_ts TEXT,
+    last_ts TEXT,
+    members TEXT
+);
+
 CREATE TABLE IF NOT EXISTS meta (
     key TEXT PRIMARY KEY,
     value TEXT
@@ -173,6 +246,9 @@ def connect(path: Path | str | None = None) -> sqlite3.Connection:
     p.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(p, timeout=120)
     conn.row_factory = sqlite3.Row
+    sc = {r["name"] for r in conn.execute("PRAGMA table_info(signals)")}
+    if sc and "stage" not in sc:  # pre-release shape of the signals table (never populated)
+        conn.execute("DROP TABLE signals")
     conn.executescript(SCHEMA)
     cols = {r["name"] for r in conn.execute("PRAGMA table_info(proposals)")}
     if "public_proposal" not in cols:  # migration of old DBs

@@ -127,7 +127,7 @@ def test_run_alerts_noop_without_config(tmp_path, monkeypatch):
 
 def test_sample_messages_render():
     msgs = alerts.sample_messages()
-    assert len(msgs) == 10 and all(isinstance(m, str) and m for m in msgs)
+    assert len(msgs) == 11 and all(isinstance(m, str) and m for m in msgs)
 
 
 def test_new_proposal_without_tronscan_submit_still_alerts(tmp_path):

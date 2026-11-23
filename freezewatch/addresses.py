@@ -57,7 +57,7 @@ def _kind(fn):
     return None
 
 
-def build(conn):
+def build(conn, extras=None):
     """{key: {p, e, s, b, i}} - proposals (live/stale), executed events, current state, balances, inflows."""
     idx = {}
 
@@ -116,6 +116,8 @@ def build(conn):
         first, last = spans[(chain, addr)]
         rec(key).setdefault("i", {})[chain] = [sum(v[0] for v in d.values()), round(sum(v[1] for v in d.values()), 2),
                                                [[s, v[0], round(v[1], 2)] for s, v in top], first, last]
+    if extras:
+        _add_insights(idx, rec, extras)
     # current state per chain: last freeze-type event decides
     for key, r in idx.items():
         st = {}
@@ -126,6 +128,43 @@ def build(conn):
         if "e" in r:
             r["e"].sort(key=lambda x: x[2] or 0)
     return idx
+
+
+def _label_arr(x):
+    """label row -> compact [entity, label, category, source, source_url, confidence] (wallet-attribution, never our claim)."""
+    return [x["entity"], x["label"], x["category"], x["source"], x["source_url"], x["confidence"]] if x else None
+
+
+def _add_insights(idx, rec, extras):
+    """Own label (o: reason hints / sanctions), outflows before freezes (o), clusters (c), cross-chain signals (x)."""
+    from .labels import NETWORK_OF, key_of
+    lab = extras["labels"]
+    for key, r in list(idx.items()):
+        chains = {e[0] for e in r.get("e", [])} | {p[0] for p in r.get("p", [])}
+        for ch in chains:
+            net = NETWORK_OF.get(ch)
+            x = lab.get((net, key_of(net, key))) if net else None
+            if x:
+                r.setdefault("l", {})[ch] = _label_arr(x)
+    for (chain, addr), freezes in extras.get("outflow_addr", {}).items():
+        key = canon_for(chain, addr)
+        if not key:
+            continue
+        lst = []
+        for f in freezes[-3:]:
+            lst.append([parse_iso(f["freeze_ts"]), round(f["total"], 2), round(f["window"], 2),
+                        [[x["to"], round(x["usd"], 2), round(x["w"], 2), _label_arr(x["label"])] for x in f["recipients"][:6]]])
+        rec(key).setdefault("o", {})[chain] = lst
+    big = {c["id"] for c in extras.get("cluster_list", []) if c["size"] >= 3 or c["kind"] != "batch"}
+    for (chain, addr), ids in extras.get("cluster_index", {}).items():
+        ids = [i for i in ids if i in big][:4]
+        if ids:
+            key = canon_for(chain, addr)
+            if key:
+                rec(key).setdefault("c", [])
+                rec(key)["c"] += [i for i in ids if i not in rec(key)["c"]]
+    for s in (extras.get("signals") or {}).get("open", []):
+        rec(s["address"]).setdefault("x", []).append([s["frozen_on"], s["stage"], parse_iso(s["frozen_at"]), s["at_risk"]])
 
 
 def write(site_dir, idx):

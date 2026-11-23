@@ -5,7 +5,8 @@ import sys
 import time
 from datetime import datetime, timezone
 
-from . import alerts, analytics, crosschain, eth, evmmsw, health, inflows, others, safe, status, tokenevents, tron
+from . import (alerts, analytics, crosschain, eth, evmmsw, health, inflows, labels, others, outflows, safe, signals, status,
+               tokenevents, tron)
 from .constants import BALANCE_FUNCS
 from .db import connect, meta_get, meta_set, update_proposal
 from .derive import derive_all, rebuild_blacklist
@@ -151,8 +152,15 @@ def cmd_update(args, conn=None):
         health.check(conn)
     except Exception as e:  # noqa: BLE001
         log.warning("health check failed: %s", str(e)[:80])
+    for step in (signals.detect, signals.resolve):  # cross-chain signals first, so their alerts go out in this run
+        t0 = time.time()
+        try:
+            step(conn)
+        except Exception as e:  # noqa: BLE001
+            log.warning("signals step %s failed: %s", step.__name__, status.sanitize(e, 100))
+        log.debug("%s took %.1fs", step.__name__, time.time() - t0)
     budget = int(env("ANALYTICS_BUDGET_SEC", "120"))
-    for step in (analytics.enrich_destroy_amounts, analytics.refresh_balances, inflows.refresh):
+    for step in (analytics.enrich_destroy_amounts, analytics.refresh_balances, inflows.refresh, outflows.refresh, labels.refresh):
         try:
             step(conn, budget)
         except Exception as e:  # noqa: BLE001
