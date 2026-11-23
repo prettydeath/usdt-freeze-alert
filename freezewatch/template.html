@@ -154,6 +154,93 @@ details.provd summary{cursor:pointer}details.provd>div{margin-top:4px}
 :root[data-theme=dark] .statpill.amber{background:#3a2f0b;color:#f0cd6a}:root[data-theme=dark] .statpill.red{background:#3b1614;color:#ff9b94}
 @media (prefers-color-scheme:dark){:root:not([data-theme=light]) .statpill.amber{background:#3a2f0b;color:#f0cd6a}:root:not([data-theme=light]) .statpill.red{background:#3b1614;color:#ff9b94}}
 .sbadge{white-space:nowrap;font-weight:600}.sbadge.ok{color:var(--add,#2a9d8f)}.sbadge.degraded{color:#c99a1b}.sbadge.failing{color:#d64545}
+
+/* ===== mobile (<= 640px): desktop is unchanged ===== */
+.iconbtn{cursor:pointer;font:inherit;font-size:16px;line-height:1;width:40px;height:40px;border:1px solid var(--hair);border-radius:10px;background:var(--surf);color:var(--fg);display:none;align-items:center;justify-content:center;padding:0}
+.iconbtn:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.frow{display:none}
+.sheet{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.45)}
+.sheetin{position:absolute;left:0;right:0;bottom:0;background:var(--surf);border-top:1px solid var(--hair);border-radius:14px 14px 0 0;padding:12px 16px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:8px}
+.sheetin a,.sheetin button{display:flex;align-items:center;min-height:46px;padding:0 14px;border:1px solid var(--hair);border-radius:10px;background:var(--surf);color:var(--fg);font:inherit;font-size:15px;cursor:pointer;text-decoration:none}
+.sheetin .mclose{justify-content:center;color:var(--mut)}
+.cp{cursor:pointer;font:inherit;font-size:11px;line-height:1;padding:3px 7px;margin-left:6px;border:1px solid var(--hair);border-radius:6px;background:var(--surf);color:var(--mut);vertical-align:1px}
+@media (max-width:640px){
+  body{font-size:14px}
+  .wrap{padding:0 12px}
+  header.bar .wrap{flex-wrap:nowrap;gap:8px;padding-top:8px;padding-bottom:8px;min-height:56px}
+  h1{font-size:15px;white-space:nowrap;flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
+  h1 small,#nch,#themeBtn,header.bar #filters{display:none}
+  .iconbtn{display:inline-flex}
+  #srchBtn[hidden],#menuBtn[hidden]{display:inline-flex!important}
+  #live{font-size:0;gap:0;padding:0;width:26px;height:26px;justify-content:center;flex:none}
+  #live::before{width:10px;height:10px}
+  .statpill,.stalepill{font-size:0!important;padding:0;width:30px;height:30px;justify-content:center;flex:none}
+  .statpill::before,.stalepill::before{content:attr(data-short);font-size:15px}
+  .qbox{display:none;position:absolute;left:12px;right:108px;top:8px;width:auto;height:40px;font-size:16px;padding:0 14px;z-index:6}
+  header.bar.srch-open .qbox{display:block}
+  header.bar.srch-open h1,header.bar.srch-open #live,header.bar.srch-open .statpill,header.bar.srch-open .stalepill{visibility:hidden}
+  nav.tabs{padding:0 8px;gap:0;border-top:1px solid var(--hair);-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  nav.tabs::-webkit-scrollbar{display:none}
+  .tab{min-height:44px;padding:0 14px;font-size:14px;flex:none}
+  .frow{display:flex;gap:6px;overflow-x:auto;padding:10px 12px 2px;scrollbar-width:none;-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent)}
+  .frow::-webkit-scrollbar{display:none}
+  .frow[hidden]{display:none!important}
+  .frow .filters{flex-wrap:nowrap;margin:0;display:flex}
+  .frow .fp{flex:none;min-height:34px;padding:0 13px;font-size:13px}
+  .frow .pill{white-space:nowrap}
+  h2{margin:18px 0 8px}
+  /* KPI tiles: 2x2 */
+  .kpis{gap:8px;margin-top:10px}
+  .kpi{padding:8px 10px}
+  .kpi .v{font-size:20px;margin:1px 0}
+  .kpi .l{font-size:10px}
+  .kpi .s{font-size:11px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  #akpis{grid-template-columns:repeat(2,1fr)}
+  .hero .n{font-size:36px}
+  .story{font-size:16px}
+  /* tables -> cards */
+  .tw{overflow:visible;background:none;border:0;border-radius:0}
+  table.cards{min-width:0;width:100%;display:block}
+  table.cards tbody{display:block}
+  table.cards tr{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;background:var(--surf);border:1px solid var(--hair);border-radius:10px;padding:10px 12px;margin-bottom:8px}
+  table.cards tr.hd{display:none}
+  table.cards td{display:inline-flex;align-items:baseline;flex-wrap:wrap;gap:0 5px;padding:0;border:0;font-size:13px;white-space:normal;word-break:normal;overflow-wrap:anywhere;font-variant-numeric:tabular-nums;max-width:100%}
+  table.cards td.nw{white-space:nowrap;overflow-wrap:normal}
+  table.cards td[data-l]::before{content:attr(data-l);color:var(--mut);font-size:10px;text-transform:uppercase;letter-spacing:.3px}
+  table.cards td.wide{flex:1 1 100%;display:block;white-space:normal;word-break:break-all;overflow-wrap:anywhere;font-size:12.5px}
+  table.cards td.wide[data-l]::before{display:block;margin-bottom:1px}
+  table.cards td.m:not(.wide){word-break:normal;overflow-wrap:normal}
+  table.cards td div,table.cards td span.mut{white-space:normal;overflow-wrap:anywhere}
+  table.cards td:has(div){flex:1 1 100%;display:block;white-space:normal}
+  table.cards td.empty,table.cards td[colspan]{flex:1 1 100%;display:block;white-space:normal}
+  table.cards td:first-child{font-weight:600}
+  /* watchlist */
+  textarea#wlText{min-height:110px;font-size:14px}
+  .wlbar{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .wlbar button,.filebtn,.livebox button,.livebtn{min-height:42px;font-size:14px;display:flex;align-items:center;justify-content:center;text-align:center}
+  .wlbar .filebtn{grid-column:auto}
+  .banner{flex-direction:column;align-items:flex-start;flex-wrap:nowrap;gap:2px;padding:12px 14px}
+  .bn-amt{font-size:26px;text-align:left;margin-left:0}
+  .bn-word{font-size:20px}
+  .chiprow{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+  .chips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+  .chip{flex:none;white-space:nowrap}
+  .wlhead{align-items:flex-start}
+  .verdict{font-size:14px}
+  /* charts */
+  canvas{max-height:200px}
+  .legend{font-size:11px;gap:3px 10px}
+  .box{padding:10px}
+  .funnel{gap:6px}.fstep{min-width:0;flex:1 1 44%}
+  /* exports */
+  .xbar{justify-content:flex-start;flex-wrap:wrap}
+  .xbar button,#wlExp button{min-height:34px;padding:0 12px;font-size:12px}
+  .datalinks{gap:6px 12px}
+  .datalinks a{min-height:28px;display:inline-flex;align-items:center}
+  .ctl{gap:8px 12px}
+  .seg button{min-height:38px;padding:0 12px;font-size:13px}
+  #tipbox{max-width:calc(100vw - 24px)}
+}
 .t-sup{background:var(--grybg);color:var(--gry)}
 .tipw{border-bottom:1px dotted var(--mut)}
 #tipbox{position:absolute;z-index:50;max-width:min(320px,calc(100vw - 24px));background:var(--fg);color:var(--bg);font-size:12px;line-height:1.35;padding:6px 9px;border-radius:6px;pointer-events:none}
@@ -172,11 +259,21 @@ footer{margin:30px 0 18px;color:var(--mut);font-size:12px;border-top:1px solid v
   <a class="pill statpill" id="hstat" href="#status" hidden></a>
   <input class="qbox" id="q" type="search" placeholder="Search an address…" aria-label="Search an address" autocomplete="off" spellcheck="false">
   <div class="filters" id="filters"></div>
+  <button type="button" class="iconbtn" id="srchBtn" aria-label="Search" aria-expanded="false" hidden>🔍</button>
+  <button type="button" class="iconbtn" id="menuBtn" aria-label="Menu" aria-expanded="false" aria-controls="menuSheet" hidden>☰</button>
   <button type="button" class="pill themebtn" id="themeBtn" title="Theme: auto / light / dark" aria-label="Switch theme">🌓 Auto</button>
 </div>
 <nav class="tabs" id="tabs" role="tablist" aria-label="Sections"></nav></header>
 
 <main class="wrap">
+<div id="filtersRow" class="frow" hidden></div>
+<div id="menuSheet" class="sheet" hidden role="dialog" aria-label="Menu"><div class="sheetin">
+  <button type="button" id="mTheme">🌓 Theme</button>
+  <a href="#status" id="mStatus">Source status</a>
+  <button type="button" id="mGloss">Glossary</button>
+  <a href="https://github.com/prettydeath/usdt-freeze-alert" target="_blank" rel="noopener">GitHub ↗</a>
+  <button type="button" id="mClose" class="mclose">Close</button>
+</div></div>
 <div id="tab-live">
   <div class="kpis" id="kpis"></div>
 
@@ -1314,6 +1411,76 @@ $('foot').innerHTML = '<div><button type="button" class="sublink" id="glosslink"
   'Freezing actions = addBlackList / addToBlockedList; destroy*; remove*. ' +
   'TRON execution time is inferred from confirmations; Safe queues live off-chain; USDC and Solana have no queue (delay n/a). ' +
   'Not financial advice.';
+
+// ================= mobile helpers =================
+(function(){
+  const MQ = window.matchMedia('(max-width:640px)');
+  const hdr = document.querySelector('header.bar'), filters = $('filters'), row = $('filtersRow');
+  // chain pills: one scrollable row below the header (not sticky); back into the header on desktop
+  const place = () => {
+    if(MQ.matches){ row.appendChild(filters); row.hidden = false; }
+    else { const anchor = $('themeBtn'); anchor.parentNode.insertBefore(filters, anchor); row.hidden = true; hdr.classList.remove('srch-open'); }
+    $('srchBtn').hidden = !MQ.matches; $('menuBtn').hidden = !MQ.matches;
+  };
+  (MQ.addEventListener ? MQ.addEventListener('change', place) : MQ.addListener(place)); place();
+  // short icons for the status / stale pills
+  for(const id of ['hstat', 'hstale']){ const el = $(id); if(el) el.dataset.short = id === 'hstat' ? '⚠' : '🧊'; }
+  // search
+  const sb = $('srchBtn'), q = $('q');
+  const setSearch = on => { hdr.classList.toggle('srch-open', on); sb.setAttribute('aria-expanded', on); sb.textContent = on ? '✕' : '🔍'; if(on) q.focus(); };
+  sb.onclick = () => setSearch(!hdr.classList.contains('srch-open'));
+  q.addEventListener('keydown', ev => { if(ev.key === 'Escape') setSearch(false); });
+  q.addEventListener('change', () => { if(MQ.matches) setSearch(false); });
+  // menu sheet
+  const sheet = $('menuSheet'), mb = $('menuBtn');
+  const openMenu = on => { sheet.hidden = !on; mb.setAttribute('aria-expanded', on); };
+  mb.onclick = () => openMenu(sheet.hidden);
+  sheet.addEventListener('click', ev => { if(ev.target === sheet) openMenu(false); });
+  $('mClose').onclick = () => openMenu(false);
+  $('mStatus').onclick = () => openMenu(false);
+  $('mTheme').onclick = () => { $('themeBtn').click(); $('mTheme').textContent = $('themeBtn').textContent + ' (tap to switch)'; };
+  $('mTheme').textContent = $('themeBtn').textContent + ' (tap to switch)';
+  $('mGloss').onclick = () => { openMenu(false); showTab('analytics'); const g = $('glossary'); g.open = true; g.scrollIntoView({block: 'start'}); };
+  document.addEventListener('keydown', ev => { if(ev.key === 'Escape') openMenu(false); });
+  // charts: fewer ticks and smaller text on phones
+  if(window.Chart && MQ.matches){
+    Chart.defaults.font.size = 10;
+    for(const s of ['category', 'linear', 'time']) if(Chart.defaults.scales && Chart.defaults.scales[s]) Chart.defaults.scales[s].ticks.maxTicksLimit = 6;
+  }
+  // tables -> cards: copy header texts into data-l, mark long cells (addresses, notes) as full-width lines, add copy buttons
+  const ADDRISH = /^(0x[0-9a-fA-F]{40,64}|T[1-9A-HJ-NP-Za-km-z]{33}|0:[0-9a-f]{64}|[1-9A-HJ-NP-Za-km-z]{32,44})$/;
+  function cardify(tb){
+    const rows = tb.rows; if(!rows.length) return;
+    const head = rows[0], labels = [...head.cells].map(c => c.textContent.trim());
+    if(!head.querySelector('th')){ tb.classList.remove('cards'); return; }
+    head.classList.add('hd'); tb.classList.add('cards');
+    for(let i = 1; i < rows.length; i++){
+      [...rows[i].cells].forEach((td, j) => {
+        if(td.colSpan > 1 || td.classList.contains('empty')) return;
+        if(j > 0 && labels[j] && !td.hasAttribute('data-l')) td.setAttribute('data-l', labels[j]);
+        const txt = td.textContent.trim();
+        const wide = /\S{26,}/.test(txt) || txt.length > 42;
+        if(wide && !td.classList.contains('wide')) td.classList.add('wide');
+        if(!wide && txt.length <= 30) td.classList.add('nw');
+        if(td.classList.contains('wide') && !td.querySelector('.cp')){
+          const m = txt.match(/(0x[0-9a-fA-F]{40,64}|T[1-9A-HJ-NP-Za-km-z]{33}|0:[0-9a-f]{64})/);
+          if(m && ADDRISH.test(m[1])){ const b = document.createElement('button'); b.type = 'button'; b.className = 'cp'; b.dataset.copy = m[1]; b.textContent = 'copy'; b.setAttribute('aria-label', 'Copy address'); td.appendChild(b); }
+        }
+      });
+    }
+  }
+  let busy = false;
+  const run = () => { if(busy) return; busy = true; try { document.querySelectorAll('.tw table').forEach(cardify); } finally { busy = false; } };
+  const mo = new MutationObserver(() => { if(MQ.matches) requestAnimationFrame(run); });
+  document.querySelectorAll('.tw table').forEach(tb => mo.observe(tb, {childList: true}));
+  MQ.addEventListener && MQ.addEventListener('change', () => { if(MQ.matches) run(); });
+  if(MQ.matches) run();
+  document.addEventListener('click', async ev => {
+    const b = ev.target.closest('.cp'); if(!b) return;
+    try { await navigator.clipboard.writeText(b.dataset.copy); b.textContent = 'copied'; } catch(e) { b.textContent = 'press and hold'; }
+    setTimeout(() => { b.textContent = 'copy'; }, 1500);
+  });
+})();
 </script>
 </body>
 </html>
