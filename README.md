@@ -45,7 +45,9 @@ Ethereum executions land in the same block and cannot be seen coming.
 |---|---|
 | **On-chain pending** (multisig contract) | Ethereum, TRON, Avalanche, Celo, Kaia, Kava, NEAR, Aptos, TON |
 | **Safe API pending** (off-chain, not guaranteed) | USDT0 on Arbitrum, Polygon, Plasma, Mantle, Optimism, Monad, Unichain, Stable, Morph, Ink, HyperEVM, Berachain |
-| **Executed only** (no queue exists) | USDC on Ethereum, USDC and USDT on Solana |
+| **Executed only** (no queue exists) | USDC on Ethereum, USDC and USDT on Solana; USDT0 on Flare, Conflux, Sei, MegaETH, Rootstock (from token events) |
+
+For **USDT0** the token's own `BlockPlaced` / `BlockReleased` / `DestroyedBlockedFunds` events are the source of truth for executed freezes, unfreezes and burns (Etherscan V2 or Blockscout APIs). Each event is linked to the Safe transaction that executed it (same tx hash and address) to get the proposal time and a real delay; events without a published Safe proposal are counted as **no public proposal** (delay n/a), e.g. 32 of 41 Arbitrum freezes. Not covered: USDT0 on X Layer (no free log API) and Optimism (explorer API unreachable); other chains returned no events.
 
 ## Analytics
 
