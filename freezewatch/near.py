@@ -110,6 +110,25 @@ def match_executions(creations, execs):
     return out
 
 
+def executions_by_confirm(creations, confirms, execs):
+    """creation index -> execution. An execution (the multisig calling the token) is a receipt of the confirm transaction
+    that reached the threshold: the same transaction hash gives the exact request_id (the listing no longer carries call
+    arguments, so matching by function/target is only the fallback)."""
+    rid_by_tx = {c["tx"]: c["request_id"] for c in confirms}
+    out, used = {}, set()
+    for e in execs:
+        rid = rid_by_tx.get(e["tx"])
+        if rid is not None and rid < len(creations) and rid not in out:
+            out[rid] = e
+            used.add(id(e))
+    rest = [e for e in execs if id(e) not in used]
+    free = [(i, c) for i, c in enumerate(creations) if i not in out]
+    sub = match_executions([c for _i, c in free], rest)
+    for j, e in sub.items():
+        out[free[j][0]] = e
+    return out
+
+
 def fetch_txns(max_pages=80):
     rows, cur = [], None
     for _ in range(max_pages):
@@ -124,10 +143,51 @@ def fetch_txns(max_pages=80):
     return rows
 
 
+DETAIL = "https://api.nearblocks.io/v1/txns/"
+
+
+def fill_args(conn, txns, budget=300):
+    """The nearblocks account listing no longer carries call arguments (args=None): fetch them per transaction from the
+    detail endpoint and cache them in `near_args` (arguments never change, so each transaction is fetched once)."""
+    import time
+    t0 = time.time()
+    def wanted(t):
+        a0 = (t.get("actions") or [{}])[0]
+        if a0.get("args") is not None:
+            return False
+        if t.get("receiver_account_id") == MULTISIG:
+            return a0.get("method") in ("add_request_and_confirm", "add_request", "confirm")
+        return t.get("predecessor_account_id") == MULTISIG and t.get("receiver_account_id") == TOKEN  # the executed call
+    need = [t for t in txns if wanted(t)]
+    got = 0
+    for t in need:
+        h = t["transaction_hash"]
+        r = conn.execute("SELECT args FROM near_args WHERE tx=?", (h,)).fetchone()
+        args = r["args"] if r else None
+        if args is None:
+            if time.time() - t0 > budget:
+                continue
+            try:
+                o = http_json("GET", DETAIL + h, interval=2.5, retries=5, validate=lambda x: "txns" in x)
+                args = ((o["txns"] or [{}])[0].get("actions") or [{}])[0].get("args")
+            except Exception as e:  # noqa: BLE001
+                log.info("NEAR: args of %s unavailable (%s)", h[:8], str(e)[:60])
+                continue
+            if args:
+                conn.execute("INSERT OR IGNORE INTO near_args(tx,args) VALUES(?,?)", (h, args))
+                got += 1
+        if args:
+            t["actions"][0]["args"] = args
+    if got:
+        conn.commit()
+        log.info("NEAR: fetched call arguments of %s transactions", got)
+
+
 def sync(conn, stale_days=7):
     txns = fetch_txns()
+    fill_args(conn, txns)
     creations, confirms, execs = parse_history(txns)
-    ex_of = match_executions(creations, execs)
+    ex_of = executions_by_confirm(creations, confirms, execs)
     open_ids = set(view("list_request_ids"))
     nonce = view("get_request_nonce")
     log.info("NEAR: creations %s, confirms %s, executions %s, open %s, nonce %s", len(creations), len(confirms),
