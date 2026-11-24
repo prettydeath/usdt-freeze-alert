@@ -57,7 +57,7 @@ export interface Signal {
 export interface Signals {
   open: Signal[]
   history: Signal[]
-  stats: { signals: number; open: number; resolved_chains: number; median_lag_s: number | null; moved_before_pct: number | null; moved_balance_pct: number | null; open_usd: number }
+  stats: { signals: number; open: number; resolved_chains: number; median_lag_s: number | null; moved_before_pct: number | null; moved_balance_pct: number | null; open_usd: number; pending_checks?: number }
 }
 
 export interface Cluster {
@@ -84,7 +84,19 @@ export interface Outflows {
   top_entities: { entity: string; category: string; usd: number; n: number; url: string | null }[]
   frontrun: { chain: string; address: string; freeze_ts: string; window_out: number; frozen_usd: number; share: number; label: string | null }[]
   n_frontrun: number
+  /** exit classes: cex | bridge | dex | mixer | watchlist | unlabelled */
+  exits?: Record<string, { n: number; usd: number }>
+  /** outcome classes: clean | racing | partial | weak */
+  classes?: Record<string, { n: number; escaped: number }>
+  lead?: { n: number; median_after_submit_s: number | null; median_before_execute_s: number | null; first_after_submit_s: number | null } | null
+  third_party?: { n: number; usd: number; looked_up: number }
+  sweepers?: { contract: string; victims: number; callers: string[] }[]
+  repeat?: { chain: string; recipient: string; sources: number; usd: number }[]
+  fee_collectors?: number
+  fee_flagged?: number
 }
+
+export interface Flight { watched: number; hop1: number; hop2: number; moves: number; moved_usd: number; confirmed: number; confirmed_usd: number; unfrozen_yet?: number }
 
 export interface Reasons {
   freezes: number; known: number; unknown: number; known_usd: number; unknown_usd: number; curated: number
@@ -103,7 +115,8 @@ export interface SourceStatus {
   rows_added: number; coverage: string; partial: boolean; gap: number | null; note: string | null
 }
 export interface Status {
-  run?: { at: string; run_s: number; deadline_s: number; steps: [string, number, string][] }
+  detect?: { median_s: number; p90_s: number; n: number } | null
+  run?: { at: string; run_s: number; deadline_s: number; steps: [string, number, string, (string | number)?][]; tron_keys?: string }
   overall: string
   bad: string[]
   sources: SourceStatus[]
@@ -131,6 +144,7 @@ export interface Data {
   outflows: Outflows | null
   reasons: Reasons | null
   pulse: Pulse | null
+  flight?: Flight | null
   hints: Record<string, Reason>
   status: Status
   generated_at: string
@@ -188,6 +202,10 @@ export interface AddrRecord {
   /** pending/stale proposals: [chain, id, function, sigs, required, submittedTs, status, balance] */
   p?: any[][]
   x?: any[][]
+  /** exposure at proposal time: [kind allowance|eip7702, spender, amount, note] */
+  ex?: any[][]
+  /** hop-ahead watch: [hop, source frozen address, USD received, USD moved on] */
+  w?: any[]
   l?: Record<string, Label>
   r?: Record<string, Reason>
 }

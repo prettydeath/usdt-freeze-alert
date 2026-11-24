@@ -321,6 +321,7 @@ function Outflows() {
         <Kpi icon="⏱" label="Escaped in the window" num={O.window_12m} fmt={usdS} sub="between proposal and execution" />
         <Kpi icon="🏃" label="Front-run" num={O.n_frontrun} sub="escaped in-window outflow was at least half of (outflow + frozen); truncated freezes excluded" />
       </KpiGrid>
+      <OutflowExtras O={O} />
       <div className="mt-3 grid grid-cols-2 gap-4 max-md:grid-cols-1">
         <Card><CardHeader><CardTitle>Top recipient entities</CardTitle></CardHeader><CardContent><DataTable cols={ec} rows={O.top_entities} exportName="top_recipient_entities" rowKey={(e) => e.entity} empty="No labelled recipients yet." /></CardContent></Card>
         <Card><CardHeader><CardTitle>Front-run in the window</CardTitle><Muted>Shown: the 25 largest.</Muted></CardHeader><CardContent><DataTable cols={fc} rows={O.frontrun} exportName="front_run" rowKey={(f) => f.chain + f.address + f.freeze_ts} empty="None yet." /></CardContent></Card>
@@ -491,5 +492,68 @@ function Clusters() {
       <Muted className="mb-1.5">Batch {k.batch || 0} · cross-chain {k.crosschain || 0} · counterparty {k.counterparty || 0} clusters. Top by amount frozen. A cluster is a lead, not proof of a common owner.</Muted>
       <DataTable cols={cols} rows={C.top} exportName="clusters" rowKey={(c) => c.id} empty="No clusters yet." />
     </>
+  )
+}
+
+const EXIT_NAME: Record<string, string> = { cex: "exchange", bridge: "bridge", dex: "DEX", mixer: "mixer", watchlist: "verified evasion address", unlabelled: "unlabelled wallet" }
+const CLASS_VARIANT: Record<string, "ok" | "danger" | "warn" | "secondary"> = { clean: "ok", racing: "danger", weak: "warn", partial: "secondary" }
+
+/** exit classes, outcome classes, lead times, third-party pulls, sweeper candidates, repeat recipients, hop-ahead watch */
+function OutflowExtras({ O }: { O: NonNullable<ReturnType<typeof useApp>["d"]["outflows"]> }) {
+  const { d } = useApp()
+  const F = d.flight
+  const hasAny = O.exits || O.classes || O.third_party || O.sweepers?.length || O.repeat?.length || (F && F.watched)
+  if (!hasAny) return null
+  const exits = Object.entries(O.exits || {}).filter(([, v]) => v.n).map(([k, v]) => ({ k, ...v }))
+  const tp = O.third_party || { n: 0, usd: 0, looked_up: 0 }
+  const lead = O.lead
+  const ex: Col<(typeof exits)[number]>[] = [
+    { h: "Exit", v: (r) => EXIT_NAME[r.k] || r.k },
+    { h: "Escaped", v: (r) => r.usd, r: (r) => usd(r.usd) },
+    { h: "Transfers", v: (r) => r.n },
+  ]
+  const sw: Col<NonNullable<typeof O.sweepers>[number]>[] = [
+    { h: "Contract", v: (s) => s.contract, wide: true, className: "mono" },
+    { h: "Victims", v: (s) => s.victims },
+    { h: "Callers", v: (s) => s.callers.join(" "), wide: true, r: (s) => <>{s.callers.map((c) => <div key={c} className="mono">{c}</div>)}</> },
+  ]
+  const rp: Col<NonNullable<typeof O.repeat>[number]>[] = [
+    { h: "Chain", v: (s) => cshort(s.chain), r: (s) => <b>{cshort(s.chain)}</b> },
+    { h: "Recipient", v: (s) => s.recipient, wide: true, r: (s) => <AddrLink chain={s.chain} a={s.recipient} /> },
+    { h: "Frozen sources", v: (s) => s.sources },
+    { h: "Received", v: (s) => s.usd, r: (s) => usd(s.usd) },
+  ]
+  return (
+    <div className="mt-3 space-y-3" data-testid="outflow-extras">
+      <div className="grid grid-cols-2 gap-4 max-md:grid-cols-1">
+        {O.exits && (
+          <Card><CardHeader><CardTitle>Where the escaped money went</CardTitle></CardHeader><CardContent>
+            <DataTable cols={ex} rows={exits} exportName="escaped_exit_classes" rowKey={(r) => r.k} empty="None yet." />
+            <Muted className="mt-1">Exchange / bridge / DEX come from wallet-attribution labels and the verified watchlist; everything else is an unlabelled wallet.</Muted>
+          </CardContent></Card>
+        )}
+        {(O.classes || O.third_party) && (
+          <Card><CardHeader><CardTitle>Outcome per freeze</CardTitle></CardHeader><CardContent>
+            <div className="flex flex-wrap gap-1.5">
+              {Object.entries(O.classes || {}).map(([k, v]) => <Badge key={k} variant={CLASS_VARIANT[k] || "secondary"} className="px-2.5 text-xs" title={v.n + " freezes, " + usd(v.escaped) + " escaped"}>{k} {v.n}</Badge>)}
+            </div>
+            <Muted className="mt-1.5">This tool's own heuristic: <b>clean</b> under 1% of the money left; <b>racing</b> at least 20% moved between proposal and execution; <b>weak</b> at least half had left before the proposal; otherwise <b>partial</b>. Needs a known frozen amount.</Muted>
+            {lead && <div className="mt-1.5 text-[13px]">In-window transfers ({lead.n}): median <b>{dur(lead.median_after_submit_s)}</b> after the proposal, <b>{dur(lead.median_before_execute_s)}</b> before execution; the first one after <b>{dur(lead.first_after_submit_s)}</b>.</div>}
+            <div className="mt-1.5 text-[13px]">{tp.n} escaped transfers ({usd(tp.usd)}) were <b>pulled by a third party</b> (the caller is not the frozen address); {tp.looked_up || 0} transactions looked up so far{O.fee_flagged ? " · " + O.fee_flagged + " paid an unusual priority fee" : ""}.</div>
+          </CardContent></Card>
+        )}
+      </div>
+      {!!O.sweepers?.length && (
+        <Card><CardHeader><CardTitle>Sweeper candidates</CardTitle><Muted>Contracts that pulled from at least two later-frozen addresses.</Muted></CardHeader>
+          <CardContent><DataTable cols={sw} rows={O.sweepers} exportName="sweeper_candidates" rowKey={(s) => s.contract} /></CardContent></Card>
+      )}
+      {!!O.repeat?.length && (
+        <Card><CardHeader><CardTitle>Repeat recipients</CardTitle><Muted>Received escaped funds from two or more frozen addresses (service-fee collectors and dust excluded).</Muted></CardHeader>
+          <CardContent><DataTable cols={rp} rows={O.repeat} exportName="repeat_recipients" rowKey={(s) => s.chain + s.recipient} /></CardContent></Card>
+      )}
+      {F && !!F.watched && (
+        <Muted>🏃 Hop-ahead watch: {F.watched} addresses that received funds from recent freezes are polled ({F.hop1} at hop 1, {F.hop2} at hop 2); {F.moves} moves worth {usd(F.moved_usd)} seen, {F.confirmed} of them ({usd(F.confirmed_usd)}) were followed by the address's own freeze proposal.</Muted>
+      )}
+    </div>
   )
 }

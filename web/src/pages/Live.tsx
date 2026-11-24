@@ -28,6 +28,7 @@ function pendCols(): Col<Proposal>[] {
 function SignalsTable() {
   const { d, active } = useApp()
   const S = d.signals
+  const pc = S?.stats?.pending_checks || 0
   const rows = (S?.open ?? []).filter((s) => active(s.frozen_on))
   const risk = (s: Signal) => { const done = new Set(s.resolutions.map((x) => x.chain)); return s.at_risk.filter((e) => !done.has(e[0])) }
   const cols: Col<Signal>[] = [
@@ -41,7 +42,7 @@ function SignalsTable() {
   return (
     <>
       <H2 id="signals">🔗 At risk on other chains ({rows.length})</H2>
-      <Muted className="mb-1.5">An address that was just frozen (or has a freeze proposal) on one chain and still holds funds on chains where it is not blocked yet. Checked on every run.</Muted>
+      <Muted className="mb-1.5">An address that was just frozen (or has a freeze proposal) on one chain and still holds funds on chains where it is not blocked yet. Checked on every run.{pc ? " " + pc + " chain check" + (pc > 1 ? "s" : "") + " pending a retry (a source was unavailable; nothing is skipped silently)." : ""}</Muted>
       <DataTable cols={cols} rows={rows} exportName="cross_chain_signals" empty="No open signals: nothing frozen recently still sits unblocked on another chain." />
     </>
   )

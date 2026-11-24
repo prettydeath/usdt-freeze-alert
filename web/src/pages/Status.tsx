@@ -23,6 +23,7 @@ export default function Status({ health }: { health: StatusT | null }) {
   usePulse(ref, S.overall !== "ok")
   const bad = S.sources.filter((s) => s.status !== "ok").length
   const R = S.run
+  const DL = S.detect
   const slow = R ? R.steps.filter((x) => x[2]).length : 0
   const cols: Col<SourceStatus>[] = [
     { h: "Source", v: (s) => s.label, r: (s) => <><b>{s.label}</b><div className="text-muted-foreground text-xs">{s.source}</div></> },
@@ -38,14 +39,14 @@ export default function Status({ health }: { health: StatusT | null }) {
       <H2>Status of data sources</H2>
       <p className="text-muted-foreground mb-2 flex items-center gap-2 text-xs">
         <span className={"pulse-dot " + (S.overall === "ok" ? "" : S.overall === "failing" ? "pend" : "old")} aria-hidden="true" />
-        {S.sources.length} sources · {bad ? bad + " not fully healthy" : "all healthy"}
+        {S.sources.length} sources · {bad ? bad + " not fully healthy" : "all healthy"}{DL ? " · new TRON proposals are detected a median " + dur(DL.median_s) + " after submission (p90 " + dur(DL.p90_s) + ", " + DL.n + " in 7 days)" : ""}
       </p>
       {R && (
         <Collapsible className="mb-3 border-t pt-1.5">
           <CollapsibleTrigger className="text-muted-foreground hover:text-foreground text-xs font-semibold uppercase">
             Last run: {dur(R.run_s)} of a {dur(R.deadline_s)} deadline · {slow} step{slow === 1 ? "" : "s"} cut short or skipped · {dt(R.at)}
           </CollapsibleTrigger>
-          <CollapsibleContent className="mono pt-1.5">{R.steps.map((x) => x[0] + " " + dur(x[1]) + (x[2] ? " (" + x[2] + ")" : "")).join(" · ")}</CollapsibleContent>
+          <CollapsibleContent className="mono pt-1.5">{R.tron_keys && <>{R.tron_keys}<br /></>}{R.steps.map((x) => x[0] + " " + dur(x[1]) + (x[2] ? " (" + x[2] + ")" : "") + (x[3] != null ? " [" + x[3] + "]" : "")).join(" · ")}</CollapsibleContent>
         </Collapsible>
       )}
       <DataTable cols={cols} rows={S.sources} exportName="source_status" rowKey={(s) => s.source} empty="No run recorded yet." />

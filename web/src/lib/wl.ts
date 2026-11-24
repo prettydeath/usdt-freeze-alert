@@ -146,7 +146,7 @@ export function buildReport(d: Data, r: WlResult, nowIso: string): string {
     L.push("", "## Funds moved before the freeze (72 h window)", "")
     for (const [c, fl] of Object.entries(rec.o)) for (const f of fl) {
       L.push("- " + CH[c]?.label + ", frozen " + dstr(f[0]) + ": escaped " + usd(f[1]) + " (" + usd(f[2]) + " between proposal and execution)" + (f[4] > 0 ? "; " + usd(f[4]) + " moved between addresses that were also frozen (not counted)" : "") + (f[5] ? "; TRUNCATED (lower bound)" : "") + (f[6] ? "; labelled service wallet, not counted" : ""))
-      for (const x of f[3]) L.push("  - to `" + x[0] + "` " + usd(x[1]) + (x[2] > 0 ? " (in-window " + usd(x[2]) + ")" : "") + (x[4] ? " [also frozen]" : "") + (x[3] ? " [label from wallet-attribution: " + [x[3][0], x[3][1], x[3][2]].filter(Boolean).join(" / ") + "]" : ""))
+      for (const x of f[3]) L.push("  - to `" + x[0] + "` " + usd(x[1]) + (x[2] > 0 ? " (in-window " + usd(x[2]) + ")" : "") + (x[4] ? " [also frozen]" : "") + (x[5] ? " [pulled by third party: `" + x[5] + "`]" : "") + (x[3] ? " [label from wallet-attribution: " + [x[3][0], x[3][1], x[3][2]].filter(Boolean).join(" / ") + "]" : ""))
     }
   }
   const inf = rec ? Object.entries(rec.i || {}) : []
@@ -154,6 +154,8 @@ export function buildReport(d: Data, r: WlResult, nowIso: string): string {
     L.push("", "## Funds sent after the freeze", "")
     for (const [c, v] of inf) L.push("- " + CH[c]?.label + ": " + v[0] + " transfer(s), " + usd(v[1]) + "; top senders: " + v[2].map((s) => "`" + s[0] + "` (" + s[1] + ", " + usd(s[2]) + ")").join(", "))
   }
+  if (rec?.ex?.length) { L.push("", "## Exposure at proposal time", ""); for (const x of rec.ex) L.push("- " + (x[0] === "eip7702" ? "EIP-7702 delegated to `" + x[1] + "`" : "allowance (" + (x[3] === "unlimited" ? "unlimited" : usd(x[2])) + ") to `" + x[1] + "`")) }
+  if (rec?.w) L.push("", "## Hop-ahead watch", "", "- Hop " + rec.w[0] + ": received " + usd(rec.w[2]) + " from frozen `" + rec.w[1] + "`; moved on " + usd(rec.w[3]))
   if (rec?.x?.length) { L.push("", "## Cross-chain signals", ""); for (const x of rec.x) L.push("- " + (x[1] === "proposed" ? "freeze proposed" : "frozen") + " on " + CH[x[0]]?.label + " " + dstr(x[2]) + ", still unblocked: " + x[3].map((e: any[]) => usd(e[3]) + " on " + CH[e[0]]?.label).join(", ")) }
   if (rec?.c?.length) L.push("", "## Clusters", "", "Cluster ids (leads, not proof of a common owner): " + rec.c.map((i) => "`" + i + "`").join(", "))
   if (rec?.p?.length) { L.push("", "## Pending / stale proposals", ""); for (const p of rec.p) L.push("- " + CH[p[0]]?.label + " " + (p[6] === "stale" ? "stale" : "pending") + " proposal " + p[1] + " (" + p[2] + "), " + p[3] + "/" + (p[4] ?? "?") + " signatures" + (p[5] ? ", submitted " + dstr(p[5]) : "")) }

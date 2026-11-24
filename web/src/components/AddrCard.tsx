@@ -165,7 +165,7 @@ export function AddrCard({ r, onLive, page }: { r: WlResult; onLive: () => Promi
       <Sec key="out" title="Funds moved before the freeze" open={page}>
         {outf.map(([c, fl]) => fl.map((f, i) => {
           const rc: Col<any[]>[] = [
-            { h: "Recipient", v: (x) => x[0], wide: true, r: (x) => <><AddrLink chain={c} a={x[0]} />{x[4] ? <> <Badge title="This recipient was (or became) frozen too">also frozen</Badge></> : null}</> },
+            { h: "Recipient", v: (x) => x[0], wide: true, r: (x) => <><AddrLink chain={c} a={x[0]} />{x[4] ? <> <Badge title="This recipient was (or became) frozen too">also frozen</Badge></> : null}{x[5] ? <> <Badge variant="warn" title={"The transaction was sent by someone else: " + x[5]}>pulled by third party</Badge></> : null}</> },
             { h: "72 h", v: (x) => x[1], r: (x) => usd(x[1]) },
             { h: "In-window", v: (x) => x[2], r: (x) => (x[2] > 0 ? <span className="text-warn">{usd(x[2])}</span> : "-") },
             { h: "Label", v: (x) => (x[3] ? [x[3][0], x[3][1], x[3][2]].filter(Boolean).join(" / ") : ""), r: (x) => <LabelTag lb={x[3]} withUrl /> },
@@ -235,6 +235,10 @@ export function AddrCard({ r, onLive, page }: { r: WlResult; onLive: () => Promi
               {rec.r && Object.entries(rec.r).map(([c, x]) => <div key={"r" + c}>{x[4] ? "⚖" : "🧾"} <b>{x[4] ? "OFAC SDN listed" : "Reason hint"}</b> ({cshort(c)}): <ReasonChip x={x} withUrl /> {!x[4] && <span className="text-muted-foreground">{x[1]}{x[3] === "curated" ? " - curated, public source" : " - label from wallet-attribution"}</span>}</div>)}
               {Object.entries(rec.l || {}).map(([c, l]) => <div key={"l" + c}>🏷 <b>frozen address labeled:</b> <LabelTag lb={l} withUrl /> <span className="text-muted-foreground">({cshort(c)}, label from wallet-attribution)</span></div>)}
               {(rec.x || []).map((x, i) => <div key={"x" + i}>🔗 {x[1] === "proposed" ? "freeze proposed" : "frozen"} on {cshort(x[0])}, still unblocked: {x[3].map((e: any[], j: number) => <span key={j}>{j > 0 && ", "}<b>{usd(e[3])}</b> on {cshort(e[0])}</span>)}</div>)}
+              {(rec.ex || []).map((x, i) => x[0] === "eip7702"
+                ? <div key={"ex" + i} className="text-warn">⚠️ <b>EIP-7702 delegated</b> to <span className="mono">{x[1]}</span> - the delegate can act as this account</div>
+                : <div key={"ex" + i} className="text-warn">⚠️ <b>Allowance</b> ({x[2] >= 1e30 || x[3] === "unlimited" ? "unlimited" : usd(x[2])}) to <span className="mono">{x[1] === "0x000000000022d473030f116ddee9f6b43ac78ba3" ? x[1] + " (Permit2)" : x[1]}</span> - the spender can still move funds after the proposal</div>)}
+              {rec.w && <div>🏃 Watched (hop {rec.w[0]}): received {usd(rec.w[2])} from frozen <span className="mono">{rec.w[1]}</span>{rec.w[3] > 0 ? ", has moved " + usd(rec.w[3]) + " on" : ""}</div>}
               {rec.c && rec.c.length > 0 && <div>🧩 Clusters: {rec.c.map((id) => have.has(id)
                 ? <a key={id} href="#analytics" className="mr-1 inline-flex rounded-full border px-2 text-xs" title="Open the cluster list" onClick={(e) => { e.preventDefault(); setClusterFocus(id); go("analytics") }}>{id}</a>
                 : <Badge key={id} variant="outline" className="mr-1" title="Cluster not in the top list">{id}</Badge>)}</div>}
