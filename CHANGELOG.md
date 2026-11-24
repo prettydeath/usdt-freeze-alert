@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- New dashboard UI (`web/`): React 18 + TypeScript + Tailwind + shadcn/ui + Recharts + anime.js, same features and hash links (`#live`, `#analytics`, `#watchlist`, `#signers`, `#status`, `#addr=`, `#watch=`), code-split, reduced-motion aware. It is the site root; the previous page is `classic.html`. `site/data.json` (the former embedded blob) is exported for it.
+
 - TRON: every TronGrid call goes through one client (key rotation, per-key throttle ~14 req/s, 429 cooldown, bounded, per-key usage counts in the log and on Status); Tronscan token-transfer API as a keyless fallback; recent-first inflow / outflow scans run in parallel.
 - Cross-chain signals: a failed chain check is retried on the next run instead of skipped; FREEZE INCOMING alerts go out right after the core sync, TRON first; Status shows how long after submission new TRON proposals are detected.
 - Hop-ahead watch: recipients of funds that left a freeze target (hop 1 and 2) are polled; a move before the address's own proposal raises a PRE-PROPOSAL FLIGHT alert.

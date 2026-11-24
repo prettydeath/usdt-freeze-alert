@@ -94,10 +94,11 @@ For USDT0 the token's own `BlockPlaced` / `BlockReleased` / `DestroyedBlockedFun
 ```bash
 pip install requests
 export ETHERSCAN_API_KEY=...        # required for Ethereum history
-python -m freezewatch run           # update + stats + site/index.html
+python -m freezewatch run           # update + stats + site/data.json + site/classic.html (and the JSON the web UI reads)
+cd web && npm ci && npm run build   # React UI -> site/index.html + site/assets (optional locally; see web/README.md)
 ```
 
-`backfill --chain all` fetches full history (resumable), `run --loop --interval 60` is a local daemon, `python -m pytest` runs the offline tests.
+`backfill --chain all` fetches full history (resumable), `run --loop --interval 60` is a local daemon, `python -m pytest` runs the offline tests. The dashboard is a static React app in [`web/`](web/README.md) (Vite, TypeScript, Tailwind, shadcn/ui, Recharts, anime.js); the previous single-file page stays available as `classic.html`, and without the Node build `index.html` falls back to it.
 
 ### Run it on GitHub Actions
 

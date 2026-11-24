@@ -114,6 +114,8 @@
 }
 
 .mono { font-family: var(--font-mono); font-size: 11.5px; overflow-wrap: anywhere; word-break: break-all; }
+/* short mono values (timestamps, ids) never break across lines */
+.mono.nw { white-space: nowrap; word-break: normal; overflow-wrap: normal; }
 .tabnum { font-variant-numeric: tabular-nums; }
 
 /* live / pending pulse dot (animated by anime.js; static ring when motion is reduced) */

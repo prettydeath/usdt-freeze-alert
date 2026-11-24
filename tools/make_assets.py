@@ -1,8 +1,13 @@
 """Regenerate every README image from a fresh render: screenshots (desktop dark/light, mobile), the demo GIF and the social
 preview. Developer tool - needs `pip install playwright pillow` and `playwright install chromium`.
 
-    python -m freezewatch render
+The screenshots show the React app (web/): build it first, it is emitted into site/ next to the data files.
+
+    python -m freezewatch render        # data files in site/   (or: python web/scripts/fixture.py, published data)
+    (cd web && npm ci && npm run build)  # site/index.html + site/assets
     python tools/make_assets.py
+
+Animations are switched off (prefers-reduced-motion) so every frame shows the final state.
 
 Only public example addresses are used. PNGs are palette-quantised (Pillow) to keep the repository small."""
 import functools
@@ -34,8 +39,7 @@ def serve():
 
 
 def payload():
-    h = (SITE / "index.html").read_text(encoding="utf-8")
-    return json.loads(re.search(r'<script id="data" type="application/json">(.*?)</script>', h, re.S).group(1))
+    return json.loads((SITE / "data.json").read_text(encoding="utf-8"))
 
 
 def save_png(path, src, colors=256, width=None):
@@ -50,9 +54,15 @@ def save_png(path, src, colors=256, width=None):
 def examples(D):
     """Public examples plus one pending and one unfrozen address from the current data (for the four watchlist states)."""
     pend = next((p["target"] for p in D["pending"] if p.get("target") and p["chain"] in ("eth", "tron")), None)
-    idx = json.loads((SITE / "addresses.json").read_text(encoding="utf-8"))
+    man = json.loads((SITE / "addresses.json").read_text(encoding="utf-8"))
+    if man.get("sharded"):   # the index is split into site/addr/<shard>.json
+        records = {}
+        for f in sorted((SITE / "addr").glob("*.json")):
+            records.update(json.loads(f.read_text(encoding="utf-8"))["a"])
+    else:
+        records = man["a"]
     def unfrozen(with_balance):
-        for k, r in idx["a"].items():
+        for k, r in records.items():
             for c, s in (r.get("s") or {}).items():
                 if s == "unfrozen" and (not with_balance or (r.get("b") or {}).get(c, 0) > 1000):
                     return k
@@ -62,14 +72,16 @@ def examples(D):
 
 def new_page(browser, scheme, w, h, dpr=1, mobile=False):
     ctx = browser.new_context(viewport={"width": w, "height": h}, color_scheme=scheme, device_scale_factor=dpr, is_mobile=mobile,
-                              has_touch=mobile)
+                              has_touch=mobile, reduced_motion="reduce")
+    ctx.add_init_script("try{localStorage.setItem('ufa.theme','%s')}catch(e){}" % scheme)
     return ctx, ctx.new_page()
 
 
 def goto(pg, base, frag, wait=1800):
-    pg.goto(base + "/index.html")
+    pg.goto(base + "/")
     pg.evaluate("location.hash = %s" % json.dumps(frag))
     pg.reload()
+    pg.wait_for_load_state("networkidle")
     pg.wait_for_timeout(wait)
 
 
@@ -96,7 +108,7 @@ def desktop(browser, base, D):
         section_shot(pg, "Pulse", OUT / f"pulse-{scheme}.png", 1000, 1360)
         section_shot(pg, "Clusters", OUT / f"clusters-{scheme}.png", 760, 1360)
         goto(pg, base, "watch=" + ",".join(ex), 2500)
-        pg.click("#wlLiveAll")
+        pg.get_by_role("button", name="Check all live on-chain").click()
         pg.wait_for_timeout(15000)
         pg.screenshot(path=str(OUT / f"watchlist-states-{scheme}.png"), full_page=True)
         goto(pg, base, "addr=" + EXAMPLES[1], 2500)
@@ -151,15 +163,15 @@ def demo(browser, base, D):
     snap(2200)
     goto(pg, base, "watchlist", 900)
     snap(1200)
-    pg.fill("#wlText", "\n".join(EXAMPLES))
+    pg.fill("textarea", "\n".join(EXAMPLES))
     snap(1800)
-    pg.click("#wlCheck")
+    pg.get_by_role("button", name="Check", exact=True).click()
     pg.wait_for_timeout(1500)
     snap(2200)
     pg.evaluate("window.scrollBy(0, 330)")
     snap(2200)
     pg.evaluate("window.scrollTo(0, 0)")
-    pg.click("#wlLiveAll")
+    pg.get_by_role("button", name="Check all live on-chain").click()
     pg.wait_for_timeout(14000)
     pg.evaluate("window.scrollBy(0, 330)")
     snap(2800)

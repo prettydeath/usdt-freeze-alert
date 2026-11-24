@@ -68,7 +68,7 @@ export function DataTable<T>({ cols, rows, empty = "No data.", exportName, rowKe
             ) : rows.map((r, i) => (
               <TableRow key={rowKey ? rowKey(r, i) : i}>
                 {cols.map((c, j) => (
-                  <TableCell key={c.h} data-l={j > 0 ? c.h : undefined} className={cn(c.className, c.wide && "wide", j === 0 && "first")}>
+                  <TableCell key={c.h} data-l={j > 0 ? c.h : undefined} className={cn(c.className, c.wide && "wide", j === 0 && "first", c.className?.includes("mono") && !c.wide && "nw")}>
                     {c.r ? c.r(r) : String(c.v(r) ?? "")}
                   </TableCell>
                 ))}
