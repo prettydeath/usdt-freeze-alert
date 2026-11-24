@@ -310,3 +310,20 @@ def test_celo_logs_fall_back_to_rpc_but_other_chains_still_raise(monkeypatch):
     else:
         raise AssertionError("a chain without a fallback must still raise")
     assert evmmsw.LOG_FAIL_SKIP_SEC <= 30 * 60                                                    # the skip window is short now
+
+
+def test_flight_scan_stays_fast_with_thousands_of_moves_and_proposals(tmp_path):
+    """The 'flight-watch hung' abandoned step: the per-move proposal lookup scanned every proposal for every move."""
+    conn = connect(tmp_path / "p.sqlite")
+    for i in range(4000):
+        conn.execute("INSERT INTO proposals(chain,tx_id,first_seen_at,updated_at,function,target,submitted_at,status) VALUES('tron',?,?,?,?,?,?,?)",
+                     (i, iso(NOW), iso(NOW), "addBlackList", f"T{i:033d}", iso(NOW - 1000), "executed"))
+    for i in range(2000):
+        conn.execute("INSERT INTO watch_moves VALUES('tron',?,?,?,?,?,0,'none')", (f"T{i + 10000:033d}", "TR", 100.0, iso(NOW - 500), f"h{i}"))
+    conn.commit()
+    t0 = time.time()
+    flight.scan(conn, {}, watch={}, now=NOW, fetch_out=lambda *a: [])
+    assert time.time() - t0 < 3                                                                          # was tens of seconds
+    conn.execute("INSERT INTO watch_moves VALUES('tron',?,?,?,?,?,0,'none')", ("T" + "0" * 33, "TR", 100.0, iso(NOW - 5000), "hz"))
+    flight.scan(conn, {}, watch={}, now=NOW, fetch_out=lambda *a: [])
+    assert conn.execute("SELECT own_proposal FROM watch_moves WHERE tx_hash='hz'").fetchone()[0] == "after"    # its proposal (NOW-1000) came after this move (NOW-5000): confirmed

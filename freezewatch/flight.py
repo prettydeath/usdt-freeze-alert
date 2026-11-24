@@ -58,17 +58,29 @@ def refresh_watch(conn, labels, watch=None, now=None, days=WATCH_DAYS, min_usd=M
     return new
 
 
-def own_proposal_state(conn, chain, addr, move_ts):
-    """'none' no freeze proposal on this address yet, 'before' one was submitted at or before the move, 'after' it came later."""
-    first = None
-    for r in conn.execute("SELECT submitted_at, first_seen_at, target, chain FROM proposals WHERE chain=? AND function IN (?,?,?,?) "
-                          "AND target IS NOT NULL", (chain, *FREEZE_FNS)):
-        if analytics.norm(chain, r["target"]) == analytics.norm(chain, addr):
-            t = parse_iso(r["submitted_at"] or r["first_seen_at"])
-            first = t if first is None else min(first, t)
+def first_proposal_map(conn):
+    """{(chain, normalised address): time of its first freeze proposal} - one pass over the proposals. The per-move query used
+    before scanned every proposal for every move (millions of iterations: the 'flight-watch hung' abandoned step)."""
+    out = {}
+    for r in conn.execute("SELECT chain, target, submitted_at, first_seen_at FROM proposals WHERE function IN (?,?,?,?) AND target IS NOT NULL "
+                          "AND chain IN ('eth','tron')", FREEZE_FNS):
+        k = (r["chain"], analytics.norm(r["chain"], r["target"]))
+        t = parse_iso(r["submitted_at"] or r["first_seen_at"])
+        if t is not None and (k not in out or t < out[k]):
+            out[k] = t
+    return out
+
+
+def state_from(first_map, chain, addr, move_ts):
+    first = first_map.get((chain, analytics.norm(chain, addr)))
     if first is None:
         return "none"
     return "before" if first <= move_ts else "after"
+
+
+def own_proposal_state(conn, chain, addr, move_ts):
+    """'none' no freeze proposal on this address yet, 'before' one was submitted at or before the move, 'after' it came later."""
+    return state_from(first_proposal_map(conn), chain, addr, move_ts)
 
 
 def _fetch_out(chain, addr, from_ts, to_ts, stop):
@@ -87,6 +99,7 @@ def scan(conn, labels, watch=None, budget_sec=60, now=None, fetch_out=_fetch_out
     watch = watch if watch is not None else load_watchlist()
     t0 = time.time()
     n = 0
+    fmap = first_proposal_map(conn)
     due = conn.execute("SELECT * FROM watched WHERE hop<=? AND (scanned_at IS NULL OR scanned_at<?) ORDER BY hop, since_ts DESC LIMIT ?",
                        (MAX_HOP, iso(now - RESCAN_SEC), MAX_SCANS)).fetchall()
     for w in due:
@@ -103,7 +116,7 @@ def scan(conn, labels, watch=None, budget_sec=60, now=None, fetch_out=_fetch_out
         for rcp, usd, ts, tx, li in rows:
             if usd < DUST_USD or rcp in sk or rcp == w["address"]:
                 continue
-            st = own_proposal_state(conn, w["chain"], w["address"], ts)
+            st = state_from(fmap, w["chain"], w["address"], ts)
             n += conn.execute("INSERT OR IGNORE INTO watch_moves(chain,address,recipient,amount,ts,tx_hash,log_index,own_proposal) "
                               "VALUES(?,?,?,?,?,?,?,?)", (w["chain"], w["address"], rcp, usd, iso(ts), tx, li, st)).rowcount
             if w["hop"] < MAX_HOP and usd >= MIN_WATCH_USD and not _skip(w["chain"], rcp, labels, watch):
@@ -111,8 +124,11 @@ def scan(conn, labels, watch=None, budget_sec=60, now=None, fetch_out=_fetch_out
                              (w["chain"], rcp, w["source"], w["hop"] + 1, usd, iso(ts)))
         conn.execute("UPDATE watched SET scanned_at=? WHERE chain=? AND address=?", (iso(now), w["chain"], w["address"]))
     # a flight is confirmed afterwards when the address' own proposal shows up later
+    fmap = first_proposal_map(conn)   # proposals may have appeared while the addresses were polled
     for m in conn.execute("SELECT chain, address, ts, tx_hash, log_index FROM watch_moves WHERE own_proposal='none'").fetchall():
-        st = own_proposal_state(conn, m["chain"], m["address"], parse_iso(m["ts"]))
+        if deadline.http_stop():
+            break
+        st = state_from(fmap, m["chain"], m["address"], parse_iso(m["ts"]))
         if st != "none":
             conn.execute("UPDATE watch_moves SET own_proposal=? WHERE chain=? AND tx_hash=? AND log_index=? AND address=?",
                          (st, m["chain"], m["tx_hash"], m["log_index"], m["address"]))

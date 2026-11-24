@@ -90,9 +90,9 @@ def request(method, path, *, params=None, json=None, max_sec=45, session=None, s
             last = repr(e)[:80]
         # all keys cooling: wait for the first one to recover instead of hammering
         if key and pool.cooling() >= len(pool):
-            sleep(min(COOLDOWN_429, max(0.2, 1 + attempt * 0.5)))
+            sleep(deadline.http_time_left(min(COOLDOWN_429, max(0.2, 1 + attempt * 0.5))))
         elif not key:
-            sleep(min(1 + attempt, 6))
+            sleep(deadline.http_time_left(min(1 + attempt, 6)))
     raise HttpError(f"TronGrid {path.split('?')[0]}: retries exhausted ({last})")
 
 
