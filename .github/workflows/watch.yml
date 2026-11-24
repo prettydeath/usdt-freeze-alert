@@ -39,10 +39,17 @@ jobs:
           path: _data
         continue-on-error: true
 
-      - run: |
+      - name: Restore the database (release data-latest, fallback data branch)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
           mkdir -p data
-          if [ -f _data/data/freezewatch.sqlite.gz ]; then gunzip -c _data/data/freezewatch.sqlite.gz > data/freezewatch.sqlite
-          elif [ -f _data/data/freezewatch.sqlite ]; then cp _data/data/freezewatch.sqlite data/; fi
+          rm -rf _rel && mkdir _rel
+          if gh release download data-latest -R "${{ github.repository }}" -p freezewatch.sqlite.gz -D _rel 2>/dev/null; then
+            gunzip -c _rel/freezewatch.sqlite.gz > data/freezewatch.sqlite; echo "restored from release"
+          elif [ -f _data/data/freezewatch.sqlite.gz ]; then gunzip -c _data/data/freezewatch.sqlite.gz > data/freezewatch.sqlite; echo "restored from data branch (gz)"
+          elif [ -f _data/data/freezewatch.sqlite ]; then cp _data/data/freezewatch.sqlite data/; echo "restored from data branch"; fi
+          ls -la data | head
 
       - uses: actions/setup-python@v5
         with:
@@ -82,12 +89,23 @@ jobs:
           fi
           python -m freezewatch run
 
+      - name: Upload the database to the data-latest release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # the database lives in a release asset (2 GB limit, no git history), not in the data branch
+          gzip -9 -n -c data/freezewatch.sqlite > _db.sqlite.gz
+          if [ -f _rel/freezewatch.sqlite.gz ] && cmp -s _db.sqlite.gz _rel/freezewatch.sqlite.gz; then echo "database unchanged"; exit 0; fi
+          gh release view data-latest -R "${{ github.repository }}" >/dev/null 2>&1 ||             gh release create data-latest -R "${{ github.repository }}" --title "Data snapshot (auto-updated)" --prerelease --latest=false               --notes "Auto-updated SQLite database (gzip) written by the watch workflow every run. Download: freezewatch.sqlite.gz, then gunzip."
+          cp _db.sqlite.gz freezewatch.sqlite.gz
+          gh release upload data-latest freezewatch.sqlite.gz -R "${{ github.repository }}" --clobber
+          ls -la freezewatch.sqlite.gz
+
       - name: Publish to the data branch (single orphan commit)
         id: publish
         run: |
           rm -rf _pub && mkdir _pub && cp -r data site _pub/
-          # GitHub rejects files > 100 MB: publish the database gzip-compressed (-n = deterministic bytes)
-          gzip -9 -n -c _pub/data/freezewatch.sqlite > _pub/data/freezewatch.sqlite.gz && rm _pub/data/freezewatch.sqlite
+          rm -f _pub/data/freezewatch.sqlite _pub/data/freezewatch.sqlite.gz   # database is in the release
           ls -la _pub/data | awk '{print $5, $9}'
           if [ -d _data ] && diff -rq --exclude=.git _data/data _pub/data >/dev/null 2>&1 && diff -rq --exclude=.git _data/site _pub/site >/dev/null 2>&1; then
             echo "changed=false" >> "$GITHUB_OUTPUT"; echo "no changes"; exit 0

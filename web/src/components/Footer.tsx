@@ -5,7 +5,7 @@ import { go } from "@/lib/router"
 import { openGlossary } from "@/lib/focus"
 import { ChainFilter } from "@/components/Header"
 
-const LINKS: [string, string][] = [["data/proposals.csv", "proposals.csv"], ["data/blacklist.csv", "blacklist.csv"], ["data/inflows.csv", "inflows.csv"], ["site/analytics.json", "analytics.json"], ["site/addresses.json", "addresses.json"], ["data/freezewatch.sqlite.gz", "freezewatch.sqlite.gz"]]
+const LINKS: [string, string][] = [["data/proposals.csv", "proposals.csv"], ["data/blacklist.csv", "blacklist.csv"], ["data/inflows.csv", "inflows.csv"], ["site/analytics.json", "analytics.json"], ["site/addresses.json", "addresses.json"], ["https://github.com/prettydeath/usdt-freeze-alert/releases/download/data-latest/freezewatch.sqlite.gz", "freezewatch.sqlite.gz"]]
 
 /** Mobile chain filter row (a scrollable strip under the header) */
 export function MobileFilters() {
@@ -26,7 +26,7 @@ export function Footer() {
       {Object.entries(d.health || {}).filter(([, h]) => h && h.stale).map(([c, h]) => (
         <div key={c} className="text-warn">⚠ {c.toUpperCase()} data stale: on-chain transaction count {h.onchain_count}, newest id in our data {h.max_id}.</div>
       ))}
-      <div className="mt-1.5 mb-1.5 flex flex-wrap gap-x-3 gap-y-1"><b>Data:</b>{LINKS.map(([p, n]) => <a key={p} href={RAW + p} target="_blank" rel="noopener noreferrer" className="max-sm:inline-flex max-sm:min-h-7 max-sm:items-center">{n}</a>)}</div>
+      <div className="mt-1.5 mb-1.5 flex flex-wrap gap-x-3 gap-y-1"><b>Data:</b>{LINKS.map(([p, n]) => <a key={p} href={p.startsWith("https://") ? p : RAW + p} target="_blank" rel="noopener noreferrer" className="max-sm:inline-flex max-sm:min-h-7 max-sm:items-center">{n}</a>)}</div>
       Sources: {d.sources.join(", ")}. Labels: <a href="https://github.com/prettydeath/wallet-attribution" target="_blank" rel="noopener noreferrer">wallet-attribution</a> (MIT) and its upstream sources. Data changed: {dt(d.generated_at)}. Freezing actions = addBlackList / addToBlockedList; destroy*; remove*. TRON execution time is inferred from confirmations; Safe queues live off-chain; USDC and Solana have no queue (delay n/a). Not financial advice.
     </footer>
   )
