@@ -153,7 +153,7 @@ Everything is on the `data` branch (`https://raw.githubusercontent.com/prettydea
 | `data/inflows.csv`, `data/outflows.csv` | transfers to frozen addresses and the 72 h before each freeze (with labels, internal / truncated flags) |
 | `data/signals.csv` | cross-chain signals |
 | `site/analytics.json`, `site/health.json`, `site/addresses.json` | aggregates, per-source health, per-address index |
-| `data/freezewatch.sqlite` | the full database |
+| `data/freezewatch.sqlite.gz` | the full database (gzip; `gunzip` before use) |
 
 Every dashboard table has **CSV / JSON** buttons for exactly the rows shown. Curated reasons live in [`config/reasons.yaml`](config/reasons.yaml) (public source required; empty on purpose until verified). Verified evasion / sweeper / fee-collector addresses live in [`config/evasion_watchlist.yaml`](config/evasion_watchlist.yaml) (evidence required for every entry).
 

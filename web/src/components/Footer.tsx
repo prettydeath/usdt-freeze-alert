@@ -5,7 +5,7 @@ import { go } from "@/lib/router"
 import { openGlossary } from "@/lib/focus"
 import { ChainFilter } from "@/components/Header"
 
-const LINKS: [string, string][] = [["data/proposals.csv", "proposals.csv"], ["data/blacklist.csv", "blacklist.csv"], ["data/inflows.csv", "inflows.csv"], ["site/analytics.json", "analytics.json"], ["site/addresses.json", "addresses.json"], ["data/freezewatch.sqlite", "freezewatch.sqlite"]]
+const LINKS: [string, string][] = [["data/proposals.csv", "proposals.csv"], ["data/blacklist.csv", "blacklist.csv"], ["data/inflows.csv", "inflows.csv"], ["site/analytics.json", "analytics.json"], ["site/addresses.json", "addresses.json"], ["data/freezewatch.sqlite.gz", "freezewatch.sqlite.gz"]]
 
 /** Mobile chain filter row (a scrollable strip under the header) */
 export function MobileFilters() {

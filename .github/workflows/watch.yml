@@ -41,7 +41,8 @@ jobs:
 
       - run: |
           mkdir -p data
-          if [ -f _data/data/freezewatch.sqlite ]; then cp _data/data/freezewatch.sqlite data/; fi
+          if [ -f _data/data/freezewatch.sqlite.gz ]; then gunzip -c _data/data/freezewatch.sqlite.gz > data/freezewatch.sqlite
+          elif [ -f _data/data/freezewatch.sqlite ]; then cp _data/data/freezewatch.sqlite data/; fi
 
       - uses: actions/setup-python@v5
         with:
@@ -84,10 +85,13 @@ jobs:
       - name: Publish to the data branch (single orphan commit)
         id: publish
         run: |
-          if [ -d _data ] && diff -rq --exclude=.git _data/data data >/dev/null 2>&1 && diff -rq --exclude=.git _data/site site >/dev/null 2>&1; then
+          rm -rf _pub && mkdir _pub && cp -r data site _pub/
+          # GitHub rejects files > 100 MB: publish the database gzip-compressed (-n = deterministic bytes)
+          gzip -9 -n -c _pub/data/freezewatch.sqlite > _pub/data/freezewatch.sqlite.gz && rm _pub/data/freezewatch.sqlite
+          ls -la _pub/data | awk '{print $5, $9}'
+          if [ -d _data ] && diff -rq --exclude=.git _data/data _pub/data >/dev/null 2>&1 && diff -rq --exclude=.git _data/site _pub/site >/dev/null 2>&1; then
             echo "changed=false" >> "$GITHUB_OUTPUT"; echo "no changes"; exit 0
           fi
-          rm -rf _pub && mkdir _pub && cp -r data site _pub/
           cd _pub
           git init -q -b data
           git config user.name "freezewatch-bot"
