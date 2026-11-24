@@ -159,8 +159,11 @@ def _optional(conn_box, name, fn, own):
         deadline.note(name, 0.0, "skipped")
         log.info("step %s skipped (run deadline: %.0fs of optional time left)", name, deadline.optional_remaining())
         return
+    res = {}
     with st:
-        done = deadline.run_guarded(lambda: fn(conn_box[0], st.budget), name, st.budget)
+        done = deadline.run_guarded(lambda: res.update(v=fn(conn_box[0], st.budget)), name, st.budget)
+        if isinstance(res.get("v"), (int, float)):
+            st.result = f"{res['v']} done"   # 0 done = nothing was due (everything already checked today)
     if not done:
         _Run.abandoned = True
         conn_box[0] = connect()   # the abandoned thread may still hold the old connection

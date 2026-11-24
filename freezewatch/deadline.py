@@ -88,6 +88,7 @@ class Step:
             self.budget = own
         self.skipped = bool(optional and started() and self.budget is not None and self.budget <= 0)
         self.hit = False
+        self.result = None      # what the step reported (e.g. addresses processed): explains a 0 s step ("nothing due")
 
     def __enter__(self):
         self.t0 = time.monotonic()
@@ -102,7 +103,8 @@ class Step:
         with _lock:
             _S["optional"] = False
             _S["step_end"] = None
-            _S["timings"].append([self.name, round(dt, 1), "skipped" if self.skipped else ("deadline" if self.hit else "")])
+            row = [self.name, round(dt, 1), "skipped" if self.skipped else ("deadline" if self.hit else "")]
+            _S["timings"].append(row + ([self.result] if self.result is not None else []))
         return False
 
 
@@ -144,5 +146,5 @@ def timings():
 
 def summary():
     """'timings: tron 41s, eth 12s, outflows 60s (deadline), ...' for the log."""
-    parts = [f"{n} {s:.0f}s" + (f" ({flag})" if flag else "") for n, s, flag in _S["timings"]]
+    parts = [f"{t[0]} {t[1]:.0f}s" + (f" ({t[2]})" if t[2] else "") + (f" [{t[3]}]" if len(t) > 3 else "") for t in _S["timings"]]
     return f"timings (run {elapsed():.0f}s of {_S['total']:.0f}s): " + ", ".join(parts)

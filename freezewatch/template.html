@@ -789,7 +789,7 @@ function renderStatus(){
   if(R){
     const slow = R.steps.filter(x => x[2]).length;
     $('stRunSum').textContent = 'Last run: ' + dur(R.run_s) + ' of a ' + dur(R.deadline_s) + ' deadline · ' + slow + ' step' + (slow === 1 ? '' : 's') + ' cut short or skipped · ' + dt(R.at);
-    $('stRunBody').innerHTML = (R.tron_keys ? esc(R.tron_keys) + '<br>' : '') + R.steps.map(x => esc(x[0]) + ' ' + dur(x[1]) + (x[2] ? ' (' + esc(x[2]) + ')' : '')).join(' · ');
+    $('stRunBody').innerHTML = (R.tron_keys ? esc(R.tron_keys) + '<br>' : '') + R.steps.map(x => esc(x[0]) + ' ' + dur(x[1]) + (x[2] ? ' (' + esc(x[2]) + ')' : '') + (x[3] != null ? ' [' + esc(x[3]) + ']' : '')).join(' · ');
   }
   const bad = S.sources.filter(s => s.status !== 'ok').length;
   $('stNote').textContent = S.sources.length + ' sources · ' + (bad ? bad + ' not fully healthy' : 'all healthy');

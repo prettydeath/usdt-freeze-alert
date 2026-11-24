@@ -160,10 +160,15 @@ def sync(conn, stale_days=7):
     log.info("TON: %s orders", len(rows))
     for r in rows:
         ensure_proposal(conn, CHAIN, r["tx_id"])
-        cur = conn.execute("SELECT executed_at, function, status FROM proposals WHERE chain=? AND tx_id=?",
+        cur = conn.execute("SELECT executed_at, function, status, submitted_at, confirmations FROM proposals WHERE chain=? AND tx_id=?",
                            (CHAIN, r["tx_id"])).fetchone()
         vals = dict(r["vals"])
         done = cur and cur["executed_at"] and cur["function"] != "governance_call"
+        # settled orders are not re-read from toncenter every run (a request per order cost ~25 s at the keyless 1 req/s limit):
+        # executed / revoked ones never change, a stale one only when its approval count moved
+        if cur and cur["submitted_at"] and (cur["status"] in ("executed", "revoked") or (
+                cur["status"] == "stale" and cur["confirmations"] == vals["confirmations"])):
+            done = True
         if not done:
             try:
                 txs = http_json("GET", TONCENTER, params={"account": r["address"], "limit": 50, "sort": "asc"},

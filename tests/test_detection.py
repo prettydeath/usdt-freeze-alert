@@ -211,3 +211,23 @@ def test_outflow_stats_expose_evasion_numbers(tmp_path):
     assert st["lead"]["n"] == 1 and st["lead"]["first_after_submit_s"] == 240
     pa = outflows.per_address(conn, labels)[("eth", F)][0]
     assert any(r["pulled_by"] == "0xbot" for r in pa["recipients"])
+
+
+# ---------------- destroy-amounts step (SQL placeholders must follow DESTROY_FUNCS) ----------------
+def test_enrich_destroy_amounts_covers_every_destroy_function(tmp_path, monkeypatch):
+    from freezewatch import analytics, constants
+    conn = connect(tmp_path / "d.sqlite")
+    for i, fn in enumerate(constants.DESTROY_FUNCS):       # destroyBlackFunds, destroyBlockedFunds, burn_from ...
+        ensure_proposal(conn, "eth", 100 + i)
+        update_proposal(conn, "eth", 100 + i, destination="x", function=fn, target=F, executed=1, executed_at=iso(NOW - 100),
+                        exec_tx=f"0x{i:064x}", status="executed")
+    log = []
+    topics = ["0x" + "00" * 32]
+
+    def fake_batch(calls, chunk=25, url=None, retries=3):
+        log.extend(c[1][0] for c in calls)
+        return [{"logs": []} for _ in calls]
+    monkeypatch.setattr(analytics.eth, "rpc_batch", fake_batch)
+    done = analytics.enrich_destroy_amounts(conn, 30)          # used to raise "Incorrect number of bindings supplied"
+    assert done == len(constants.DESTROY_FUNCS) and len(log) == len(constants.DESTROY_FUNCS)
+    assert conn.execute("SELECT COUNT(*) FROM proposals WHERE function='burn_from' AND amount IS NOT NULL").fetchone()[0] == 1

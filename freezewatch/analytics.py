@@ -381,8 +381,10 @@ def enrich_destroy_amounts(conn, budget_sec=150):
     """Store the burned amount of executed destroy proposals (proposals.amount) from transaction receipts."""
     from .util import tron_to_hex20
     t0 = time.time()
+    # one placeholder per destroy function (the list grew when burn_from was added: a fixed "(?,?)" broke the whole step)
     rows = conn.execute("SELECT chain, tx_id, target, exec_tx FROM proposals WHERE executed=1 AND amount IS NULL "
-                        "AND function IN (?,?) AND exec_tx IS NOT NULL ORDER BY executed_at DESC", DESTROY_FUNCS).fetchall()
+                        f"AND function IN ({','.join('?' * len(DESTROY_FUNCS))}) AND exec_tx IS NOT NULL ORDER BY executed_at DESC",
+                        DESTROY_FUNCS).fetchall()
     done = 0
     by_chain = {}
     for r in rows:

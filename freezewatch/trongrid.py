@@ -171,5 +171,6 @@ def transfers(addr, direction, min_ms, max_ms=None, *, grid_get=None, scan_get=N
     except Stopped:
         raise
     except HttpError as e:
-        log.info("TronGrid transfers %s unavailable (%s): Tronscan fallback", addr[:10], str(e)[:50])
+        log.debug("TronGrid transfers %s unavailable (%s): Tronscan fallback", addr[:10], str(e)[:50])
+        _count("fallback")
     return tronscan_transfers(addr, direction, min_ms, max_ms, get=scan_get, stop=stop), "tronscan"
