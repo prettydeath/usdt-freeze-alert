@@ -1,0 +1,47 @@
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 8ba2741..74080df 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -18,3 +18,19 @@ jobs:
+           python-version: "3.12"
+       - run: pip install requests pytest eth_utils "eth-hash[pycryptodome]"
+       - run: python -m pytest -q
++
++  web:
++    runs-on: ubuntu-latest
++    defaults:
++      run:
++        working-directory: web
++    steps:
++      - uses: actions/checkout@v4
++      - uses: actions/setup-node@v4
++        with:
++          node-version: "22"
++          cache: npm
++          cache-dependency-path: web/package-lock.json
++      - run: npm ci
++      - run: npm run lint
++      - run: npm run build
+diff --git a/.github/workflows/watch.yml b/.github/workflows/watch.yml
+index 7ee102e..cc0ecc2 100644
+--- a/.github/workflows/watch.yml
++++ b/.github/workflows/watch.yml
+@@ -68,6 +68,18 @@ jobs:
+           fi
+           python -m freezewatch run
+ 
++      - uses: actions/setup-node@v4
++        with:
++          node-version: "22"
++          cache: npm
++          cache-dependency-path: web/package-lock.json
++
++      - name: Build the React UI into site/app
++        working-directory: web
++        run: |
++          npm ci
++          npm run build
++
+       - name: Publish to the data branch (single orphan commit)
+         id: publish
+         run: |
