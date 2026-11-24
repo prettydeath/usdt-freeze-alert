@@ -57,7 +57,7 @@ def test_collect_and_format(tmp_path):
     assert d["delay"]["tron"] == {"median": 2730, "n": 2} and d["fastest"] == (60, "tron") and d["slowest"] == (5400, "tron")
     assert d["pending"]["n"] == 2
     txt = daily.fmt_daily(d)
-    assert txt.startswith("📊 <b>DAILY REPORT</b> · 2026-10-25 (Kyiv)") and txt.endswith("#daily #report")
+    assert txt.startswith("📊 <b>DAILY REPORT</b> · 2026-10-25") and txt.endswith("#daily #report")
     assert "New freeze proposals: <b>2</b> (TRON 2)" in txt and "Supply (not freezes): issued $1,000,000" in txt
     assert "#analytics" in txt and "glossary" in txt and "Supply" in txt and "Pending now: <b>2</b>" in txt
 

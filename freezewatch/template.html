@@ -890,7 +890,7 @@ function renderAnalytics(){
   if(!AN){ $('akpis').innerHTML = '<div class="empty">Loading analytics…</div>'; loadAnalytics().then(() => { if(AN && TAB === 'analytics') renderAnalytics(); else if(!AN) $('akpis').innerHTML = '<div class="empty">Analytics data unavailable.</div>'; }); return; }
   document.querySelectorAll('#pseg button').forEach(b => b.classList.toggle('on', b.dataset.v === AX.period));
   $('pfine').textContent = fine() ? (AX.period === 'today' ? 'since 00:00 Kyiv time' : 'last 7 Kyiv days incl. today') : '';
-  $('amtitle').textContent = !fine() ? 'Money per month' : AX.period === 'today' ? 'Money per hour (Kyiv time)' : 'Money per day (Kyiv days)';
+  $('amtitle').textContent = !fine() ? 'Money per month' : AX.period === 'today' ? 'Money per hour' : 'Money per day (Kyiv days)';
   document.querySelectorAll('#tseg button').forEach(b => b.classList.toggle('on', b.dataset.v === AX.token));
   const s = anSum();
   const inf = [0, 0, 0, 0, 0, 0];
@@ -1010,7 +1010,7 @@ function renderAnShare(){
     const box = $(id);
     for(const [v, l] of items){ const b = document.createElement('button'); b.type = 'button'; b.dataset.v = v; b.textContent = l; b.onclick = () => { set(v); renderAnalytics(); if(box.id === 'pseg'){ renderInsights(); renderReasons(); renderPulse(); } }; box.appendChild(b); }
   };
-  mk('pseg', [['today','Today (Kyiv)'],['7d','7d'],['30d','30d'],['90d','90d'],['12m','12m'],['all','All']], null, v => { AX.period = v; try { localStorage.setItem('ufa.period', v); } catch(e) {} });
+  mk('pseg', [['today','Today'],['7d','7d'],['30d','30d'],['90d','90d'],['12m','12m'],['all','All']], null, v => { AX.period = v; try { localStorage.setItem('ufa.period', v); } catch(e) {} });
   mk('tseg', [['all','All'],['USDT','USDT'],['USDT0','USDT0'],['USDC','USDC']], null, v => { AX.token = v; try { localStorage.setItem('ufa.token', v); } catch(e) {} });
 })();
 
@@ -1304,7 +1304,7 @@ function renderInsights(){
   const WN = fine() ? (D.windows || {})[AX.period] : null;
   const O = WN ? WN.outflows : D.outflows, S = D.signals, C = D.clusters;
   if(O){
-    $('onote').textContent = (WN ? (AX.period === 'today' ? 'Freezes executed today (Kyiv)' : 'Freezes executed in the last 7 Kyiv days') : 'Last 12 months') + ', ' + (O.checked || 0).toLocaleString('en-US') + ' executed freezes checked so far (Ethereum, USDC, Celo, Avalanche, TRON; the scan is budgeted per run and continues). Window = 72 h before execution. "Escaped" excludes transfers to addresses that were (or became) frozen too and moves inside one cluster' + (O.truncated ? '; ' + O.truncated + ' freezes with very many transfers are marked truncated and never counted as front-run' : '') + (O.service_n ? '. ' + O.service_n + ' labelled exchange / service wallets (' + usdS(O.service_12m) + ' of routine transfers) are reported apart and not counted' : '') + '.';
+    $('onote').textContent = (WN ? (AX.period === 'today' ? 'Freezes executed today' : 'Freezes executed in the last 7 days') : 'Last 12 months') + ', ' + (O.checked || 0).toLocaleString('en-US') + ' executed freezes checked so far (Ethereum, USDC, Celo, Avalanche, TRON; the scan is budgeted per run and continues). Window = 72 h before execution. "Escaped" excludes transfers to addresses that were (or became) frozen too and moves inside one cluster' + (O.truncated ? '; ' + O.truncated + ' freezes with very many transfers are marked truncated and never counted as front-run' : '') + (O.service_n ? '. ' + O.service_n + ' labelled exchange / service wallets (' + usdS(O.service_12m) + ' of routine transfers) are reported apart and not counted' : '') + '.';
     const pct = O.moved_12m + O.frozen_12m > 0 ? (100 * O.moved_12m / (O.moved_12m + O.frozen_12m)).toFixed(1) + '% of escaped + frozen (' + usdS(O.frozen_12m) + ' frozen)' : 'amount frozen unknown';
     $('okpis').innerHTML = [
       ['📤 Escaped, 72 h before', usdS(O.moved_12m), pct + ' · ' + O.with_out + ' of ' + O.checked + ' freezes had outgoing transfers'],
@@ -1511,7 +1511,7 @@ let speedChart = null, queueChart = null;
 function renderReasons(){
   const WR = fine() ? (D.windows || {})[AX.period] : null;
   const R = WR ? WR.reasons : D.reasons; if(!R) return;
-  $('rtitle').textContent = 'Freezes by reason' + (WR ? (AX.period === 'today' ? ' (today, Kyiv)' : ' (last 7 Kyiv days)') : '');
+  $('rtitle').textContent = 'Freezes by reason' + (WR ? (AX.period === 'today' ? ' (today)' : ' (last 7 days)') : '');
   $('rnote').textContent = 'A reason is known only from a curated entry with a public source or from a wallet-attribution label (hack / scam / ransomware / sanctions ...). Everything else is "unknown": most freezes are never explained publicly.' + (R.curated ? '' : ' No curated entries yet (config/reasons.yaml).');
   const unk = R.unknown, tot = R.freezes;
   $('rkpis').innerHTML = [

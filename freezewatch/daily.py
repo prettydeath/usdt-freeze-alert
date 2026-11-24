@@ -113,7 +113,7 @@ def _ofac(conn, si, ei):
 def fmt_daily(d):
     """Radar-style HTML message for the numbers of collect()."""
     from .alerts import DASHBOARD, NL, e, human, num, short, site_link
-    lines = [f"📊 <b>DAILY REPORT</b> · {e(d['day'])} (Kyiv)"]
+    lines = [f"📊 <b>DAILY REPORT</b> · {e(d['day'])}"]
     pend = d["pending"]
     pending = f"⏳ Pending now: <b>{pend['n']}</b> freeze proposal{'s' if pend['n'] != 1 else ''}" + (f" · ${num(pend['usd'])} at risk" if pend["usd"] else "")
     if not d["activity"]:

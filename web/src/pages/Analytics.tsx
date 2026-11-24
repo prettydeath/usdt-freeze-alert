@@ -69,7 +69,7 @@ function AnalyticsBody({ AN }: { AN: AN }) {
     <div>
       <div className="mt-3.5 flex flex-wrap items-center gap-x-4 gap-y-2">
         <span className="text-muted-foreground">Period</span>
-        <Seg label="Period" value={period} onChange={setPeriod} items={[["today", "Today (Kyiv)"], ["7d", "7d"], ["30d", "30d"], ["90d", "90d"], ["12m", "12m"], ["all", "All"]]} />
+        <Seg label="Period" value={period} onChange={setPeriod} items={[["today", "Today"], ["7d", "7d"], ["30d", "30d"], ["90d", "90d"], ["12m", "12m"], ["all", "All"]]} />
         {fine && <span className="text-muted-foreground text-xs">{period === "today" ? "since 00:00 Kyiv time" : "last 7 Kyiv days incl. today"}</span>}
         <span className="text-muted-foreground">Token</span>
         <Seg label="Token" value={token} onChange={setToken} items={[["all", "All"], ["USDT", "USDT"], ["USDT0", "USDT0"], ["USDC", "USDC"]]} />
@@ -95,7 +95,7 @@ function AnalyticsBody({ AN }: { AN: AN }) {
       <Funnel s={s} />
       <Muted className="mt-1">{num(s.never_n)} proposals never executed (stale / revoked / failed) · {usd(s.never_usd)} still on those addresses</Muted>
 
-      <H2>{!fine ? "Money per month" : period === "today" ? "Money per hour (Kyiv time)" : "Money per day (Kyiv days)"}</H2>
+      <H2>{!fine ? "Money per month" : period === "today" ? "Money per hour" : "Money per day (Kyiv days)"}</H2>
       <Monthly AN={AN} since={since} chOk={chOk} fine={fine ? (period as "today" | "7d") : null} days={kd.days} />
 
       <H2>By chain</H2>
@@ -290,7 +290,7 @@ function Reasons({ period }: { period: "today" | "7d" | null }) {
   ]
   return (
     <>
-      <H2>Freezes by reason{W ? (period === "today" ? " (today, Kyiv)" : " (last 7 Kyiv days)") : ""}</H2>
+      <H2>Freezes by reason{W ? (period === "today" ? " (today)" : " (last 7 days)") : ""}</H2>
       <Muted>A reason is known only from a curated entry with a public source or from a wallet-attribution label (hack / scam / ransomware / sanctions ...). Everything else is "unknown": most freezes are never explained publicly.{R.curated ? "" : " No curated entries yet (config/reasons.yaml)."}</Muted>
       <KpiGrid className="mt-2 grid-cols-3 max-md:grid-cols-1">
         <Kpi icon="🧾" label="Known reason" value={R.known_pct == null ? "n/a" : R.known_pct + "%"} sub={num(R.known) + " of " + num(R.freezes) + " freezes (" + num(R.known_unique) + " of " + num(R.unique) + " unique addresses) · " + usdS(R.known_usd)} />
@@ -329,7 +329,7 @@ function Outflows({ period }: { period: "today" | "7d" | null }) {
   return (
     <>
       <H2>Moved out before the freeze</H2>
-      <Muted>{W ? (period === "today" ? "Freezes executed today (Kyiv)" : "Freezes executed in the last 7 Kyiv days") : "Last 12 months"}, {num(O.checked || 0)} executed freezes checked so far (Ethereum, USDC, Celo, Avalanche, TRON; the scan is budgeted per run and continues). Window = 72 h before execution. "Escaped" excludes transfers to addresses that were (or became) frozen too and moves inside one cluster{O.truncated ? "; " + O.truncated + " freezes with very many transfers are marked truncated and never counted as front-run" : ""}{O.service_n ? ". " + O.service_n + " labelled exchange / service wallets (" + usdS(O.service_12m) + " of routine transfers) are reported apart and not counted" : ""}.</Muted>
+      <Muted>{W ? (period === "today" ? "Freezes executed today" : "Freezes executed in the last 7 days") : "Last 12 months"}, {num(O.checked || 0)} executed freezes checked so far (Ethereum, USDC, Celo, Avalanche, TRON; the scan is budgeted per run and continues). Window = 72 h before execution. "Escaped" excludes transfers to addresses that were (or became) frozen too and moves inside one cluster{O.truncated ? "; " + O.truncated + " freezes with very many transfers are marked truncated and never counted as front-run" : ""}{O.service_n ? ". " + O.service_n + " labelled exchange / service wallets (" + usdS(O.service_12m) + " of routine transfers) are reported apart and not counted" : ""}.</Muted>
       <KpiGrid className="mt-2">
         <Kpi icon="📤" label="Escaped, 72 h before" num={O.moved_12m} fmt={usdS} sub={pct + " · " + O.with_out + " of " + O.checked + " freezes had outgoing transfers"} />
         <Kpi icon="🔁" label="Moved between frozen addresses" num={O.internal_12m} fmt={usdS} sub="not an escape: the recipients were also frozen, or the same entity or cluster (kept out of the totals)" />
