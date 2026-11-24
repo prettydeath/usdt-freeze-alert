@@ -213,13 +213,15 @@ def cmd_update(args, conn=None):
     # 2. optional work, each step capped by what is left of the run deadline (reserve kept for render + publish)
     _optional(box, "signals", lambda c, b: (signals.detect(c, budget_sec=min(35, b)), signals.resolve(c, budget_sec=min(20, b))), 45)
     budget = int(env("ANALYTICS_BUDGET_SEC", "120"))
+    # fair shares: the analytics scans come first, the long history back-fills last; no step may eat the others' time
+    steps = (("destroy-amounts", analytics.enrich_destroy_amounts, 15), ("balances", analytics.refresh_balances, 30),
+             ("inflows", inflows.refresh, 45), ("outflows", outflows.refresh, 45), ("txinfo", txinfo.resolve, 25),
+             ("flight-watch", _flight_step, 30), ("labels", labels.refresh, 20))
+    for name, fn, share in steps:
+        _optional(box, name, lambda cn, b, fn=fn: fn(cn, b), min(budget, share))
     for c in HISTORY_CHAINS:
         if c in chains_of(getattr(args, "chain", "all")):
-            _optional(box, f"history:{c}", lambda cn, b, c=c: do_sync(cn, c, None, b, phase="history"), min(budget, 90))
-    for name, fn in (("destroy-amounts", analytics.enrich_destroy_amounts), ("balances", analytics.refresh_balances),
-                     ("inflows", inflows.refresh), ("outflows", outflows.refresh), ("txinfo", txinfo.resolve),
-                     ("labels", labels.refresh), ("flight-watch", _flight_step)):
-        _optional(box, name, lambda cn, b, fn=fn: fn(cn, b), budget)
+            _optional(box, f"history:{c}", lambda cn, b, c=c: do_sync(cn, c, None, b, phase="history"), min(budget, 20))
     conn = box[0]
     with deadline.step("alerts", optional=False):
         n = alerts.run_alerts(conn, before, max_fr, before_pairs, AUTH_CHANGES, max_inflow)

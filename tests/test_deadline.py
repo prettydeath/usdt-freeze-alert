@@ -152,4 +152,4 @@ def test_optional_steps_run_with_a_capped_budget_when_time_is_left(monkeypatch, 
         budget = 300
         chain = "all"
     cli.cmd_update(A(), conn)
-    assert budgets["outflows"] == pytest.approx(50, abs=1) and budgets["refresh"] == pytest.approx(50, abs=1)   # inflows / labels
+    assert budgets["outflows"] == pytest.approx(45, abs=1) and budgets["refresh"] == pytest.approx(45, abs=1)   # fair shares: min(ANALYTICS_BUDGET_SEC, share)
