@@ -123,6 +123,12 @@ with sync_playwright() as p:
                          ("#addr=" + ADDRS[0], "BLOCKED"), ("#watch=" + ADDRS[1], "BLOCKED")]:
         page.goto(BASE + frag); page.reload(); page.wait_for_timeout(1500)
         check(expect.upper() in page.inner_text("body").upper(), f"root deep link {frag[:20]} opens the right view")
+    # Telegram alert links: #addr=<url-encoded address> (EVM, TRON, an address that needs escaping) opens the address page, also from another view
+    for addr, word in [(ADDRS[0], "BLOCKED"), (ADDRS[1], "BLOCKED"), (ADDRS[3], "NOT BLOCKED")]:
+        page.goto(BASE + "#status"); page.wait_for_timeout(800)
+        page.evaluate("h => { location.hash = h }", "addr=" + __import__("urllib.parse").parse.quote(addr, safe=""))
+        page.wait_for_timeout(1500)
+        check(word in page.inner_text("body") and addr[:10] in page.inner_text("body"), f"alert link #addr={addr[:12]}… (encoded) opens the address page")
     check(not errs, f"switch-over page errors: {errs[:2]}")
     ctx.close()
     b.close()

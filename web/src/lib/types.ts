@@ -96,22 +96,24 @@ export interface Outflows {
   fee_flagged?: number
 }
 
-/** one row of data.flights (pre-proposal flights, last 24 h); the export lands with main's flight update, fields are optional on purpose */
+/** one row of data.flight.recent (pre-proposal flights, last 24 h, moves of at least $1,000) */
 export interface FlightRow {
-  ts: number | string
+  ts: number
   chain: string
   address: string
   amount: number
-  recipient?: string | null
-  recipient_label?: Label | null
-  source?: string | null
-  hop?: number | null
-  freeze_ts?: number | string | null
-  status?: "watching" | "confirmed" | "frozen_later" | string
-  tx?: string | null
+  recipient: string
+  label: Label | null
+  source: string
+  hop: number
+  freeze_ts: number | null
+  /** watching | confirmed (its own proposal appeared) | frozen | proposal existed */
+  status: string
+  tx: string | null
+  alerted?: boolean
 }
 
-export interface Flight { watched: number; hop1: number; hop2: number; moves: number; moved_usd: number; confirmed: number; confirmed_usd: number; unfrozen_yet?: number }
+export interface Flight { watched: number; hop1: number; hop2: number; moves: number; moved_usd: number; confirmed: number; confirmed_usd: number; unfrozen_yet?: number; moves_24h?: number; moved_24h_usd?: number; alerts_24h?: number; recent?: FlightRow[] }
 
 export interface Reasons {
   freezes: number; known: number; unknown: number; known_usd: number; unknown_usd: number; curated: number
@@ -160,7 +162,6 @@ export interface Data {
   reasons: Reasons | null
   pulse: Pulse | null
   flight?: Flight | null
-  flights?: FlightRow[]
   hints: Record<string, Reason>
   status: Status
   generated_at: string

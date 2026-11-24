@@ -117,10 +117,10 @@ export default function Live() {
         </KpiGrid>
       </div>
 
-      <FlightsBlock />
-
       <H2>Pending queue</H2>
       <DataTable cols={pc} rows={pend} exportName="pending" rowKey={(r) => r.chain + r.tx_id} empty="No live pending proposals." />
+
+      <FlightsBlock />
 
       <SignalsTable />
 
