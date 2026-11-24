@@ -39,7 +39,7 @@ export default function Status({ health }: { health: StatusT | null }) {
       <H2>Status of data sources</H2>
       <p className="text-muted-foreground mb-2 flex items-center gap-2 text-xs">
         <span className={"pulse-dot " + (S.overall === "ok" ? "" : S.overall === "failing" ? "pend" : "old")} aria-hidden="true" />
-        {S.sources.length} sources · {bad ? bad + " not fully healthy" : "all healthy"}{DL ? " · new TRON proposals are detected a median " + dur(DL.median_s) + " after submission (p90 " + dur(DL.p90_s) + ", " + DL.n + " in 7 days)" : ""}
+        {S.sources.length} sources · {bad ? bad + " not fully healthy" : "all healthy"}{!DL ? "" : DL.collecting || !DL.n ? " · TRON detection lag: collecting data from healthy runs" : " · new TRON proposals are detected a median " + dur(DL.median_s ?? 0) + " after submission (p90 " + dur(DL.p90_s ?? 0) + ", " + DL.n + " in 7 days" + (DL.n_24h ? "; last 24 h median " + dur(DL.median_24h_s ?? 0) : "") + ")"}
       </p>
       {R && (
         <Collapsible className="mb-3 border-t pt-1.5">

@@ -132,7 +132,7 @@ export interface SourceStatus {
   rows_added: number; coverage: string; partial: boolean; gap: number | null; note: string | null
 }
 export interface Status {
-  detect?: { median_s: number; p90_s: number; n: number } | null
+  detect?: { median_s?: number | null; p90_s?: number | null; n: number; median_24h_s?: number | null; n_24h?: number; excluded?: number; interval_s?: number; collecting?: boolean } | null
   run?: { at: string; run_s: number; deadline_s: number; steps: [string, number, string, (string | number)?][]; tron_keys?: string }
   overall: string
   bad: string[]
