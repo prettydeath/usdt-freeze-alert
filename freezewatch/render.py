@@ -155,9 +155,11 @@ def build_payload(conn, stats, stale_days, extras=None):
 
 def render_site(conn, stats, stale_days=7, extras=None):
     payload = build_payload(conn, stats, stale_days, extras)
-    blob = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
+    raw = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
+    blob = raw.replace("</", "<\\/")
     tpl = (Path(__file__).parent / "template.html").read_text(encoding="utf-8")
     SITE_DIR.mkdir(parents=True, exist_ok=True)
+    write_if_changed(SITE_DIR / "data.json", raw)  # the same object as the embedded blob, for the React app (web/)
     out = SITE_DIR / "index.html"
     html = tpl.replace("__DATA__", blob)
     if out.exists() and _strip(out.read_text(encoding="utf-8")) == _strip(html):
