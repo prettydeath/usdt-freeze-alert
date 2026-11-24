@@ -245,10 +245,16 @@ def compute_extras(conn):
 
 
 def export_insights(conn, extras):
-    """data/outflows.csv and data/signals.csv."""
+    """data/outflows.csv.gz and data/signals.csv."""
     from .labels import NETWORK_OF, key_of
     lab = extras["labels"]
-    with open(DATA_DIR / "outflows.csv", "w", newline="", encoding="utf-8") as f:
+    import gzip
+    import io
+    old = DATA_DIR / "outflows.csv"
+    if old.exists():
+        old.unlink()   # the plain file (20 MB) was replaced by a gzip: one file under the data branch's size limit
+    # gzip with a fixed mtime: unchanged data gives identical bytes, so the data branch is not rewritten for nothing
+    with io.TextIOWrapper(gzip.GzipFile(DATA_DIR / "outflows.csv.gz", "wb", compresslevel=9, mtime=0), newline="", encoding="utf-8") as f:
         w = csv.writer(f)
         w.writerow(["chain", "frozen_address", "freeze_ts", "recipient", "amount", "ts", "tx_hash", "in_window", "internal",
                     "freeze_truncated", "label_entity", "label_category", "label_source", "label_source_url"])

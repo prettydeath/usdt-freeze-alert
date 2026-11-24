@@ -18,7 +18,7 @@ log = logging.getLogger("freezewatch.deadline")
 DEFAULT_TOTAL = 420.0
 RESERVE = 60.0          # kept for render + publish
 GRACE = 25.0            # an optional step still running this long after its budget is abandoned (hung socket)
-_S = {"start": None, "total": DEFAULT_TOTAL, "step_end": None, "optional": False, "timings": []}
+_S = {"start": None, "total": DEFAULT_TOTAL, "step_end": None, "optional": False, "timings": [], "abandoned": False}
 _lock = threading.Lock()
 
 
@@ -26,12 +26,12 @@ def start(total=None):
     """Begin a run. FREEZEWATCH_RUN_DEADLINE_SEC (default 420) is the wall time for the update part of the run."""
     with _lock:
         _S.update(start=time.monotonic(), total=float(total if total is not None else os.environ.get("FREEZEWATCH_RUN_DEADLINE_SEC", DEFAULT_TOTAL)),
-                  step_end=None, optional=False, timings=[])
+                  step_end=None, optional=False, timings=[], abandoned=False)
 
 
 def stop():
     with _lock:
-        _S.update(start=None, step_end=None, optional=False)
+        _S.update(start=None, step_end=None, optional=False, abandoned=False)
 
 
 def started():
@@ -58,8 +58,21 @@ def cap(own):
     return min(own, optional_remaining()) if started() else own
 
 
+def abandon():
+    """A step hung and was abandoned: from now on EVERY HTTP helper refuses to start a request (the abandoned thread and the
+    worker threads it spawned end at their next call) and `abandoned()` tells writers to stop touching the database."""
+    with _lock:
+        _S["abandoned"] = True
+
+
+def abandoned():
+    return bool(_S["abandoned"])
+
+
 def http_stop():
-    """True when an HTTP call should not start (optional step over its budget, or global deadline reached)."""
+    """True when an HTTP call should not start (optional step over its budget, global deadline reached, step abandoned)."""
+    if _S["abandoned"]:
+        return True
     if not started() or not _S["optional"]:
         return False
     if optional_remaining() <= 0:
@@ -128,6 +141,7 @@ def run_guarded(fn, name, budget):
     if th.is_alive():
         frame = sys._current_frames().get(th.ident)
         where = "".join(traceback.format_stack(frame)[-4:]) if frame else ""
+        abandon()
         log.error("step %s hung (> %.0fs): abandoned. Stack tail:\n%s", name, (budget or 0) + GRACE, where)
         return False
     if "err" in box:

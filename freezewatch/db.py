@@ -161,6 +161,11 @@ CREATE TABLE IF NOT EXISTS source_health (
     updated_at TEXT
 );
 
+CREATE TABLE IF NOT EXISTS runs (
+    started_at TEXT PRIMARY KEY,
+    finished_at TEXT
+);
+
 CREATE TABLE IF NOT EXISTS near_args (
     tx TEXT PRIMARY KEY,
     args TEXT
@@ -255,9 +260,8 @@ CREATE TABLE IF NOT EXISTS address_labels (
 CREATE TABLE IF NOT EXISTS label_checked (
     network TEXT NOT NULL,
     key TEXT NOT NULL,
-    checked_at TEXT,
     PRIMARY KEY (network, key)
-);
+) WITHOUT ROWID;
 
 CREATE TABLE IF NOT EXISTS signals (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

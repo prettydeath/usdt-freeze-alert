@@ -289,3 +289,24 @@ def test_every_alert_links_to_the_site_address_page(tmp_path):
     assert f'#addr={F}">site' in alerts.fmt_inflow({"chain": "eth", "token": "USDT", "amount": 5000.0, "sender": A, "frozen_address": F, "tx_hash": "0x" + "cd" * 32})
     sig = {"address": A, "frozen_on": "eth", "stage": "frozen", "frozen_at": iso(NOW), "at_risk": [["pol", "USDT0", 5000.0, 5000.0]]}
     assert f'#addr={A}">site' in alerts.fmt_signal(sig)
+
+
+# ---------------- Celo log source: RPC fallback when Etherscan V2 fails ----------------
+def test_celo_logs_fall_back_to_rpc_but_other_chains_still_raise(monkeypatch):
+    from freezewatch import evmmsw
+    from freezewatch.registry import MSW_CHAINS
+    calls = []
+
+    def boom(cfg, frm):
+        raise RuntimeError("Etherscan: Community Free API Limit")
+    monkeypatch.setattr(evmmsw, "fetch_logs_v2", boom)
+    monkeypatch.setattr(evmmsw, "fetch_logs_rpc", lambda cfg, frm, step: calls.append((cfg["logs"], frm, step)) or ([{"blockNumber": "0x1"}], 123))
+    logs, scanned = evmmsw.get_logs(MSW_CHAINS["celo"], 77)
+    assert scanned == 123 and logs and calls[0][0]["kind"] == "rpc" and calls[0][1:] == (77, 5000)   # forno allows 5,000-block ranges
+    try:
+        evmmsw.get_logs(MSW_CHAINS["arb_usdt"], 0)
+    except RuntimeError:
+        pass
+    else:
+        raise AssertionError("a chain without a fallback must still raise")
+    assert evmmsw.LOG_FAIL_SKIP_SEC <= 30 * 60                                                    # the skip window is short now

@@ -16,7 +16,7 @@ from .util import http_json, iso, now_ts, parse_iso
 
 log = logging.getLogger("freezewatch.outflows")
 WINDOW_SEC = 72 * 3600
-MIN_OUT_USD = 0.01
+MIN_OUT_USD = 1.0     # smaller transfers are dust / address-poisoning noise and are not stored
 COVERED = tuple(EVM_TOKENS) + ("tron",)
 
 
@@ -201,6 +201,14 @@ def finish(conn, chain, addr, freeze_ts, n_transfers, truncated):
                  "truncated) VALUES(?,?,?,?,?,?,?,?)", (chain, addr, iso(freeze_ts), iso(now_ts()), r[0], r[1], n_transfers,
                                                         int(bool(truncated))))
     conn.execute("DELETE FROM outflow_cursor WHERE chain=? AND frozen_address=? AND freeze_ts=?", (chain, addr, iso(freeze_ts)))
+    from . import maintenance   # a giant wallet keeps its biggest recipients and in-window transfers, not 16,000 rows
+    n = conn.execute("SELECT COUNT(*) FROM outflows WHERE chain=? AND frozen_address=? AND freeze_ts=?", (chain, addr, iso(freeze_ts))).fetchone()[0]
+    if n > maintenance.KEEP_RECIPIENTS + 150:
+        maintenance.compact_freeze(conn, chain, addr, iso(freeze_ts))
+        r = conn.execute("SELECT COALESCE(SUM(amount),0), COALESCE(SUM(CASE WHEN in_window THEN amount ELSE 0 END),0) FROM outflows WHERE chain=? "
+                         "AND frozen_address=? AND freeze_ts=?", (chain, addr, iso(freeze_ts))).fetchone()
+        conn.execute("UPDATE outflow_done SET total_out=?, window_out=? WHERE chain=? AND frozen_address=? AND freeze_ts=?",
+                     (r[0], r[1], chain, addr, iso(freeze_ts)))
 
 
 def save(conn, chain, addr, freeze_ts, rows, n_transfers=None, truncated=False):
@@ -308,6 +316,8 @@ def refresh(conn, budget_sec=120):
                 results = list(ex.map(work, batch))
         else:
             results = [work(batch[0])]
+        if deadline.abandoned():   # this step was abandoned while the workers ran: do not touch the database any more
+            return n
         for (chain, addr, fts, sub), st, res, err in results:
             if err is not None:
                 log.warning("outflows %s %s: %s", chain, str(addr)[:12], str(err)[:80])

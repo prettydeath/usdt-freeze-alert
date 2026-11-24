@@ -150,7 +150,7 @@ Everything is on the `data` branch (`https://raw.githubusercontent.com/prettydea
 | File | Content |
 |---|---|
 | `data/proposals.csv`, `data/blacklist.csv` | all proposals (with a `category` column) and the current blacklist |
-| `data/inflows.csv`, `data/outflows.csv` | transfers to frozen addresses and the 72 h before each freeze (with labels, internal / truncated flags) |
+| `data/inflows.csv`, `data/outflows.csv.gz` | transfers to frozen addresses and the 72 h before each freeze (with labels, internal / truncated flags; the outflows file is gzipped, giant wallets keep their biggest recipients and every in-window transfer) |
 | `data/signals.csv` | cross-chain signals |
 | `site/analytics.json`, `site/health.json`, `site/addresses.json` | aggregates, per-source health, per-address index |
 | [`freezewatch.sqlite.gz`](https://github.com/prettydeath/usdt-freeze-alert/releases/download/data-latest/freezewatch.sqlite.gz) | the full database (gzip, release `data-latest`, updated every run) |

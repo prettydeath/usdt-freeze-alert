@@ -146,7 +146,7 @@ def match(conn, network, keys, rows_by_key):
                          (network, k, b["entity"], b["label"], b["category"], b["categories"], b["source"], b["source_url"],
                           b["confidence"]))
             n += 1
-        conn.execute("INSERT OR REPLACE INTO label_checked(network,key,checked_at) VALUES(?,?,?)", (network, k, iso(now_ts())))
+        conn.execute("INSERT OR IGNORE INTO label_checked(network,key) VALUES(?,?)", (network, k))
     return n
 
 

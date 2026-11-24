@@ -2,7 +2,7 @@
 import logging
 import time
 
-from . import abi
+from . import abi, deadline
 from .constants import (ETH_MULTISIG, ETH_USDT, SEL_BALANCE_OF, SEL_CONF_COUNT, SEL_REQUIRED, SEL_TRANSACTIONS,
                         SEL_TX_COUNT, TOPIC_CONFIRMATION, TOPIC_EXEC_FAILURE, TOPIC_EXECUTION, TOPIC_REVOCATION,
                         TOPIC_SUBMISSION, USDT_DECIMALS)
@@ -13,6 +13,7 @@ from .util import HttpError, env, http_json, iso, key_pool, looks_rate_limited
 log = logging.getLogger("freezewatch.eth")
 CHAIN = "eth"
 ETHERSCAN = "https://api.etherscan.io/v2/api"
+ES_MAX_SEC = 45   # wall-clock cap of one Etherscan call including key rotation and cooldown sleeps
 STALE_REFRESH_SEC = 6 * 3600
 
 
@@ -83,7 +84,10 @@ def _es(params, chainid=1):
     if not len(pool):
         raise HttpError("ETHERSCAN_API_KEY not set (needed for Ethereum history)")
     last = None
+    t_start = time.monotonic()
     for attempt in range(6 + 3 * len(pool)):
+        if deadline.http_stop() or time.monotonic() - t_start > ES_MAX_SEC:   # bounded: no step may sit here in a rate-limit loop
+            break
         key = pool.next()
         try:
             o = http_json("GET", ETHERSCAN, params={"chainid": chainid, "apikey": key, **params}, interval=0.5 / len(pool),
@@ -92,7 +96,7 @@ def _es(params, chainid=1):
             last = str(ex)
             pool.mark_bad(key, 30)
             log.info("Etherscan %s failed (%s)", pool.label(key), last[:60])
-            time.sleep(min(2 ** attempt, 10) if pool.cooling() >= len(pool) else 0.2)
+            time.sleep(deadline.http_time_left(min(2 ** attempt, 10) if pool.cooling() >= len(pool) else 0.2))
             continue
         if o.get("status") == "1" or o.get("message") == "No records found":
             return o
@@ -100,7 +104,7 @@ def _es(params, chainid=1):
             invalid = "invalid" in str(o.get("result")).lower()
             pool.mark_bad(key, 600 if invalid else 2)  # per-second limit: a short pause is enough
             log.info("Etherscan %s %s, cooling", pool.label(key), "invalid" if invalid else "rate-limited")
-            time.sleep(1.0 if pool.cooling() >= len(pool) else 0.1)
+            time.sleep(deadline.http_time_left(1.0 if pool.cooling() >= len(pool) else 0.1))
             last = str(o)[:100]
             continue
         raise HttpError(f"Etherscan: {str(o)[:150]}")

@@ -119,12 +119,30 @@ def test_signal_check_failures_are_retried_not_skipped(tmp_path):
     assert signals.detect(conn, checker=chk, now=NOW + 900, chains=["pol", "tron"]) == 0  # and nothing is re-checked afterwards
 
 
-def test_detect_lag_median_over_recent_proposals(tmp_path):
+def _runs(conn, starts):
+    for s in starts:
+        conn.execute("INSERT INTO runs(started_at) VALUES(?)", (iso(s),))
+
+
+def _seen(conn, tid, submitted, seen):
+    ensure_proposal(conn, "tron", tid)
+    update_proposal(conn, "tron", tid, submitted_at=iso(submitted), status="pending")
+    conn.execute("UPDATE proposals SET first_seen_at=? WHERE chain='tron' AND tx_id=?", (iso(seen), tid))
+
+
+def test_detect_lag_ignores_proposals_found_after_an_outage(tmp_path):
     conn = connect(tmp_path / "d.sqlite")
-    for i, lag in enumerate([30, 60, 90, 120, 600]):
-        ensure_proposal(conn, "tron", i)
-        update_proposal(conn, "tron", i, submitted_at=iso(NOW - 1000), status="pending")
-        conn.execute("UPDATE proposals SET first_seen_at=? WHERE chain='tron' AND tx_id=?", (iso(NOW - 1000 + lag), i))
-    d = status.detect_lag(conn)
-    assert d["n"] == 5 and d["median_s"] == 90 and d["p90_s"] == 600
-    assert status.detect_lag(conn, chain="eth") is None
+    assert status.detect_lag(conn, now=NOW) == {"collecting": True, "n": 0, "excluded": 0}          # no run log yet
+    # healthy runs every 10 min for 5 h, then a 4 h outage, then healthy again
+    healthy1 = [NOW - 3600 * 10 + i * 600 for i in range(30)]
+    healthy2 = [NOW - 3600 * 1 + i * 600 for i in range(7)]
+    _runs(conn, healthy1 + healthy2)
+    _seen(conn, 1, healthy1[5] - 100, healthy1[5] + 5)            # 105 s, found in a healthy run
+    _seen(conn, 2, healthy1[6] - 200, healthy1[6] + 5)            # 205 s
+    _seen(conn, 3, healthy1[7] - 300, healthy1[7] + 5)            # 305 s
+    _seen(conn, 4, healthy1[-1] - 9000, healthy2[0] + 5)          # submitted during the outage, found by the first run after it: excluded
+    _seen(conn, 5, healthy2[3] - 60, healthy2[3] + 5)             # 65 s, inside the last 24 h
+    d = status.detect_lag(conn, now=NOW)
+    assert d["n"] == 4 and d["excluded"] == 1 and d["median_s"] == 155                              # median of 65, 105, 205, 305
+    assert d["median_24h_s"] == 155 and d["n_24h"] == 4 and d["interval_s"] == 600
+    assert status.detect_lag(conn, chain="eth", now=NOW)["n"] == 0

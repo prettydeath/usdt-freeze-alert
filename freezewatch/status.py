@@ -154,21 +154,40 @@ def pseudo_sources(conn):
     return out
 
 
-def detect_lag(conn, days=7, chain="tron"):
-    """How long after submission a proposal was first seen by this tool: {median_s, p90_s, n} over the last `days` days
-    (first_seen_at - submitted_at; only plausible values, < 1 day)."""
+def detect_lag(conn, days=7, chain="tron", now=None):
+    """How long after submission a proposal was first seen by this tool, only for proposals first seen while the pipeline was healthy:
+    a proposal counts when the run that found it started at most 2 x the usual run interval after the previous run (so an outage
+    or a stuck queue does not inflate the metric). -> {median_s, p90_s, n, excluded, median_24h_s, n_24h, interval_s} or None.
+    Needs the `runs` log (written by every update); without it the metric is "collecting"."""
+    import bisect
     import statistics
-    cut = iso(now_ts() - days * 86400)
-    lags = []
+    now = now or now_ts()
+    starts = sorted(parse_iso(r[0]) for r in conn.execute("SELECT started_at FROM runs"))
+    if len(starts) < 3:
+        return {"collecting": True, "n": 0, "excluded": 0}
+    gaps = [b - a for a, b in zip(starts, starts[1:]) if b - a < 6 * 3600]
+    interval = max(300, int(statistics.median(gaps))) if gaps else 600
+    cut = iso(now - days * 86400)
+    lags, lags24, excluded = [], [], 0
     for r in conn.execute("SELECT submitted_at, first_seen_at FROM proposals WHERE chain=? AND submitted_at IS NOT NULL "
                           "AND first_seen_at>=? AND first_seen_at IS NOT NULL", (chain, cut)):
-        d = parse_iso(r["first_seen_at"]) - parse_iso(r["submitted_at"])
-        if 0 <= d < 86400:
-            lags.append(d)
+        seen = parse_iso(r["first_seen_at"])
+        d = seen - parse_iso(r["submitted_at"])
+        if not 0 <= d < 86400:
+            continue
+        i = bisect.bisect_right(starts, seen) - 1            # the run that found it
+        if i < 1 or starts[i] - starts[i - 1] > 2 * interval or seen - starts[i] > 2 * interval:
+            excluded += 1                                      # found right after a gap in the run log (outage), or before the log began
+            continue
+        lags.append(d)
+        if seen >= now - 86400:
+            lags24.append(d)
     if not lags:
-        return None
+        return {"collecting": not starts or True, "n": 0, "excluded": excluded, "interval_s": interval}
     lags.sort()
-    return {"median_s": int(statistics.median(lags)), "p90_s": lags[min(len(lags) - 1, int(0.9 * len(lags)))], "n": len(lags)}
+    return {"median_s": int(statistics.median(lags)), "p90_s": lags[min(len(lags) - 1, int(0.9 * len(lags)))], "n": len(lags),
+            "excluded": excluded, "interval_s": interval,
+            "median_24h_s": int(statistics.median(lags24)) if lags24 else None, "n_24h": len(lags24)}
 
 
 def status_of(fails, gap, partial):

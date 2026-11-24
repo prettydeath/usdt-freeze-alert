@@ -17,7 +17,7 @@ MSW_CHAINS = {
     "celo": {"label": "USDT - Celo", "rpc": "https://forno.celo.org",
              "token": "0x48065fbbe25f71c9282ddf5e1cd6d6a887483d5e",
              "msw": "0xba2a995bd4ab9e605454ccef88169352cd5f75a6",
-             "logs": {"kind": "etherscan_v2", "chainid": 42220},
+             "logs": {"kind": "etherscan_v2", "chainid": 42220, "fallback": {"chunk": 5000, "parallel": 4, "budget": 20}},
              "addr": "https://celoscan.io/address/", "tx": "https://celoscan.io/tx/", "threshold": "3 of 6"},
     "kaia": {"label": "USDT - Kaia", "rpc": "https://public-en.node.kaia.io",
              "token": "0xd077a400968890eacc75cdc901f0356c943e4fdb",

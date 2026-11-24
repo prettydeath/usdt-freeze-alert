@@ -5,7 +5,7 @@ import sys
 import time
 from datetime import datetime, timezone
 
-from . import (alerts, analytics, crosschain, deadline, exposure, flight, trongrid, txinfo, eth, evmmsw, health, inflows, labels, others, outflows, safe, signals,
+from . import (alerts, analytics, crosschain, deadline, exposure, flight, maintenance, trongrid, txinfo, eth, evmmsw, health, inflows, labels, others, outflows, safe, signals,
                status, tokenevents, tron)
 from .constants import BALANCE_FUNCS
 from .db import connect, meta_get, meta_set, update_proposal
@@ -166,7 +166,11 @@ def _optional(conn_box, name, fn, own):
             st.result = f"{res['v']} done"   # 0 done = nothing was due (everything already checked today)
     if not done:
         _Run.abandoned = True
-        conn_box[0] = connect()   # the abandoned thread may still hold the old connection
+        old, conn_box[0] = conn_box[0], connect()   # the abandoned thread must not keep writing through the old connection
+        try:
+            old.close()
+        except Exception:  # noqa: BLE001
+            pass
 
 
 def cmd_update(args, conn=None):
@@ -175,6 +179,13 @@ def cmd_update(args, conn=None):
     deadline.start()
     trongrid.reset_usage()
     _Run.abandoned = False
+    run_started = iso(now_ts())
+    try:   # the run log: the detection-lag metric only counts proposals found while the pipeline was running normally
+        conn.execute("INSERT OR IGNORE INTO runs(started_at) VALUES(?)", (run_started,))
+        conn.execute("DELETE FROM runs WHERE started_at < ?", (iso(now_ts() - 30 * 86400),))
+        conn.commit()
+    except Exception as e:  # noqa: BLE001
+        log.warning("run log: %s", str(e)[:60])
     box = [conn]
     before = alerts.snapshot(conn)
     before_pairs = crosschain.pairs(conn)
@@ -222,11 +233,17 @@ def cmd_update(args, conn=None):
     for c in HISTORY_CHAINS:
         if c in chains_of(getattr(args, "chain", "all")):
             _optional(box, f"history:{c}", lambda cn, b, c=c: do_sync(cn, c, None, b, phase="history"), min(budget, 20))
+    _optional(box, "maintenance", lambda cn, b: maintenance.run(cn, b), 30)
     conn = box[0]
     with deadline.step("alerts", optional=False):
         n = alerts.run_alerts(conn, before, max_fr, before_pairs, AUTH_CHANGES, max_inflow)
     if n:
         log.info("alerts sent: %s", n)
+    try:
+        conn.execute("UPDATE runs SET finished_at=? WHERE started_at=?", (iso(now_ts()), run_started))
+        conn.commit()
+    except Exception:  # noqa: BLE001
+        pass
     _save_timings(conn)
     if own_conn:
         log.info(deadline.summary())
@@ -243,8 +260,12 @@ def _flight_step(conn, budget):
 
 def _log_detect_lag(conn):
     d = status.detect_lag(conn)
-    if d:
-        log.info("detected after submission (7 d): median %ss, p90 %ss over %s proposals (TRON)", d["median_s"], d["p90_s"], d["n"])
+    if d and d.get("n"):
+        log.info("detected after submission (7 d, healthy runs only): median %ss, p90 %ss over %s TRON proposals (%s excluded as found after "
+                 "a gap); last 24 h: %s", d["median_s"], d["p90_s"], d["n"], d["excluded"],
+                 f"median {d['median_24h_s']}s over {d['n_24h']}" if d.get("median_24h_s") is not None else "n/a")
+    elif d:
+        log.info("detected after submission: collecting (needs a few runs in the run log)")
 
 
 def _save_timings(conn):

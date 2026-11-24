@@ -12,6 +12,7 @@ from .derive import derive_all
 from .registry import MSW_CHAINS
 from .util import http_json, iso, now_ts, parse_iso
 
+LOG_FAIL_SKIP_SEC = 20 * 60   # was 6 h: a rate-limit blip must not switch a chain to first_seen_poll mode for hours
 log = logging.getLogger("freezewatch.evmmsw")
 
 
@@ -137,7 +138,14 @@ def get_logs(cfg, from_block):
     if kind == "compat":
         return fetch_logs_compat(cfg, from_block), None
     if kind == "etherscan_v2":
-        return fetch_logs_v2(cfg, from_block), None
+        try:
+            return fetch_logs_v2(cfg, from_block), None
+        except Exception as e:  # noqa: BLE001
+            fb = cfg["logs"].get("fallback")   # e.g. Celo: Etherscan V2 rate-limited -> the chain's own RPC in small ranges
+            if not fb:
+                raise
+            log.info("%s: Etherscan logs unavailable (%s), using the RPC fallback", cfg["label"], str(e)[:60])
+            return fetch_logs_rpc({**cfg, "logs": {"kind": "rpc", **fb}}, from_block, fb.get("chunk", 5000))
     return fetch_logs_rpc(cfg, from_block, cfg["logs"].get("chunk", 50_000))
 
 
@@ -150,7 +158,7 @@ def sync_chain(conn, chain, stale_days=7):
     mode = "logs"
     last_fail = float(meta_get(conn, f"{chain}_logs_fail_ts", 0) or 0)
     try:
-        if time.time() - last_fail < 6 * 3600:  # the log source failed recently: do not waste time
+        if time.time() - last_fail < LOG_FAIL_SKIP_SEC:  # the log source failed recently: do not waste time
             raise RuntimeError("skipped: log source failed recently")
         cur = int(meta_get(conn, f"{chain}_next_block", 0) or 0)
         logs, scanned = get_logs(cfg, max(0, cur - 10))

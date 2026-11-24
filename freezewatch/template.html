@@ -789,7 +789,7 @@ function renderStatus(){
   }
   $('srcStatus').innerHTML = S.sources.length ? h : '<tr><td class="empty">No run recorded yet.</td></tr>';
   const DL = S.detect;
-  $('stNote').textContent += (DL ? ' · new TRON proposals are detected a median ' + dur(DL.median_s) + ' after submission (p90 ' + dur(DL.p90_s) + ', ' + DL.n + ' in 7 days)' : '');
+  $('stNote').textContent += (!DL ? '' : DL.n ? ' · new TRON proposals are detected a median ' + dur(DL.median_s) + ' after submission (p90 ' + dur(DL.p90_s) + ', ' + DL.n + ' in 7 days with the pipeline healthy' + (DL.excluded ? ', ' + DL.excluded + ' found after a gap excluded' : '') + ')' + (DL.median_24h_s != null ? '; last 24 h: median ' + dur(DL.median_24h_s) + ' over ' + DL.n_24h : '') : ' · detection delay: collecting data (needs a few runs)');
   const R = S.run;
   $('stRun').hidden = !R;
   if(R){

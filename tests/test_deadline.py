@@ -1,11 +1,14 @@
 import threading
 import time
 
+
 import pytest
 import requests
 
 from freezewatch import cli, deadline, outflows, util
 from freezewatch.db import connect
+
+NOW = int(time.time())
 
 
 @pytest.fixture(autouse=True)
@@ -153,3 +156,50 @@ def test_optional_steps_run_with_a_capped_budget_when_time_is_left(monkeypatch, 
         chain = "all"
     cli.cmd_update(A(), conn)
     assert budgets["outflows"] == pytest.approx(45, abs=1) and budgets["refresh"] == pytest.approx(45, abs=1)   # fair shares: min(ANALYTICS_BUDGET_SEC, share)
+
+
+# ---------------- the "step outflows hung" fix: cooperative stop, abandoned steps never write ----------------
+def test_etherscan_helper_stops_at_the_step_budget_instead_of_looping(monkeypatch):
+    from freezewatch import eth
+    monkeypatch.setenv("ETHERSCAN_API_KEY", "k1,k2")
+    util._pools.clear()
+    monkeypatch.setattr(eth, "http_json", lambda *a, **k: {"status": "0", "message": "NOTOK", "result": "Max rate limit reached"})
+    monkeypatch.setattr(deadline, "RESERVE", 0.0)
+    deadline.start(total=100)
+    t0 = time.time()
+    with deadline.step("outflows", 0.3):
+        with pytest.raises(util.HttpError):
+            eth._es({"module": "logs"})
+    assert time.time() - t0 < 5          # the rate-limit loop is cut at the step budget (it used to run for tens of seconds)
+
+
+def test_abandon_stops_http_in_every_thread_and_resets_with_the_run(monkeypatch):
+    monkeypatch.setattr(deadline, "GRACE", 0.1)
+    deadline.start(total=100)
+    ev = threading.Event()
+    assert deadline.run_guarded(lambda: ev.wait(5), "hang", 0.05) is False
+    assert deadline.abandoned()
+    seen = []
+    th = threading.Thread(target=lambda: seen.append(deadline.http_stop()))   # e.g. a worker thread of the abandoned step
+    th.start()
+    th.join()
+    assert seen == [True]
+    monkeypatch.setattr(util._session, "request", lambda *a, **k: (_ for _ in ()).throw(AssertionError("no request may start")))
+    with pytest.raises(util.HttpError, match="deadline"):
+        util.http_json("GET", "https://example.org/x")
+    ev.set()
+    deadline.stop()
+    assert not deadline.abandoned() and not deadline.http_stop()
+
+
+def test_outflows_refresh_does_not_write_after_its_step_was_abandoned(tmp_path, monkeypatch):
+    conn = connect(tmp_path / "o.sqlite")
+    deadline.start(total=1000)
+    monkeypatch.setattr(outflows, "candidates", lambda c: [("tron", "TFROZENADDR", NOW - 600, NOW - 700)])
+
+    def scan(chain, addr, fts, st, stop):
+        deadline.abandon()                 # the guard gave up on this step while the worker was still running
+        return [("TRCP", 500.0, NOW - 650, "txh", 0, 1)], False, False, {"n": 1}
+    monkeypatch.setattr(outflows, "_scan_one", scan)
+    outflows.refresh(conn, 30)
+    assert conn.execute("SELECT COUNT(*) FROM outflows").fetchone()[0] == 0 and conn.execute("SELECT COUNT(*) FROM outflow_done").fetchone()[0] == 0
