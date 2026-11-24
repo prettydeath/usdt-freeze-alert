@@ -231,3 +231,15 @@ def test_enrich_destroy_amounts_covers_every_destroy_function(tmp_path, monkeypa
     done = analytics.enrich_destroy_amounts(conn, 30)          # used to raise "Incorrect number of bindings supplied"
     assert done == len(constants.DESTROY_FUNCS) and len(log) == len(constants.DESTROY_FUNCS)
     assert conn.execute("SELECT COUNT(*) FROM proposals WHERE function='burn_from' AND amount IS NOT NULL").fetchone()[0] == 1
+
+
+def test_configured_fee_collectors_never_count_as_exits_or_repeat_recipients():
+    w = evasion.load_watchlist()
+    fee = "TDii6vao7xyWg2rKPbCPWVRpSmne8xcqYx"                     # configured fee collector (TRON base58 in the data)
+    rows = [{"chain": "tron", "recipient": fee, "amount": 3.0, "internal": False}, {"chain": "tron", "recipient": "TOther", "amount": 40.0, "internal": False}]
+    out = evasion.exit_breakdown(rows, {}, w)
+    assert out["watchlist"]["n"] == 0 and out["unlabelled"]["n"] == 1
+    coll = evasion.fee_collectors([], w)
+    assert ("tron", fee) in coll
+    usd = [("tron", "T1", fee, 20.0), ("tron", "T2", fee, 25.0), ("tron", "T1", "TX", 500.0), ("tron", "T2", "TX", 600.0)]
+    assert [r[1] for r in evasion.repeat_recipients(usd, coll)] == ["TX"]

@@ -7,6 +7,7 @@ import logging
 import statistics
 
 from .constants import ROOT
+from .util import tron_from_hex20
 from .labels import NETWORK_OF, key_of
 from . import reasons
 
@@ -63,6 +64,12 @@ def classify_exit(chain, recipient, labels, watch):
     return "unlabelled", None
 
 
+def _is_fee_collector(chain, recipient, watch):
+    from .addresses import canon_for
+    w = watch_entry(watch, chain, canon_for(chain, recipient))
+    return bool(w) and w["kind"] == "fee_collector"
+
+
 def exit_breakdown(rows, labels, watch):
     """rows: classify() dicts (escaped only) -> {class: {usd, n}} sorted by usd."""
     out = {c: {"usd": 0.0, "n": 0} for c in EXIT_CLASSES}
@@ -70,6 +77,8 @@ def exit_breakdown(rows, labels, watch):
         if r["internal"] or r["amount"] < DUST_USD:
             continue
         c, _n = classify_exit(r["chain"], r["recipient"], labels, watch)
+        if _n and c == "watchlist" and _is_fee_collector(r["chain"], r["recipient"], watch):
+            continue   # a service-fee payment is not an escape
         out[c]["usd"] += r["amount"]
         out[c]["n"] += 1
     return {k: {"usd": round(v["usd"], 2), "n": v["n"]} for k, v in sorted(out.items(), key=lambda kv: -kv[1]["usd"])}
@@ -168,6 +177,8 @@ def fee_collectors(rows, watch=None, min_sources=FEE_COLLECTOR_MIN_SOURCES):
     for (c, key), e in (watch or {}).items():
         if e["kind"] == "fee_collector":
             out.add((c, key))
+            if c == "tron":   # rows carry TRON base58, the watchlist the 20-byte key
+                out.add((c, tron_from_hex20(key.removeprefix("0x"))))
     return out
 
 
