@@ -14,7 +14,7 @@ import logging
 import functools
 import time
 
-from . import crosschain, eth
+from . import crosschain, eth, kyiv
 from .constants import (DESTROY_FUNCS, FREEZE_FUNCS, SEL_BALANCE_OF, SOLANA_SOURCES, TRON_USDT, UNFREEZE_FUNCS,
                         USDC_ETH, USDT_DECIMALS)
 from .registry import EVENT_CHAINS, MSW_CHAINS, SAFE_CHAINS
@@ -114,13 +114,18 @@ def mint_amount(raw_data):
     return int(d[8 + 64:8 + 128], 16) / 10 ** USDT_DECIMALS if d.startswith("40c10f19") and len(d) >= 8 + 128 else None
 
 
-def supply_monthly(conn):
-    """{chain: {month: [issued $, redeemed $, issue ops, redeem ops]}} from executed supply proposals (kept apart from freezes)."""
+def supply_monthly(conn, bucket=None, since=0):
+    """{chain: {month: [issued $, redeemed $, issue ops, redeem ops]}} from executed supply proposals (kept apart from freezes).
+    `bucket(ts)` -> key (default: UTC month); only operations at or after `since` are counted."""
     out = {}
+    bucket = bucket or month_of
     for r in conn.execute("SELECT chain, function, amount, raw_data, executed_at FROM proposals WHERE executed=1 "
                           "AND executed_at IS NOT NULL AND function IN ('issue','mint','redeem','burn')"):
         amt = r["amount"] if r["amount"] is not None else (mint_amount(r["raw_data"]) if r["function"] == "mint" else None)
-        c = out.setdefault(r["chain"], {}).setdefault(month_of(parse_iso(r["executed_at"])), [0.0, 0.0, 0, 0])
+        ts = parse_iso(r["executed_at"])
+        if ts < since:
+            continue
+        c = out.setdefault(r["chain"], {}).setdefault(bucket(ts), [0.0, 0.0, 0, 0])
         k = 0 if r["function"] in ("issue", "mint") else 1
         c[2 + k] += 1
         c[k] += amt or 0.0
@@ -185,53 +190,53 @@ def compute(conn, now=None):
     events, never, proposed = load_events(conn)
     bal = load_balances(conn)
     freezes, destroys, unfreezes = attribute(events, bal)
-    monthly = {}
+    monthly, daily, hourly = {}, {}, {}
+    today = kyiv.day_of(now)
+    d0 = kyiv.start_of_day(kyiv.add_days(today, 1 - DAILY_DAYS))   # per-day cells: the last DAILY_DAYS Kyiv days, incl. today
+    h0 = now - HOURLY_HOURS * 3600                                  # per-hour cells: the last HOURLY_HOURS hours
 
-    def cell(chain, ts):
-        return monthly.setdefault(chain, {}).setdefault(month_of(ts), [0] * len(IDX))
+    def cells(chain, ts):
+        out = [monthly.setdefault(chain, {}).setdefault(month_of(ts), [0] * len(IDX))]
+        if ts >= d0:
+            out.append(daily.setdefault(chain, {}).setdefault(kyiv.day_of(ts), [0] * len(IDX)))
+        if ts >= h0:
+            out.append(hourly.setdefault(chain, {}).setdefault(kyiv.hour_of(ts), [0] * len(IDX)))
+        return out
+
+    def add(chain, ts, i, v=1):
+        for c in cells(chain, ts):
+            c[i] += v
     for ts, chain, addr, kind, usd in freezes:
         if kind == "dup":
             continue
-        c = cell(chain, ts)
-        c[0] += 1
-        if usd is None:
-            c[2] += 1
-        else:
-            c[1] += usd
+        add(chain, ts, 0)
+        add(chain, ts, 2 if usd is None else 1, 1 if usd is None else usd)
         if kind == "still":
-            c[10] += 1
-            c[11] += usd or 0
+            add(chain, ts, 10)
+            add(chain, ts, 11, usd or 0)
     for ts, chain, addr, usd in destroys:
-        c = cell(chain, ts)
-        c[3] += 1
-        if usd is None:
-            c[5] += 1
-        else:
-            c[4] += usd
+        add(chain, ts, 3)
+        add(chain, ts, 5 if usd is None else 4, 1 if usd is None else usd)
     for ts, chain, addr, usd in unfreezes:
-        c = cell(chain, ts)
-        c[6] += 1
-        if usd is None:
-            c[8] += 1
-        else:
-            c[7] += usd
+        add(chain, ts, 6)
+        add(chain, ts, 8 if usd is None else 7, 1 if usd is None else usd)
     for ts, chain in proposed:
-        cell(chain, ts)[9] += 1
+        add(chain, ts, 9)
     for ts, chain, usd in never:
-        c = cell(chain, ts)
-        c[12] += 1
-        c[13] += usd or 0
+        add(chain, ts, 12)
+        add(chain, ts, 13, usd or 0)
     inflow = inflow_stats(conn, now)
     top = sorted(([chain, addr, usd, ts] for ts, chain, addr, kind, usd in freezes if kind == "still" and usd),
                  key=lambda x: -x[2])[:300]
     still_total = sum(1 for f in freezes if f[3] == "still")
     checked = conn.execute("SELECT COUNT(*) FROM balances").fetchone()[0]
     targets = open_targets(conn)
-    return {"idx": IDX, "monthly": {ch: m for ch, m in monthly.items()},
+    return {"idx": IDX, "monthly": {ch: m for ch, m in monthly.items()}, "daily": daily, "hourly": hourly, "tz": "Europe/Kyiv",
             "tokens": {ch: token_of(ch) for ch in monthly}, "top": top,
             "unique": _unique_counts(freezes),
             "coverage": {"checked": len([t for t in targets if t in bal]), "total": len(targets), "rows": checked},
-            "still_open": still_total, "inflow": inflow, "supply": supply_monthly(conn), "generated_at": iso(now)}
+            "still_open": still_total, "inflow": inflow, "supply": supply_monthly(conn),
+            "supply_daily": supply_monthly(conn, kyiv.day_of, d0), "generated_at": iso(now)}
 
 
 # ---------------- balances ----------------
@@ -457,7 +462,18 @@ def summarize(an, chains=None, since=None, token=None):
     return tot
 
 
-PERIODS = {"30d": 30, "90d": 90, "12m": 365, "all": None}
+PERIODS = {"today": "today", "7d": "7d", "30d": 30, "90d": 90, "12m": 365, "all": None}
+DAILY_DAYS = 14      # per-day aggregates kept for the Today / 7d selector
+HOURLY_HOURS = 48    # per-hour aggregates (Kyiv hours)
+
+
+def period_cutoff(p, days, now):
+    """UTC epoch a period starts at: Today = 00:00 Kyiv, 7d = 00:00 Kyiv six days earlier (7 Kyiv days incl. today)."""
+    if p == "today":
+        return kyiv.start_of_day(kyiv.day_of(now))
+    if p == "7d":
+        return kyiv.start_of_day(kyiv.add_days(kyiv.day_of(now), -6))
+    return now - days * 86400 if days else 0
 
 
 def inflow_stats(conn, now):
@@ -487,7 +503,7 @@ def inflow_stats(conn, now):
     except Exception:  # noqa: BLE001
         out["excluded"] = None
     for p, days in PERIODS.items():
-        cutoff = now - days * 86400 if days else 0
+        cutoff = period_cutoff(p, days, now)
         per, snd, rcv = {}, {}, {}
         for chain, addr, sender, amt, ts, burned in rows:
             if ts < cutoff:

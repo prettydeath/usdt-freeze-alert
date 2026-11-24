@@ -120,14 +120,17 @@ def reason_of(labels, curated, chain, key, net_key):
     return None
 
 
-def analyze(conn, labels, curated=None, now=None):
-    """Reasons coverage and OFAC numbers over all executed freezes (unique address per chain)."""
+def analyze(conn, labels, curated=None, now=None, since=None, until=None):
+    """Reasons coverage and OFAC numbers over all executed freezes (unique address per chain); `since`/`until` (ISO) keep
+    only the freezes executed in that window."""
     from . import analytics
     from .labels import NETWORK_OF, key_of
     from .addresses import canon_for
     curated = curated if curated is not None else load()
     usd = {}
     for (c, a, _f), v in analytics.frozen_usd_map(conn).items():
+        if (since and _f < since) or (until and _f >= until):
+            continue
         usd[(c, a)] = max(usd.get((c, a)) or 0, v or 0)
     cats, known, unknown = {}, [0, 0.0], [0, 0.0]
     ofac, sanc_other = {"n": 0, "usd": 0.0, "top": []}, 0

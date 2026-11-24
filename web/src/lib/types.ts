@@ -160,6 +160,8 @@ export interface Data {
   clusters: { top: Cluster[]; counts: Record<string, number> } | null
   outflows: Outflows | null
   reasons: Reasons | null
+  /** outflow + reason numbers for the Today (Kyiv) and 7-day selector periods */
+  windows?: Record<string, { from: string; to: string; outflows: Outflows; reasons: Reasons }> | null
   pulse: Pulse | null
   flight?: Flight | null
   hints: Record<string, Reason>
@@ -190,6 +192,10 @@ export interface Data {
 export interface Analytics {
   idx: string[]
   monthly: Record<string, Record<string, number[]>>
+  /** per Kyiv day (last 14) and per Kyiv hour (last 48), same cells as monthly */
+  daily?: Record<string, Record<string, number[]>>
+  hourly?: Record<string, Record<string, number[]>>
+  supply_daily?: Record<string, Record<string, number[]>>
   tokens: Record<string, string>
   top: [string, string, number, number][]
   unique?: { freezes: number; addresses: number }

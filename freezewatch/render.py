@@ -137,7 +137,7 @@ def build_payload(conn, stats, stale_days, extras=None):
     labels.update(SOURCE_LABELS)
     labels.update({"inflows": "Transfers to frozen addresses", "balances": "Balances of frozen addresses", "outflows": "Funds moved before freezes",
                    "labels": "Address labels (wallet-attribution)", "signals": "Cross-chain signals",
-                   "flight": "Hop-ahead flight watch"})
+                   "flight": "Hop-ahead flight watch", "daily": "Daily Telegram report"})
     src_status = status.build(conn, stats.get("health"), labels)
     write_if_changed(SITE_DIR / "health.json", json.dumps(src_status, ensure_ascii=False, indent=1, sort_keys=True))
     ex2 = extras or {}
@@ -145,7 +145,7 @@ def build_payload(conn, stats, stale_days, extras=None):
     hint_rows = [(r["chain"], r.get("target")) for r in list(kept) + list(stale) + list(recent[:200])]
     hints = _reasons.hints_for(hint_rows, ex2.get("labels") or {}, ex2.get("curated")) if ex2 else {}
     return {"signals": ex2.get("signals"), "clusters": ex2.get("clusters"), "outflows": ex2.get("outflow_stats"),
-            "reasons": ex2.get("reasons"), "pulse": ex2.get("pulse"), "flight": ex2.get("flight"), "hints": hints,
+            "reasons": ex2.get("reasons"), "windows": ex2.get("windows"), "pulse": ex2.get("pulse"), "flight": ex2.get("flight"), "hints": hints,
             "status": src_status, "generated_at": iso(now), "stale_days": stale_days, "live": livecheck.targets(), "stale_total": stale_total, "chains": chains,
             "pending": kept, "supply": supply, "stale": stale, "stale_by_chain": stale_by_chain, "ex": ex, "recent": recent[:200], "signers": signers, "coverage": stats.get("coverage", {}),
             "others": stats.get("others", {}), "health": stats.get("health"), "authority": auth, "cross": xt, "cross_total": xn,
@@ -241,7 +241,22 @@ def compute_extras(conn):
                                                       "COALESCE((SELECT SUM(amount) FROM watch_moves m WHERE m.chain=w.chain AND m.address=w.address),0) moved "
                                                       "FROM watched w")],
             "outflow_addr": outflows.per_address(conn, lab, cl_index), "signals": signals.payload(conn),
-            "curated": curated, "reasons": reasons.analyze(conn, lab, curated), "pulse": pulse.compute(conn)}
+            "curated": curated, "reasons": reasons.analyze(conn, lab, curated), "pulse": pulse.compute(conn),
+            "windows": period_windows(conn, lab, curated, cl_index, watch)}
+
+
+def period_windows(conn, lab, curated, cl_index, watch, now=None):
+    """Outflow and reason numbers for the Today (Kyiv) and 7-Kyiv-day selector periods, computed like the 12-month ones."""
+    from . import analytics, kyiv, outflows, reasons
+    now = now or now_ts()
+    today = kyiv.day_of(now)
+    usd = analytics.frozen_usd_map(conn)
+    out = {}
+    for name, first in (("today", today), ("7d", kyiv.add_days(today, -6))):
+        a, b = iso(kyiv.start_of_day(first)), iso(kyiv.day_bounds(today)[1])
+        out[name] = {"from": a, "to": b, "outflows": outflows.stats(conn, lab, now, frozen_usd=usd, cluster_index=cl_index, watch=watch, since=a, until=b),
+                     "reasons": reasons.analyze(conn, lab, curated, since=a, until=b)}
+    return out
 
 
 def export_insights(conn, extras):

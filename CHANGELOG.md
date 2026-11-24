@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Analytics period selector: **Today (Kyiv)** (since 00:00 Europe/Kyiv, DST-aware) and **7d** (last 7 Kyiv days) before 30d / 90d / 12m / All; KPIs, lifecycle, chart (hourly / daily bars), by-chain table, top lists, supply, outflows, reasons / OFAC, cross-chain lag and the pulse heatmap follow it. `analytics.json` carries per-day (14 days) and per-hour (48 h) cells; the selection is remembered in the browser.
+- Daily Telegram report at 09:00 Europe/Kyiv about the previous Kyiv day (once per day, catches up after a missed run, never for older days); `python -m freezewatch daily-report --date YYYY-MM-DD [--send]`; Status shows when it was last sent.
+
 - New dashboard UI (`web/`): React 18 + TypeScript + Tailwind + shadcn/ui + Recharts + anime.js, same features and hash links (`#live`, `#analytics`, `#watchlist`, `#signers`, `#status`, `#addr=`, `#watch=`), code-split, reduced-motion aware. It is the site root; the previous page is `classic.html`. `site/data.json` (the former embedded blob) is exported for it.
 
 - TRON: every TronGrid call goes through one client (key rotation, per-key throttle ~14 req/s, 429 cooldown, bounded, per-key usage counts in the log and on Status); Tronscan token-transfer API as a keyless fallback; recent-first inflow / outflow scans run in parallel.

@@ -59,7 +59,7 @@ def test_collect_and_format(tmp_path):
     txt = daily.fmt_daily(d)
     assert txt.startswith("📊 <b>DAILY REPORT</b> · 2026-10-25 (Kyiv)") and txt.endswith("#daily #report")
     assert "New freeze proposals: <b>2</b> (TRON 2)" in txt and "Supply (not freezes): issued $1,000,000" in txt
-    assert "#analytics" in txt and "Pending now: <b>2</b>" in txt
+    assert "#analytics" in txt and "glossary" in txt and "Supply" in txt and "Pending now: <b>2</b>" in txt
 
 
 def test_zero_activity_day(tmp_path):
@@ -98,3 +98,31 @@ def test_summer_time_trigger_and_failed_send(tmp_path):
     assert daily.maybe_send(conn, ts("2026-07-10 06:00"), boom, True) is None
     assert meta_get(conn, "daily_report:2026-07-09") is None            # retried by the next run
     assert daily.maybe_send(conn, ts("2026-07-10 06:05"), lambda t: None, True) == "2026-07-09"
+
+
+def test_analytics_daily_hourly_and_windows(tmp_path):
+    from freezewatch import analytics
+    conn = connect(tmp_path / "w.sqlite")
+    now = ts("2026-11-24 10:30")            # 12:30 Kyiv, day 2026-11-24 (00:00 Kyiv = 2026-11-23 22:00Z)
+    for i, when in enumerate(("2026-11-23 21:59", "2026-11-23 22:00", "2026-11-24 09:15", "2026-11-10 08:00")):
+        mk(conn, "tron", 100 + i, target=f"T{i}" + "a" * 30, submitted_at=iso(ts(when) - 60), executed=1, status="executed",
+           executed_at=iso(ts(when)), delay_seconds=60)
+    conn.commit()
+    an = analytics.compute(conn, now)
+    d, h = an["daily"]["tron"], an["hourly"]["tron"]
+    assert d["2026-11-23"][0] == 1 and d["2026-11-24"][0] == 2              # 21:59Z is still the 23rd in Kyiv, 22:00Z starts the 24th
+    assert "2026-11-10" not in d                                            # older than DAILY_DAYS (14 days incl. today: from 2026-11-11)
+    assert h["2026-11-24T11"][0] == 1 and h["2026-11-24T00"][0] == 1 and h["2026-11-23T23"][0] == 1
+    assert sum(v[0] for v in an["monthly"]["tron"].values()) == 4 and an["tz"] == "Europe/Kyiv"
+    assert analytics.period_cutoff("today", None, now) == ts("2026-11-23 22:00")
+    assert analytics.period_cutoff("7d", None, now) == ts("2026-11-17 22:00")
+    assert analytics.period_cutoff("30d", 30, now) == now - 30 * 86400
+    assert set(an["inflow"]["periods"]) == {"today", "7d", "30d", "90d", "12m", "all"}
+
+
+def test_period_windows_payload(tmp_path):
+    from freezewatch import render
+    conn = connect(tmp_path / "pw.sqlite")
+    w = render.period_windows(conn, {}, {}, {}, set(), ts("2026-03-30 08:00"))   # day after the spring DST change
+    assert w["today"]["from"] == iso(ts("2026-03-29 21:00")) and w["today"]["to"] == iso(ts("2026-03-30 21:00"))
+    assert w["7d"]["from"] == iso(kyiv.start_of_day("2026-03-24")) and w["7d"]["reasons"]["freezes"] == 0

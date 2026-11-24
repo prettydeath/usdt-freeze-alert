@@ -143,6 +143,8 @@ Each run has a **deadline** (`FREEZEWATCH_RUN_DEADLINE_SEC`, default 420 s): new
 
 Preview every template without sending: `python -m freezewatch alert-test`.
 
+A **daily report** (📊) goes out once, from 09:00 Europe/Kyiv, about the previous Kyiv calendar day (00:00 to 24:00, DST-aware): proposals, executed freezes, burns, delays, funds that escaped, flights, OFAC hits and the top freezes. Preview a day: `python -m freezewatch daily-report --date YYYY-MM-DD` (add `--send` to post it by hand).
+
 ## Data and export
 
 Everything is on the `data` branch (`https://raw.githubusercontent.com/prettydeath/usdt-freeze-alert/data/`):

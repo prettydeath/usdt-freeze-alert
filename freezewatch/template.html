@@ -353,7 +353,7 @@ footer{margin:30px 0 18px;color:var(--mut);font-size:12px;border-top:1px solid v
 
 <div id="tab-analytics" hidden>
   <div class="ctl">
-    <span class="mut">Period</span><span class="seg" id="pseg"></span>
+    <span class="mut">Period</span><span class="seg" id="pseg"></span><span class="mut" id="pfine"></span>
     <span class="mut">Token</span><span class="seg" id="tseg"></span>
   </div>
   <div class="kpis" id="akpis"></div>
@@ -368,7 +368,7 @@ footer{margin:30px 0 18px;color:var(--mut);font-size:12px;border-top:1px solid v
   <div class="funnel" id="funnel"></div>
   <div class="mut" id="never"></div>
 
-  <h2>Money per month</h2>
+  <h2 id="amtitle">Money per month</h2>
   <div class="box"><div class="legend" id="alegend"></div><canvas id="amonthly"></canvas></div>
 
   <h2>By chain</h2>
@@ -384,7 +384,7 @@ footer{margin:30px 0 18px;color:var(--mut);font-size:12px;border-top:1px solid v
     <div class="box"><h3>Frozen addresses still receiving funds</h3><div class="tw" style="border:0"><table id="arecv"></table></div></div>
   </div>
 
-  <h2>Freezes by reason</h2>
+  <h2 id="rtitle">Freezes by reason</h2>
   <div class="mut" id="rnote"></div>
   <div class="kpis" id="rkpis"></div>
   <div class="cols" style="margin-top:12px">
@@ -845,8 +845,18 @@ function showTab(t, push){
 
 // ================= analytics =================
 let AN = D.analytics || null, ANLOAD = null;
+const PERIODS = ['today', '7d', '30d', '90d', '12m', 'all'];
+// Europe/Kyiv calendar days via Intl (DST-aware); Today / 7d are summed from the per-day cells of analytics.json
+const KF = new Intl.DateTimeFormat('en-CA', {timeZone: 'Europe/Kyiv', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', hourCycle: 'h23'});
+function kparts(ms){ const o = {}; for(const p of KF.formatToParts(new Date(ms))) o[p.type] = p.value; return {day: o.year + '-' + o.month + '-' + o.day, hour: +o.hour}; }
+const kyivDay = ms => kparts(ms).day;
+function addDays(day, n){ const [y, m, d] = day.split('-').map(Number); return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10); }
+function kyivDayStart(day){ const [y, m, d] = day.split('-').map(Number), wall = Date.UTC(y, m - 1, d); for(const off of [3, 2]){ const ms = wall - off * 3600e3, k = kparts(ms); if(k.day === day && k.hour === 0) return ms / 1000; } return (wall - 2 * 3600e3) / 1000; }
+const fine = () => (AX.period === 'today' || AX.period === '7d') && !!(AN && AN.daily);
+function fineDays(){ const t = kyivDay(Date.now()); return AX.period === 'today' ? [t] : Array.from({length: 7}, (_, i) => addDays(t, i - 6)); }
+function fineKeep(){ if(fine()){ const ds = new Set(fineDays()); return k => ds.has(k); } const since = sinceMonth(); return k => !since || k >= since; }
 const AX = {period: '12m', token: 'all', sortKey: 'frozen_usd', sortDir: -1};
-try { const p = localStorage.getItem('ufa.period'), k = localStorage.getItem('ufa.token'); if(['30d','90d','12m','all'].includes(p)) AX.period = p; if(['all','USDT','USDT0','USDC'].includes(k)) AX.token = k; } catch(e) {}
+try { const p = localStorage.getItem('ufa.period'), k = localStorage.getItem('ufa.token'); if(PERIODS.includes(p)) AX.period = p; if(['all','USDT','USDT0','USDC'].includes(k)) AX.token = k; } catch(e) {}
 let anChart;
 const APX = (tip) => '<span class="apx" title="' + esc(tip) + '">approx.</span>';
 
@@ -860,15 +870,15 @@ function sinceMonth(){
   if(!days) return null;
   return new Date((NOW - days*86400)*1000).toISOString().slice(0,7);
 }
-function sinceEpoch(){ const m = sinceMonth(); return m ? Date.parse(m + '-01T00:00:00Z')/1000 : 0; }
+function sinceEpoch(){ if(fine()) return kyivDayStart(fineDays()[0]); const m = sinceMonth(); return m ? Date.parse(m + '-01T00:00:00Z')/1000 : 0; }
 const chOk = c => active(c) && (AX.token === 'all' || (AN.tokens[c] || 'USDT') === AX.token);
 
 function anSum(chainFilter){
-  const idx = AN.idx, since = sinceMonth(), tot = Object.fromEntries(idx.map(k => [k, 0]));
-  for(const [c, months] of Object.entries(AN.monthly)){
+  const idx = AN.idx, keep = fineKeep(), tot = Object.fromEntries(idx.map(k => [k, 0]));
+  for(const [c, months] of Object.entries(fine() ? AN.daily : AN.monthly)){
     if(!chOk(c) || (chainFilter && c !== chainFilter)) continue;
     for(const [mo, v] of Object.entries(months)){
-      if(since && mo < since) continue;
+      if(!keep(mo)) continue;
       idx.forEach((k, i) => tot[k] += v[i]);
     }
   }
@@ -879,6 +889,8 @@ const usdS = x => x >= 1e9 ? '$' + (x/1e9).toFixed(2) + 'B' : x >= 1e6 ? '$' + (
 function renderAnalytics(){
   if(!AN){ $('akpis').innerHTML = '<div class="empty">Loading analytics…</div>'; loadAnalytics().then(() => { if(AN && TAB === 'analytics') renderAnalytics(); else if(!AN) $('akpis').innerHTML = '<div class="empty">Analytics data unavailable.</div>'; }); return; }
   document.querySelectorAll('#pseg button').forEach(b => b.classList.toggle('on', b.dataset.v === AX.period));
+  $('pfine').textContent = fine() ? (AX.period === 'today' ? 'since 00:00 Kyiv time' : 'last 7 Kyiv days incl. today') : '';
+  $('amtitle').textContent = !fine() ? 'Money per month' : AX.period === 'today' ? 'Money per hour (Kyiv time)' : 'Money per day (Kyiv days)';
   document.querySelectorAll('#tseg button').forEach(b => b.classList.toggle('on', b.dataset.v === AX.token));
   const s = anSum();
   const inf = [0, 0, 0, 0, 0, 0];
@@ -892,8 +904,8 @@ function renderAnalytics(){
   ].map(([l,v,sub,tag]) => `<div class="kpi"><div class="l">${l} ${tag}</div><div class="v">${v}</div><div class="s">${sub}</div></div>`).join('');
 
   $('anote').textContent = 'Reissue to victims happens off-chain / through treasury transfers and is not tracked.';
-  const sup = {i: 0, r: 0, ni: 0, nr: 0}, since = sinceMonth();
-  for(const [c, months] of Object.entries(AN.supply || {})){ if(!chOk(c)) continue; for(const [mo, v] of Object.entries(months)){ if(since && mo < since) continue; sup.i += v[0]; sup.r += v[1]; sup.ni += v[2]; sup.nr += v[3]; } }
+  const sup = {i: 0, r: 0, ni: 0, nr: 0}, keepS = fineKeep();
+  for(const [c, months] of Object.entries((fine() ? AN.supply_daily : AN.supply) || {})){ if(!chOk(c)) continue; for(const [mo, v] of Object.entries(months)){ if(!keepS(mo)) continue; sup.i += v[0]; sup.r += v[1]; sup.ni += v[2]; sup.nr += v[3]; } }
   $('asupply').textContent = '🏦 Treasury supply operations (separate from freezes): issued/minted ' + usdS(sup.i) + ' in ' + sup.ni + ' operations, redeemed/burned ' + usdS(sup.r) + ' in ' + sup.nr + '.';
   $('auniq').textContent = AN.unique ? 'All time: ' + AN.unique.freezes.toLocaleString('en-US') + ' freezes on ' + AN.unique.addresses.toLocaleString('en-US') + ' unique addresses (an address frozen on several chains counts once here, once per chain in the tables).' : '';
   const cov = AN.coverage;
@@ -915,16 +927,18 @@ function renderAnalytics(){
 }
 
 function renderAnChart(){
-  const since = sinceMonth(), mset = new Set(), agg = {};
-  for(const [c, months] of Object.entries(AN.monthly)){
+  const since = sinceMonth(), mset = new Set(), agg = {}, fm = fine() ? AX.period : null, days = fm ? fineDays() : [];
+  for(const [c, months] of Object.entries(fm === 'today' ? (AN.hourly || {}) : fm ? AN.daily : AN.monthly)){
     if(!chOk(c)) continue;
     for(const [mo, v] of Object.entries(months)){
-      if(since && mo < since) continue;
+      if(fm === 'today' ? mo.slice(0, 10) !== days[0] : fm ? !days.includes(mo) : since && mo < since) continue;
       mset.add(mo);
       const a = agg[mo] = agg[mo] || [0,0,0];
       a[0] += v[1]; a[1] += v[4]; a[2] += v[7];
     }
   }
+  if(fm === 'today'){ const hn = kparts(Date.now()).hour; for(let h = 0; h <= hn; h++){ const k = days[0] + 'T' + String(h).padStart(2, '0'); mset.add(k); agg[k] = agg[k] || [0,0,0]; } }
+  else if(fm) for(const dd of days){ mset.add(dd); agg[dd] = agg[dd] || [0,0,0]; }
   let months = [...mset].sort(); let cut = '';
   if(months.length > 48){ months = months.slice(-48); cut = ' (last 48 months shown)'; }
   $('alegend').innerHTML = [['#2a78d6','Frozen $'],['#eb6834','Burned $'],['#1baf7a','Unfrozen $ (known only)']].map(([c,l]) => `<span><i style="background:${c}"></i>${l}</span>`).join('') + '<span class="mut">' + cut + '</span>';
@@ -932,7 +946,7 @@ function renderAnChart(){
   const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
   Chart.defaults.color = css('--mut'); Chart.defaults.borderColor = css('--hair');
   if(anChart) anChart.destroy();
-  anChart = new Chart($('amonthly'), {type:'bar', data:{labels:months, datasets:[
+  anChart = new Chart($('amonthly'), {type:'bar', data:{labels:months.map(m => fm === 'today' ? m.slice(11) + ':00' : fm ? m.slice(5) : m), datasets:[
     {label:'Frozen $', data:months.map(m => agg[m][0]), backgroundColor:'#2a78d6'},
     {label:'Burned $', data:months.map(m => agg[m][1]), backgroundColor:'#eb6834'},
     {label:'Unfrozen $', data:months.map(m => agg[m][2]), backgroundColor:'#1baf7a'}]},
@@ -994,9 +1008,9 @@ function renderAnShare(){
 (function(){
   const mk = (id, items, get, set) => {
     const box = $(id);
-    for(const [v, l] of items){ const b = document.createElement('button'); b.type = 'button'; b.dataset.v = v; b.textContent = l; b.onclick = () => { set(v); renderAnalytics(); }; box.appendChild(b); }
+    for(const [v, l] of items){ const b = document.createElement('button'); b.type = 'button'; b.dataset.v = v; b.textContent = l; b.onclick = () => { set(v); renderAnalytics(); if(box.id === 'pseg'){ renderInsights(); renderReasons(); renderPulse(); } }; box.appendChild(b); }
   };
-  mk('pseg', [['30d','30d'],['90d','90d'],['12m','12m'],['all','All']], null, v => { AX.period = v; try { localStorage.setItem('ufa.period', v); } catch(e) {} });
+  mk('pseg', [['today','Today (Kyiv)'],['7d','7d'],['30d','30d'],['90d','90d'],['12m','12m'],['all','All']], null, v => { AX.period = v; try { localStorage.setItem('ufa.period', v); } catch(e) {} });
   mk('tseg', [['all','All'],['USDT','USDT'],['USDT0','USDT0'],['USDC','USDC']], null, v => { AX.token = v; try { localStorage.setItem('ufa.token', v); } catch(e) {} });
 })();
 
@@ -1287,9 +1301,10 @@ function renderSignals(){
   $('signals').innerHTML = rows.length ? h : '<tr><td class="empty">No open signals: nothing frozen recently still sits unblocked on another chain.</td></tr>';
 }
 function renderInsights(){
-  const O = D.outflows, S = D.signals, C = D.clusters;
+  const WN = fine() ? (D.windows || {})[AX.period] : null;
+  const O = WN ? WN.outflows : D.outflows, S = D.signals, C = D.clusters;
   if(O){
-    $('onote').textContent = 'Last 12 months, ' + (O.checked || 0).toLocaleString('en-US') + ' executed freezes checked so far (Ethereum, USDC, Celo, Avalanche, TRON; the scan is budgeted per run and continues). Window = 72 h before execution. "Escaped" excludes transfers to addresses that were (or became) frozen too and moves inside one cluster' + (O.truncated ? '; ' + O.truncated + ' freezes with very many transfers are marked truncated and never counted as front-run' : '') + (O.service_n ? '. ' + O.service_n + ' labelled exchange / service wallets (' + usdS(O.service_12m) + ' of routine transfers) are reported apart and not counted' : '') + '.';
+    $('onote').textContent = (WN ? (AX.period === 'today' ? 'Freezes executed today (Kyiv)' : 'Freezes executed in the last 7 Kyiv days') : 'Last 12 months') + ', ' + (O.checked || 0).toLocaleString('en-US') + ' executed freezes checked so far (Ethereum, USDC, Celo, Avalanche, TRON; the scan is budgeted per run and continues). Window = 72 h before execution. "Escaped" excludes transfers to addresses that were (or became) frozen too and moves inside one cluster' + (O.truncated ? '; ' + O.truncated + ' freezes with very many transfers are marked truncated and never counted as front-run' : '') + (O.service_n ? '. ' + O.service_n + ' labelled exchange / service wallets (' + usdS(O.service_12m) + ' of routine transfers) are reported apart and not counted' : '') + '.';
     const pct = O.moved_12m + O.frozen_12m > 0 ? (100 * O.moved_12m / (O.moved_12m + O.frozen_12m)).toFixed(1) + '% of escaped + frozen (' + usdS(O.frozen_12m) + ' frozen)' : 'amount frozen unknown';
     $('okpis').innerHTML = [
       ['📤 Escaped, 72 h before', usdS(O.moved_12m), pct + ' · ' + O.with_out + ' of ' + O.checked + ' freezes had outgoing transfers'],
@@ -1322,7 +1337,8 @@ function renderInsights(){
       ['⏳ Median lag', st.median_lag_s == null ? 'n/a' : dur(st.median_lag_s), 'first freeze to the next chain blocking it (' + st.resolved_chains + ' cases)'],
       ['🏃 Moved before', st.moved_before_pct == null ? 'n/a' : st.moved_before_pct + '%', st.moved_balance_pct == null ? 'of cases' : st.moved_balance_pct + '% of the balance had left'],
     ].map(([l, v, s]) => `<div class="kpi"><div class="l">${l}</div><div class="v">${v}</div><div class="s">${s}</div></div>`).join('');
-    const hist = S.history.filter(s => active(s.frozen_on)).slice(0, 40);
+    const hSince = fine() ? sinceEpoch() : 0;
+    const hist = S.history.filter(s => active(s.frozen_on) && (!hSince || Date.parse(s.frozen_at) / 1000 >= hSince)).slice(0, 40);
     let h = '<tr><th>Address</th><th>First frozen on</th><th>Then blocked on</th><th>Lag</th><th>Funds</th></tr>';
     for(const s of hist) for(const x of s.resolutions) h += `<tr><td class="m addr">${addrL(s.frozen_on, s.show)}</td><td class="ch">${esc(cshort(s.frozen_on))}</td><td class="ch">${esc(cshort(x.chain))}</td><td>${lagS(x.lag_s)}</td><td>${x.moved_before ? '<span class="warn">moved first</span> ' : ''}${usd(x.balance_before)} → ${usd(x.balance_at_block)}</td></tr>`;
     $('xhist').innerHTML = h.includes('<td') ? h : '<tr><td class="empty">No resolved signals yet.</td></tr>';
@@ -1493,7 +1509,9 @@ function dl(name, mime, text){ const a = document.createElement('a'); a.href = U
 const PX = {group: 'all', chain: null};
 let speedChart = null, queueChart = null;
 function renderReasons(){
-  const R = D.reasons; if(!R) return;
+  const WR = fine() ? (D.windows || {})[AX.period] : null;
+  const R = WR ? WR.reasons : D.reasons; if(!R) return;
+  $('rtitle').textContent = 'Freezes by reason' + (WR ? (AX.period === 'today' ? ' (today, Kyiv)' : ' (last 7 Kyiv days)') : '');
   $('rnote').textContent = 'A reason is known only from a curated entry with a public source or from a wallet-attribution label (hack / scam / ransomware / sanctions ...). Everything else is "unknown": most freezes are never explained publicly.' + (R.curated ? '' : ' No curated entries yet (config/reasons.yaml).');
   const unk = R.unknown, tot = R.freezes;
   $('rkpis').innerHTML = [
@@ -1514,7 +1532,8 @@ function renderPulse(){
   }
   sg.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.v === PX.group));
   const grid = Array.from({length: 7}, () => Array(24).fill(0)); let total = 0, mx = 0;
-  for(const e of D.ex){ if(!active(e[0]) || (PX.group !== 'all' && groupOf(e[0]) !== PX.group)) continue; const d = new Date(e[1] * 1000); grid[(d.getUTCDay() + 6) % 7][d.getUTCHours()]++; total++; }
+  const pSince = fine() ? sinceEpoch() : 0;
+  for(const e of D.ex){ if(!active(e[0]) || e[1] < pSince || (PX.group !== 'all' && groupOf(e[0]) !== PX.group)) continue; const d = new Date(e[1] * 1000); grid[(d.getUTCDay() + 6) % 7][d.getUTCHours()]++; total++; }
   grid.forEach(r => r.forEach(v => { mx = Math.max(mx, v); }));
   const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   let h = '<span></span>' + Array.from({length: 24}, (_, i) => `<span class="hh">${i % 3 === 0 ? i : ''}</span>`).join('');

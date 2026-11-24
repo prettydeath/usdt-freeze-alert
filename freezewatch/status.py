@@ -151,6 +151,12 @@ def pseudo_sources(conn):
         out["balances"] = (f"balances {k}/{len(targets)}", k < len(targets))
     except Exception:  # noqa: BLE001
         pass
+    try:
+        from .db import meta_get
+        last = meta_get(conn, "daily_report_last")
+        out["daily"] = (f"daily report: last sent {last}" if last else "daily report: not sent yet (09:00 Kyiv, about the previous day)", False)
+    except Exception:  # noqa: BLE001
+        pass
     return out
 
 

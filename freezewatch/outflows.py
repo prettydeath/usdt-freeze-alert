@@ -420,15 +420,16 @@ def freeze_totals(rows):
     return tot
 
 
-def stats(conn, labels, now=None, frozen_usd=None, cluster_index=None, watch=None):
-    """12-month KPIs, top recipient entities and the front-run list - all on ESCAPED funds (internal moves between frozen
+def stats(conn, labels, now=None, frozen_usd=None, cluster_index=None, watch=None, since=None, until=None):
+    """12-month KPIs (or, with `since`/`until` as ISO strings, the same numbers for the freezes executed in that window - Today / 7d), top recipient entities and the front-run list - all on ESCAPED funds (internal moves between frozen
     addresses are reported separately). Freezes whose transfer list was truncated never count as front-run."""
     from .labels import NETWORK_OF, key_of
     now = now or now_ts()
-    since = iso(now - 365 * 86400)
+    since = since or iso(now - 365 * 86400)
+    until = until or "9999"
     done = {(r["chain"], r["frozen_address"], r["freeze_ts"]): r for r in conn.execute(
-        "SELECT * FROM outflow_done WHERE freeze_ts>=?", (since,))}
-    rows = classify(conn, since, cluster_index, labels)
+        "SELECT * FROM outflow_done WHERE freeze_ts>=? AND freeze_ts<?", (since, until))}
+    rows = [r for r in classify(conn, since, cluster_index, labels) if r["freeze_ts"] < until]
     tot_all = freeze_totals(rows)
     service = {k: d for k, d in tot_all.items() if is_service_wallet(labels, k[0], k[1])}
     tot = {k: d for k, d in tot_all.items() if k not in service}

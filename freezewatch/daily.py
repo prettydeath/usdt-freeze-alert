@@ -39,7 +39,7 @@ def collect(conn, day):
     for r in conn.execute("SELECT source, COUNT(*) FROM freezes WHERE action='freeze' AND ts>=? AND ts<? GROUP BY source", (si, ei)):
         ex[r[0]] = ex.get(r[0], 0) + r[1]
     for (chain, addr, f_iso), v in usd.items():
-        if si <= f_iso < ei and v:
+        if si <= f_iso < ei and v and v >= 1:
             usd_by_chain[chain] = usd_by_chain.get(chain, 0.0) + v
             top.append((v, chain, addr))
     d["executed"] = ex
@@ -68,7 +68,7 @@ def collect(conn, day):
                   for c in ("eth", "tron") if any(ch == c for _x, ch in delays)}
     d["fastest"], d["slowest"] = (min(delays), max(delays)) if delays else (None, None)
     d["escaped"] = _escaped(conn, si, ei, usd)
-    mv = conn.execute("SELECT COUNT(*), COALESCE(SUM(amount),0) FROM watch_moves WHERE ts>=? AND ts<? AND amount>=?", (si, ei, FLIGHT_MIN_USD)).fetchone()
+    mv = conn.execute("SELECT COUNT(*), COALESCE(SUM(amount),0) FROM watch_moves WHERE ts>=? AND ts<? AND amount>=? AND own_proposal='none'", (si, ei, FLIGHT_MIN_USD)).fetchone()
     d["flights"] = {"n": mv[0], "usd": round(mv[1], 2)}
     opened = conn.execute("SELECT COUNT(*) FROM signals WHERE first_seen>=? AND first_seen<?", (si, ei)).fetchone()[0]
     resolved = 0
@@ -126,7 +126,8 @@ def fmt_daily(d):
         lines.append(f"🧊 Executed freezes: <b>{ex}</b> ({chains(d['executed'])})" + (f"\n    💰 frozen where known: {usd_by}" if usd_by else ""))
         lines.append(f"🟢 Unfreezes: <b>{d['unfreezes']}</b> · 🔥 Burned: <b>{d['burned']['n']}</b>" + (f" (${num(d['burned']['usd'])})" if d["burned"]["usd"] else ""))
         sp = d["supply"]
-        lines.append(f"🏦 Supply (not freezes): issued ${num(sp['issued'])} ({sp['ni']}) · redeemed ${num(sp['redeemed'])} ({sp['nr']})")
+        if sp["ni"] or sp["nr"]:
+            lines.append(f"🏦 Supply (not freezes): issued ${num(sp['issued'])} ({sp['ni']}) · redeemed ${num(sp['redeemed'])} ({sp['nr']})")
         dl = [f"{short(c)} {human(v['median'], approx=False)} (n={v['n']})" for c, v in d["delay"].items()]
         if dl:
             lines.append("⏱ Median proposal → execution: " + " · ".join(dl))
@@ -143,7 +144,7 @@ def fmt_daily(d):
             for t in d["top"]:
                 lines.append(f"  ${num(t['usd'])} · {e(short(t['chain']))} · <code>{e(t['address'])}</code> · {site_link(t['address'])}")
         lines.append(pending)
-    lines.append(f'<a href="{DASHBOARD}#analytics">dashboard</a> · <a href="{DASHBOARD}#analytics">glossary</a>')
+    lines.append(f'<a href="{DASHBOARD}#analytics">dashboard</a> · glossary: Analytics tab, bottom')
     lines.append("#daily #report")
     return NL.join(lines)
 
