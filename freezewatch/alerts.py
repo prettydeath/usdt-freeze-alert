@@ -433,4 +433,9 @@ def sample_messages():
             fmt_xchain("0xe485e7a70b1131216cb47ca4555c4bbb2c742478", "pol", {"pol", "arb1"}, {"eth": 25000.0}),
             fmt_signal({"address": "0xe485e7a70b1131216cb47ca4555c4bbb2c742478", "frozen_on": "eth", "stage": "frozen",
                         "frozen_at": iso(now_ts()), "at_risk": [["pol", "USDT0", 25000.0, 25000.0], ["arb1", "USDT0", 3100.0, 3100.0]]}),
-            fmt_summary(7)]
+            fmt_summary(7), _daily_sample()]
+
+
+def _daily_sample():
+    from .daily import sample_report
+    return sample_report()

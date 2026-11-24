@@ -5,7 +5,7 @@ import sys
 import time
 from datetime import datetime, timezone
 
-from . import (alerts, analytics, crosschain, deadline, exposure, flight, maintenance, trongrid, txinfo, eth, evmmsw, health, inflows, labels, others, outflows, safe, signals,
+from . import (alerts, analytics, daily, crosschain, deadline, exposure, flight, maintenance, trongrid, txinfo, eth, evmmsw, health, inflows, labels, others, outflows, safe, signals,
                status, tokenevents, tron)
 from .constants import BALANCE_FUNCS
 from .db import connect, meta_get, meta_set, update_proposal
@@ -240,6 +240,11 @@ def cmd_update(args, conn=None):
     if n:
         log.info("alerts sent: %s", n)
     try:
+        with deadline.step("daily-report", optional=False):
+            daily.maybe_send(conn)
+    except Exception:  # noqa: BLE001
+        log.warning("daily report failed", exc_info=True)
+    try:
         conn.execute("UPDATE runs SET finished_at=? WHERE started_at=?", (iso(now_ts()), run_started))
         conn.commit()
     except Exception:  # noqa: BLE001
@@ -293,6 +298,22 @@ def cmd_alert_test(args):
     return 0
 
 
+def cmd_daily_report(args):
+    """Print the daily report of a Kyiv day (default: yesterday); --send posts it to the channel (manual)."""
+    from . import kyiv
+    conn = connect()
+    day = args.date or kyiv.yesterday(now_ts())
+    text = daily.fmt_daily(daily.collect(conn, day))
+    print(text)
+    if args.send:
+        if not alerts.configured():
+            print("TG_BOT_TOKEN / TG_CHAT_ID not set; nothing sent")
+            return 1
+        alerts.send_message(text)
+        print("sent")
+    return 0
+
+
 def cmd_stats(args, conn=None):
     conn = conn or connect()
     write_stats(conn)
@@ -334,6 +355,9 @@ def main(argv=None):
     u.add_argument("--budget", type=int, default=int(env("FREEZEWATCH_BUDGET_SEC", "1200")))
     at = sub.add_parser("alert-test", help="print sample Telegram alerts (no sending unless --send)")
     at.add_argument("--send", action="store_true", help="send ONE test message (manual only)")
+    dr = sub.add_parser("daily-report", help="print the daily report of a Kyiv day (no sending unless --send)")
+    dr.add_argument("--date", help="Kyiv day YYYY-MM-DD (default: yesterday)")
+    dr.add_argument("--send", action="store_true", help="send it to the channel (manual only)")
     sub.add_parser("stats", help="recompute data/stats.json")
     sub.add_parser("render", help="stats + site/index.html + badges")
     r = sub.add_parser("run", help="update + stats + render")
@@ -351,7 +375,7 @@ def main(argv=None):
     for w in warns:
         log.warning(w)
     fn = {"backfill": cmd_backfill, "update": cmd_update, "stats": cmd_stats, "render": cmd_render, "run": cmd_run,
-          "alert-test": cmd_alert_test}[args.cmd]
+          "alert-test": cmd_alert_test, "daily-report": cmd_daily_report}[args.cmd]
     if args.cmd == "run" and args.loop:
         while True:
             try:
