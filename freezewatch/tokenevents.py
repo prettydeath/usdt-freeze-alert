@@ -338,10 +338,12 @@ def sync_chain(conn, chain, stale_days=7, backfill_sec=None):
             ts = _block_ts(chain, scanned["lo"])
             if ts:
                 meta_set(conn, f"{chain}_scan_lo_ts", ts)
-    elif events:
-        meta_set(conn, f"{chain}_ev_next", max(e["block"] for e in events) + 1)
-    elif scanned and scanned - cur > 60_000:  # quiet scan: remember it (small overlap), so the next run scans little
-        meta_set(conn, f"{chain}_ev_next", scanned - 20_000)
+    else:
+        nxt = max(e["block"] for e in events) + 1 if events else cur
+        if isinstance(scanned, int) and scanned - 2_000 > nxt and scanned - cur > 10_000:   # quiet scanned stretch: remember it
+            nxt = scanned - 2_000
+        if nxt != cur:
+            meta_set(conn, f"{chain}_ev_next", nxt)
     meta_set(conn, f"{chain}_ev_source", kind)
     cutoff = era_cutoff(conn, chain)
     dropped = reattribute(conn, chain, cutoff)

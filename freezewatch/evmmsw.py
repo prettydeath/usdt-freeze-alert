@@ -5,7 +5,7 @@ If events are unavailable, a fallback polls transactions(i) and uses first-seen 
 import logging
 import time
 
-from . import abi, eth
+from . import abi, deadline, eth
 from .constants import SEL_BALANCE_OF, SEL_CONF_COUNT, SEL_REQUIRED, SEL_TRANSACTIONS, SEL_TX_COUNT, USDT_DECIMALS
 from .db import ensure_proposal, meta_get, meta_set, update_proposal
 from .derive import derive_all
@@ -95,9 +95,17 @@ def fetch_logs_rpc(cfg, from_block, step):
         def one(r):
             return eth.rpc_batch([("eth_getLogs", [{"fromBlock": hex(r[0]), "toBlock": hex(r[1]),
                                                     "address": cfg["msw"]}])], url=cfg["rpc"], retries=4)[0]
+        budget = cfg["logs"].get("budget", 25)   # a slow / rate-limited log node must not hold the run: scan in batches, resume next run
+        t0, done_to = time.time(), from_block - 1
         with ThreadPoolExecutor(max_workers=par) as ex:
-            for res in ex.map(one, rng):
-                rows += res
+            for i in range(0, len(rng), par * 4):
+                if time.time() - t0 > budget or deadline.http_stop():
+                    break
+                batch = rng[i:i + par * 4]
+                for res in ex.map(one, batch):
+                    rows += res
+                done_to = batch[-1][1]
+        latest = max(done_to, from_block - 1) if done_to < latest else latest   # partial scan: the cursor only moves as far as it got
         cur = latest + 1
     while cur <= latest:
         to = min(cur + step - 1, latest)
@@ -147,11 +155,13 @@ def sync_chain(conn, chain, stale_days=7):
         cur = int(meta_get(conn, f"{chain}_next_block", 0) or 0)
         logs, scanned = get_logs(cfg, max(0, cur - 10))
         eth.ingest_logs(conn, logs, chain)
-        # advance the cursor only on new events or after a long quiet stretch (keeps the DB file stable)
-        if logs:
-            meta_set(conn, f"{chain}_next_block", max(eth._h(x["blockNumber"]) for x in logs) + 1)
-        elif scanned and scanned - cur > 60_000:   # keep the rescan window small (it was 100k-500k blocks = minutes on Kava)
-            meta_set(conn, f"{chain}_next_block", scanned - 20_000)
+        # the cursor moves to the last event or - when the node scanned further - to the end of the scanned stretch (small
+        # overlap), so a slow node still makes progress run after run
+        nxt = max(eth._h(x["blockNumber"]) for x in logs) + 1 if logs else cur
+        if scanned and scanned - 2_000 > nxt and scanned - cur > 10_000:
+            nxt = scanned - 2_000
+        if nxt != cur:
+            meta_set(conn, f"{chain}_next_block", nxt)
     except Exception as e:  # noqa: BLE001
         mode = "first_seen_poll"
         if "skipped" not in str(e):
