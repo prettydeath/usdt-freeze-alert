@@ -123,36 +123,15 @@ def fetch_evm(chain, addr, from_block):
 
 
 def _grid_get(url, params):
-    pool = key_pool("TRONGRID_API_KEY")
-    last = None
-    for attempt in range(8 + 3 * len(pool)):
-        key = pool.next()
-        try:
-            o = http_json("GET", url, params=params, headers={"TRON-PRO-API-KEY": key} if key else {},
-                          interval=0.06 / max(1, len(pool)) if len(pool) else 0.5, retries=1)
-            if o.get("success") is not False:
-                return o
-            last = str(o)[:80]
-        except HttpError as ex:
-            last = str(ex)[:80]
-        if key:
-            pool.mark_bad(key, 20)
-        time.sleep(min(1 + attempt, 6) if (not key or pool.cooling() >= len(pool)) else 0.1)
-    raise HttpError(f"TronGrid: retries exhausted ({last})")
+    """TronGrid GET (key rotation, 429 cooldown, bounded) - kept as the single entry point for tests and outflows."""
+    from . import trongrid
+    return trongrid.request("GET", url.replace(TRONGRID, ""), params=params)
 
 
-def fetch_tron(addr, min_ts_ms):
-    rows, fp = [], None
-    for _ in range(25):
-        params = {"only_to": "true", "contract_address": TRON_USDT, "min_timestamp": int(min_ts_ms), "limit": 200,
-                  "order_by": "block_timestamp,asc"}
-        if fp:
-            params["fingerprint"] = fp
-        o = _grid_get(f"{TRONGRID}/v1/accounts/{addr}/transactions/trc20", params)
-        rows += o.get("data") or []
-        fp = (o.get("meta") or {}).get("fingerprint")
-        if not fp:
-            break
+def fetch_tron(addr, min_ts_ms, stop=None):
+    """Transfers INTO a TRON address since min_ts_ms: TronGrid, or Tronscan when TronGrid is saturated."""
+    from . import trongrid
+    rows, _src = trongrid.transfers(addr, "in", min_ts_ms, stop=stop)
     return [p for p in (parse_tron_transfer(x) for x in rows) if p]
 
 
@@ -189,7 +168,10 @@ def refresh(conn, budget_sec=120):
     cur = {(r["chain"], r["address"]): (r["cursor"], r["checked_at"]) for r in conn.execute("SELECT * FROM inflow_cursor")}
     todo = [c for c in candidates(conn) if cur.get((c[0], c[1]), (None, None))[1] != today]
     prio = {c: i for i, c in enumerate(COVERED)}  # cheap EVM chains first, TRON (rate-limited) last
-    todo.sort(key=lambda c: (cur.get((c[0], c[1])) is not None, cur.get((c[0], c[1]), (0, ""))[1] or "", prio[c[0]], -c[3]))
+    bal = {(r["chain"], r["address"]): r["balance"] or 0 for r in conn.execute("SELECT chain, address, balance FROM balances")}
+    # never-checked first, then chain priority, then RECENT freezes first (by day) and the biggest balance within a day
+    todo.sort(key=lambda c: (cur.get((c[0], c[1])) is not None, cur.get((c[0], c[1]), (0, ""))[1] or "", prio[c[0]], -(c[3] // 86400),
+                             -bal.get((c[0], c[1]), 0)))
     latest = {}
     n = 0
 
@@ -231,7 +213,7 @@ def refresh(conn, budget_sec=120):
         except Exception as e:  # noqa: BLE001
             log.warning("inflows tron %s: %s", str(addr)[:10], str(e)[:80])
             return item, None, None
-    with ThreadPoolExecutor(max_workers=6) as ex:
+    with ThreadPoolExecutor(max_workers=max(6, 4 * len(key_pool("TRONGRID_API_KEY")))) as ex:
         for i in range(0, len(trn), 24):
             if time.time() - t0 > budget_sec:
                 break

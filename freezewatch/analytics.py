@@ -267,8 +267,18 @@ def fetch_balances(chain, addrs):
         c = SAFE_CHAINS.get(chain) or EVENT_CHAINS[chain]
         return _batch_eth_balances(c["rpc"], c["token"], addrs)
     if chain == "tron":
+        from concurrent.futures import ThreadPoolExecutor
         from . import tron
-        return {a: tron.balance_of(a) for a in addrs}
+        from .util import key_pool
+
+        def one(a):
+            try:
+                return a, tron.balance_of(a)
+            except Exception as e:  # noqa: BLE001
+                log.debug("tron balance %s: %s", a[:10], str(e)[:50])
+                return a, None
+        with ThreadPoolExecutor(max_workers=min(12, 4 * max(1, len(key_pool("TRONGRID_API_KEY"))))) as ex:   # spread over all keys
+            return {a: b for a, b in ex.map(one, addrs) if b is not None}
     if chain in SOLANA_SOURCES:
         from . import others
         out = {}
@@ -314,7 +324,7 @@ def refresh_balances(conn, budget_sec=150):
     by_chain = {}
     for chain, addr in todo:
         by_chain.setdefault(chain, []).append(addr)
-    size = {"tron": 8, "near": 5}
+    size = {"tron": 48, "near": 5}
     n = 0
     for chain, addrs in by_chain.items():
         step = size.get(chain, 50)
@@ -384,11 +394,8 @@ def enrich_destroy_amounts(conn, budget_sec=150):
                 if time.time() - t0 > budget_sec:
                     return done
                 try:
-                    from .util import http_json, key_pool
-                    key = key_pool("TRONGRID_API_KEY").next()
-                    o = http_json("POST", tron.TRONGRID + "/wallet/gettransactioninfobyid", json={"value": r["exec_tx"]},
-                                  headers={"TRON-PRO-API-KEY": key} if key else {}, interval=0.06 if key else 0.5,
-                                  retries=4)
+                    from . import trongrid
+                    o = trongrid.request("POST", "/wallet/gettransactioninfobyid", json={"value": r["exec_tx"]}, max_sec=30)
                 except Exception as e:  # noqa: BLE001
                     log.debug("tron receipt: %s", str(e)[:60])
                     continue
