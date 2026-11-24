@@ -13,7 +13,7 @@ from . import reasons
 
 log = logging.getLogger("freezewatch.evasion")
 WATCHLIST_FILE = ROOT / "config" / "evasion_watchlist.yaml"
-KINDS = ("interceptor", "sweeper", "fee_collector", "dex", "bridge", "delegate")
+KINDS = ("evasion_hop", "sweeper", "sweeper_caller", "interceptor", "fee_collector", "dex", "bridge", "delegate")
 DUST_USD = 1.0               # transfers below this are noise (address poisoning, zero-value spam) in class statistics
 FEE_COLLECTOR_MIN_SOURCES = 50   # recipients paid by this many different frozen addresses are service-fee collectors, not escapes
 SWEEPER_MIN_VICTIMS = 2      # a contract that pulled from this many later-frozen addresses is a "sweeper candidate"

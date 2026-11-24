@@ -1,10 +1,12 @@
 # config/evasion_watchlist.yaml - addresses with a verified role around freezes. VERIFIED ENTRIES ONLY: every entry needs an
-# `evidence` (tx hash, URL or a dated note of the on-chain check). kind: interceptor | sweeper | fee_collector | dex | bridge | delegate
+# `evidence` (tx hash, URL or a dated note of the on-chain check). kind: evasion_hop | sweeper | sweeper_caller | interceptor | fee_collector | dex | bridge | delegate
 # These are factual roles seen on chain, not accusations; add nothing that cannot be shown.
+# evasion_hop = owner-controlled hop used to move funds around a freeze; sweeper_caller = account that triggered a sweeper contract;
+# interceptor = ONLY a proven third party that pulled funds in a freeze window.
 - address: 0x77edef23fbd05921c26fe29fcc3a65e14d2ac3eb
   chain: eth
-  kind: interceptor
-  name: Recipient of the 130,000,000 USDT front-run of 2026-10-29
+  kind: evasion_hop
+  name: Hop that received 130,000,000 USDT inside the 2026-10-29 freeze window
   evidence: Received 130,000,000 USDT from 0x8d53903625b8e839b9df4bd28b0efb1cd6b8639a at 21:01:59 UTC, after that address's freeze proposal (21:00:59) and before execution (21:02:47); EIP-7702 delegated account (maintainer on-chain check, 2026-11-24)
 - address: TEcDijvKSXcfWT7S6rd44H5vNgufm7Y4XC
   chain: tron
@@ -13,7 +15,7 @@
   evidence: TRON tx 70f47baa9464b975d19a50a6c6a85efa1ccc59ada449c05805ef44b35f6cb2a7 - called by TYU88zK91HUUa9DRv17YbhpVt7j6ghd2oK, pulled 143,051 USDT from TCe9CjSScVDhaTjQm81yGAEhqqU8Wcmqq1 to TNyH35RFP9F8yAJPk9tnuZ8omVEdwiyL6a (maintainer on-chain check, 2026-11-24)
 - address: TYU88zK91HUUa9DRv17YbhpVt7j6ghd2oK
   chain: tron
-  kind: interceptor
+  kind: sweeper_caller
   name: Caller of the sweeper contract in tx 70f47baa94...
   evidence: Initiator (owner_address) of TRON tx 70f47baa9464b975d19a50a6c6a85efa1ccc59ada449c05805ef44b35f6cb2a7 (maintainer on-chain check, 2026-11-24)
 - address: TDii6vao7xyWg2rKPbCPWVRpSmne8xcqYx
