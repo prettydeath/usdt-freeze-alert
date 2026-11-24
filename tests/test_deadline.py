@@ -122,8 +122,8 @@ def test_core_always_runs_and_optional_steps_are_skipped_when_the_deadline_is_go
         budget = 300
         chain = "all"
     assert cli.cmd_update(A(), conn) == 0
-    assert [x for x in log if x[0] == "sync"] == [("sync", "eth", "core"), ("sync", "tron", "core")]   # core sync always runs
-    assert ("core", "alerts") in log and ("core", "health") in log                                    # so do the cheap core steps
+    assert [x for x in log if x[0] == "sync"] == [("sync", "tron", "core"), ("sync", "eth", "core")]   # core sync always runs, TRON first (time-critical pending proposals)
+    assert [x for x in log if x == ("core", "alerts")] == [("core", "alerts")] * 2 and ("core", "health") in log   # alerts: right after core, again at the end                                    # so do the cheap core steps
     assert not [x for x in log if x[0] == "optional"]                                                 # every optional step skipped
     flags = {n: f for n, s, f in deadline.timings()}
     assert flags["signals"] == "skipped" and flags["outflows"] == "skipped" and flags["labels"] == "skipped"

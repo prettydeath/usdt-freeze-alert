@@ -60,20 +60,18 @@ def _evm_check(t, hex20):
 
 
 def _tron_check(hex20):
-    pool = key_pool("TRONGRID_API_KEY")
+    from . import trongrid
     param = "0" * 24 + hex20
 
     def call(sel):
-        for _ in range(4):
-            key = pool.next()
-            o = http_json("POST", TRONGRID + "/wallet/triggerconstantcontract", interval=0.2, retries=2,
-                          json={"owner_address": "41" + "0" * 40, "contract_address": "41" + _tron_hex(),
-                                "function_selector": sel, "parameter": param, "visible": False},
-                          headers={"TRON-PRO-API-KEY": key} if key else {})
+        for _ in range(3):
+            o = trongrid.request("POST", "/wallet/triggerconstantcontract", max_sec=30,
+                                 json={"owner_address": "41" + "0" * 40, "contract_address": "41" + _tron_hex(),
+                                       "function_selector": sel, "parameter": param, "visible": False})
             r = (o.get("constant_result") or [None])[0]
             if r:
                 return int(r, 16)
-            time.sleep(1)
+            time.sleep(0.5)
         raise HttpError("tron: empty result")
     return call("isBlackListed(address)") != 0, call("balanceOf(address)") / 10 ** USDT_DECIMALS
 
@@ -117,35 +115,48 @@ def triggers(conn, now=None):
 
 
 def detect(conn, checker=check_chain, now=None, budget_sec=90, min_usd=MIN_USD, chains=None):
-    """Create signals for unchecked fresh triggers. -> number of NEW signals."""
+    """Create / extend signals for fresh triggers. A chain whose check failed (RPC / TronGrid error, deadline) is NOT skipped:
+    it stays in `signal_checked.pending` and is retried on the next run, only that chain (the trigger is fresh for 48 h).
+    -> number of NEW signals."""
     now = now or now_ts()
     t0 = time.time()
-    chains = chains if chains is not None else [c for c, _ in chains_to_check()]
+    all_chains = chains if chains is not None else [c for c, _ in chains_to_check()]
     new = 0
     for ref, chain, addr, ts, stage in triggers(conn, now):
         if time.time() - t0 > budget_sec:
             break
-        if conn.execute("SELECT 1 FROM signal_checked WHERE address=? AND trigger_ref=?", (addr, ref)).fetchone():
-            continue
-        risk, blocked_already = [], []
-        for c in chains:
+        row = conn.execute("SELECT pending, risk FROM signal_checked WHERE address=? AND trigger_ref=?", (addr, ref)).fetchone()
+        if row and not row["pending"]:
+            continue                                   # fully checked
+        todo = json.loads(row["pending"]) if row else [c for c in all_chains]
+        risk = json.loads(row["risk"]) if row and row["risk"] else []
+        failed = []
+        for c in todo:
             if c == chain:
+                continue
+            if time.time() - t0 > budget_sec:
+                failed.append(c)
                 continue
             try:
                 blocked, bal = checker(c, addr)
             except Exception as e:  # noqa: BLE001
                 log.debug("signal check %s: %s", c, str(e)[:60])
+                failed.append(c)
                 continue
-            if blocked:
-                blocked_already.append(c)
-            elif bal >= min_usd:
+            if not blocked and bal >= min_usd:
                 risk.append([c, token_label(c), round(bal, 2), round(bal, 2)])
-        conn.execute("INSERT OR IGNORE INTO signal_checked(address,trigger_ref,checked_at) VALUES(?,?,?)", (addr, ref, iso(now)))
+        conn.execute("INSERT OR REPLACE INTO signal_checked(address,trigger_ref,checked_at,pending,risk) VALUES(?,?,?,?,?)",
+                     (addr, ref, iso(now), json.dumps(failed) if failed else "", json.dumps(risk)))
+        if failed:
+            log.info("signals: %s %s: %s chain check(s) pending (%s), retried next run", chain, addr[:10], len(failed), ", ".join(failed[:5]))
         if not risk:
             continue
-        cur = conn.execute("SELECT id, stage FROM signals WHERE address=? AND frozen_on=?", (addr, chain)).fetchone()
-        if cur:  # proposal became an executed freeze: refresh the time/stage, keep the row (and its alert)
-            conn.execute("UPDATE signals SET frozen_at=?, stage=?, updated_at=? WHERE id=?", (iso(ts), stage, iso(now), cur["id"]))
+        cur = conn.execute("SELECT id, at_risk FROM signals WHERE address=? AND frozen_on=?", (addr, chain)).fetchone()
+        if cur:  # known signal: refresh time / stage and add chains found late
+            have = json.loads(cur["at_risk"])
+            have += [e for e in risk if e[0] not in {x[0] for x in have}]
+            conn.execute("UPDATE signals SET frozen_at=?, stage=?, at_risk=?, updated_at=? WHERE id=?",
+                         (iso(ts), stage, json.dumps(have), iso(now), cur["id"]))
             continue
         conn.execute("INSERT INTO signals(address,frozen_on,frozen_at,first_seen,at_risk,status,stage,resolutions,updated_at) "
                      "VALUES(?,?,?,?,?,?,?,?,?)", (addr, chain, iso(ts), iso(now), json.dumps(risk), "open", stage, "[]", iso(now)))
@@ -154,6 +165,11 @@ def detect(conn, checker=check_chain, now=None, budget_sec=90, min_usd=MIN_USD, 
     if new:
         log.info("signals: %s new cross-chain signals", new)
     return new
+
+
+def pending_checks(conn):
+    """Number of triggers with at least one chain check still pending (shown on the Live tab and the Status page)."""
+    return conn.execute("SELECT COUNT(*) FROM signal_checked WHERE pending<>'' AND pending IS NOT NULL").fetchone()[0]
 
 
 def executed_freeze_ts(conn, chain, addr):
@@ -226,6 +242,7 @@ def payload(conn, now=None):
                       "median_lag_s": int(statistics.median(lags)) if lags else None,
                       "moved_before_pct": round(100 * sum(1 for x in moved if x["moved_before"]) / len(moved), 1) if moved else None,
                       "moved_balance_pct": round(100 * lost / total_before, 1) if total_before else None,
+                      "pending_checks": pending_checks(conn),
                       "open_usd": round(sum(e[3] for r in open_ for e in r["at_risk"]
                                             if e[0] not in {x["chain"] for x in r["resolutions"]}), 2)}}
 

@@ -777,12 +777,14 @@ function renderStatus(){
          `<td>${esc(s.coverage)}${s.partial ? ' <span class="tag" title="Older history is still being collected, a little more on every run.">back-filling</span>' : ''}${s.rows_added ? `<div class="mut" style="font-size:12px">+${s.rows_added} rows last run</div>` : ''}${note}</td></tr>`;
   }
   $('srcStatus').innerHTML = S.sources.length ? h : '<tr><td class="empty">No run recorded yet.</td></tr>';
+  const DL = S.detect;
+  $('stNote').textContent += (DL ? ' · new TRON proposals are detected a median ' + dur(DL.median_s) + ' after submission (p90 ' + dur(DL.p90_s) + ', ' + DL.n + ' in 7 days)' : '');
   const R = S.run;
   $('stRun').hidden = !R;
   if(R){
     const slow = R.steps.filter(x => x[2]).length;
     $('stRunSum').textContent = 'Last run: ' + dur(R.run_s) + ' of a ' + dur(R.deadline_s) + ' deadline · ' + slow + ' step' + (slow === 1 ? '' : 's') + ' cut short or skipped · ' + dt(R.at);
-    $('stRunBody').innerHTML = R.steps.map(x => esc(x[0]) + ' ' + dur(x[1]) + (x[2] ? ' (' + esc(x[2]) + ')' : '')).join(' · ');
+    $('stRunBody').innerHTML = (R.tron_keys ? esc(R.tron_keys) + '<br>' : '') + R.steps.map(x => esc(x[0]) + ' ' + dur(x[1]) + (x[2] ? ' (' + esc(x[2]) + ')' : '')).join(' · ');
   }
   const bad = S.sources.filter(s => s.status !== 'ok').length;
   $('stNote').textContent = S.sources.length + ' sources · ' + (bad ? bad + ' not fully healthy' : 'all healthy');
@@ -1245,6 +1247,8 @@ function renderSignals(){
   const S = D.signals; if(!S) return;
   const rows = S.open.filter(s => active(s.frozen_on));
   $('sigTitle').textContent = '🔗 At risk on other chains (' + rows.length + ')';
+  const pc = (S.stats || {}).pending_checks || 0;
+  $('sigHint').textContent = 'An address that was just frozen (or has a freeze proposal) on one chain and still holds funds on chains where it is not blocked yet. Checked on every run.' + (pc ? ' ' + pc + ' chain check' + (pc > 1 ? 's' : '') + ' pending a retry (a source was unavailable; nothing is skipped silently).' : '');
   let h = '<tr><th>Address</th><th>Frozen on</th><th>When</th><th>Still holds, not blocked</th><th>Status</th></tr>';
   for(const s of rows){
     const risk = sigRisk(s), blocked = s.resolutions;

@@ -5,7 +5,7 @@ import sys
 import time
 from datetime import datetime, timezone
 
-from . import (alerts, analytics, crosschain, deadline, eth, evmmsw, health, inflows, labels, others, outflows, safe, signals,
+from . import (alerts, analytics, crosschain, deadline, trongrid, eth, evmmsw, health, inflows, labels, others, outflows, safe, signals,
                status, tokenevents, tron)
 from .constants import BALANCE_FUNCS
 from .db import connect, meta_get, meta_set, update_proposal
@@ -170,6 +170,7 @@ def cmd_update(args, conn=None):
     own_conn = conn is None
     conn = conn or connect()
     deadline.start()
+    trongrid.reset_usage()
     _Run.abandoned = False
     box = [conn]
     before = alerts.snapshot(conn)
@@ -178,7 +179,8 @@ def cmd_update(args, conn=None):
     max_inflow = conn.execute("SELECT COALESCE(MAX(rowid),0) FROM inflows_after_freeze").fetchone()[0]
     # 1. core: new proposals / freezes of every chain (always runs; bounded only by the per-call HTTP timeouts)
     results = []
-    for c in chains_of(getattr(args, "chain", "all")):
+    # TRON first: its pending proposals are the time-critical ones (FREEZE INCOMING alerts)
+    for c in sorted(chains_of(getattr(args, "chain", "all")), key=lambda c: c != "tron"):
         with deadline.step(c, optional=False):
             results.append(do_sync(conn, c, None, args.budget, phase="core"))
     ok = any(results)  # one failing source must not fail the whole run (rate limits, missing optional keys)
@@ -190,6 +192,14 @@ def cmd_update(args, conn=None):
         health.check(conn)
     except Exception as e:  # noqa: BLE001
         log.warning("health check failed: %s", str(e)[:80])
+    # alerts for new / executed proposals go out NOW, before any slow optional step (inflow / cross-chain alerts follow at the end;
+    # the `alerts` table dedupes, so nothing is sent twice)
+    with deadline.step("alerts-early", optional=False):
+        try:
+            alerts.run_alerts(conn, before, max_fr, before_pairs, AUTH_CHANGES, None)
+        except Exception as e:  # noqa: BLE001
+            log.warning("early alerts failed: %s", str(e)[:80])
+    _log_detect_lag(conn)
     # 2. optional work, each step capped by what is left of the run deadline (reserve kept for render + publish)
     _optional(box, "signals", lambda c, b: (signals.detect(c, budget_sec=min(90, b)), signals.resolve(c, budget_sec=min(60, b))), 120)
     budget = int(env("ANALYTICS_BUDGET_SEC", "120"))
@@ -210,11 +220,18 @@ def cmd_update(args, conn=None):
     return 0 if ok else 1
 
 
+def _log_detect_lag(conn):
+    d = status.detect_lag(conn)
+    if d:
+        log.info("detected after submission (7 d): median %ss, p90 %ss over %s proposals (TRON)", d["median_s"], d["p90_s"], d["n"])
+
+
 def _save_timings(conn):
     import json
     try:
         meta_set(conn, "run_timings", json.dumps({"at": iso(now_ts()), "run_s": round(deadline.elapsed(), 1),
-                                                  "deadline_s": deadline._S["total"], "steps": deadline.timings()}))
+                                                  "deadline_s": deadline._S["total"], "steps": deadline.timings(),
+                                                  "tron_keys": trongrid.usage_report()}))
         conn.commit()
     except Exception as e:  # noqa: BLE001
         log.warning("timings not saved: %s", str(e)[:60])
@@ -256,6 +273,8 @@ def cmd_run(args):
             cmd_render(args, connect() if _Run.abandoned else conn)
     finally:
         log.info(deadline.summary())
+        if trongrid.usage_report():
+            log.info(trongrid.usage_report())
         deadline.stop()
     return rc
 

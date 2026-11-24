@@ -130,7 +130,9 @@ def pseudo_sources(conn):
         n = conn.execute("SELECT COUNT(*) FROM label_checked").fetchone()[0]
         out["labels"] = (f"{n} addresses matched against wallet-attribution", False)
         s = conn.execute("SELECT SUM(status='open'), COUNT(*) FROM signals").fetchone()
-        out["signals"] = (f"{s[0] or 0} open / {s[1]} cross-chain signals", False)
+        from . import signals as _sg
+        pc = _sg.pending_checks(conn)
+        out["signals"] = (f"{s[0] or 0} open / {s[1]} cross-chain signals" + (f" · {pc} chain check(s) pending a retry" if pc else ""), pc > 0)
     except Exception:  # noqa: BLE001
         pass
     try:
@@ -142,6 +144,23 @@ def pseudo_sources(conn):
     except Exception:  # noqa: BLE001
         pass
     return out
+
+
+def detect_lag(conn, days=7, chain="tron"):
+    """How long after submission a proposal was first seen by this tool: {median_s, p90_s, n} over the last `days` days
+    (first_seen_at - submitted_at; only plausible values, < 1 day)."""
+    import statistics
+    cut = iso(now_ts() - days * 86400)
+    lags = []
+    for r in conn.execute("SELECT submitted_at, first_seen_at FROM proposals WHERE chain=? AND submitted_at IS NOT NULL "
+                          "AND first_seen_at>=? AND first_seen_at IS NOT NULL", (chain, cut)):
+        d = parse_iso(r["first_seen_at"]) - parse_iso(r["submitted_at"])
+        if 0 <= d < 86400:
+            lags.append(d)
+    if not lags:
+        return None
+    lags.sort()
+    return {"median_s": int(statistics.median(lags)), "p90_s": lags[min(len(lags) - 1, int(0.9 * len(lags)))], "n": len(lags)}
 
 
 def status_of(fails, gap, partial):
@@ -179,7 +198,7 @@ def build(conn, health=None, labels=None):
         run = json.loads(meta_get(conn, "run_timings") or "null")
     except ValueError:
         run = None
-    return {"run": run, "overall": overall, "bad": [x["source"] for x in out if x["status"] != "ok"],
+    return {"detect": detect_lag(conn), "run": run, "overall": overall, "bad": [x["source"] for x in out if x["status"] != "ok"],
             "sources": out}
 
 

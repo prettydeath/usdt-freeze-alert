@@ -231,6 +231,8 @@ CREATE TABLE IF NOT EXISTS signal_checked (
     address TEXT NOT NULL,
     trigger_ref TEXT NOT NULL,
     checked_at TEXT,
+    pending TEXT,                 -- JSON list of chains whose check failed and is retried next run ('' = done)
+    risk TEXT,                    -- JSON at-risk entries found so far
     PRIMARY KEY (address, trigger_ref)
 );
 
@@ -261,6 +263,11 @@ def connect(path: Path | str | None = None) -> sqlite3.Connection:
     if sc and "stage" not in sc:  # pre-release shape of the signals table (never populated)
         conn.execute("DROP TABLE signals")
     conn.executescript(SCHEMA)
+    sc2 = {r["name"] for r in conn.execute("PRAGMA table_info(signal_checked)")}
+    if sc2 and "pending" not in sc2:  # migration: retry failed chain checks instead of skipping them
+        conn.execute("ALTER TABLE signal_checked ADD COLUMN pending TEXT")
+        conn.execute("ALTER TABLE signal_checked ADD COLUMN risk TEXT")
+        conn.commit()
     od = {r["name"] for r in conn.execute("PRAGMA table_info(outflow_done)")}
     if "truncated" not in od:  # migration: truncation tracking
         conn.execute("ALTER TABLE outflow_done ADD COLUMN n_transfers INTEGER")
