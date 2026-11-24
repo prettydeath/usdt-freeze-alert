@@ -33,7 +33,7 @@ def test_new_proposal_radar_format(tmp_path):
     assert "⏱ usually lands in <b>~1 min</b>" in txt
     assert "<blockquote>proposal #11957 · addBlackList" + chr(10) + "seen 12:34:56 UTC</blockquote>" in txt
     assert "#TRON #addBlackList #whale" in txt
-    assert txt.endswith(f'<a href="https://tronscan.org/#/address/{ADDR}">explorer</a> · <a href="{alerts.DASHBOARD}">dashboard</a>')
+    assert txt.endswith(f'<a href="https://tronscan.org/#/address/{ADDR}">explorer</a> · <a href="{alerts.DASHBOARD}#addr={ADDR}">site</a> · <a href="{alerts.DASHBOARD}">dashboard</a>')
     assert alerts.e("<b>&") == "&lt;b&gt;&amp;"
     assert "usually lands" not in alerts.fmt_new(row(conn, "tron", 11957), None)  # no stats -> line omitted
 

@@ -24,6 +24,7 @@ NOTES = {
     "inflows": "Transfers to frozen addresses are scanned address by address; TronGrid is the slow part.",
     "outflows": "Outgoing transfers before each freeze (72 h window); TronGrid and Etherscan limits make this a slow, resumable scan.",
     "labels": "Labels come from the public wallet-attribution dataset (MIT) and its upstream sources, refreshed once a day.",
+    "flight": "Recipients of funds that left a recent freeze are polled; a move before any proposal on that address raises the PRE-PROPOSAL FLIGHT alert.",
     "signals": "Cross-chain signals: other chains are re-checked on every run while a signal is open.",
     "balances": "Current balances of frozen addresses, refreshed once a day per address.",
 }
@@ -133,6 +134,13 @@ def pseudo_sources(conn):
         from . import signals as _sg
         pc = _sg.pending_checks(conn)
         out["signals"] = (f"{s[0] or 0} open / {s[1]} cross-chain signals" + (f" · {pc} chain check(s) pending a retry" if pc else ""), pc > 0)
+    except Exception:  # noqa: BLE001
+        pass
+    try:
+        from . import flight
+        f = flight.stats(conn)
+        out["flight"] = (f"flight watch: {f['watched']} watched ({f['hop1']} hop 1 / {f['hop2']} hop 2), {f['moves_24h']} moves 24h, "
+                         f"{f['alerts_24h']} alerts sent", False)
     except Exception:  # noqa: BLE001
         pass
     try:

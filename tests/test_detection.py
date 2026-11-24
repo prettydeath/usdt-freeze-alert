@@ -243,3 +243,49 @@ def test_configured_fee_collectors_never_count_as_exits_or_repeat_recipients():
     assert ("tron", fee) in coll
     usd = [("tron", "T1", fee, 20.0), ("tron", "T2", fee, 25.0), ("tron", "T1", "TX", 500.0), ("tron", "T2", "TX", 600.0)]
     assert [r[1] for r in evasion.repeat_recipients(usd, coll)] == ["TX"]
+
+
+# ---------------- Live flights block data, site links in every alert, Status line ----------------
+def test_flight_recent_statuses_and_payload(tmp_path):
+    conn = connect(tmp_path / "r.sqlite")
+    fz = NOW - 7200
+    _prop(conn, "eth", 1, F, executed_at=fz, submitted_at=fz - 100)
+    conn.execute("INSERT INTO outflows VALUES('eth',?,?,?,?,?,0,1,?)", (F, A, 60_000.0, iso(fz - 600), "0xt1", iso(fz)))
+    conn.execute("INSERT INTO outflows VALUES('eth',?,?,?,?,?,0,1,?)", (F, B, 70_000.0, iso(fz - 500), "0xt2", iso(fz)))
+    flight.refresh_watch(conn, {}, watch={}, now=NOW)
+    mv = {A: ("0x" + "d1" * 20, NOW - 300), B: ("0x" + "d2" * 20, NOW - 200)}
+    flight.scan(conn, {}, watch={}, now=NOW, fetch_out=lambda chain, addr, since, now, stop: [(mv[addr][0], 40_000.0, mv[addr][1], "0x" + addr[2:4] * 32, 0)])
+    _prop(conn, "eth", 2, B, executed_at=NOW - 60, submitted_at=NOW - 100)      # B is frozen shortly after its flight
+    flight.scan(conn, {}, watch={}, now=NOW + 300, fetch_out=lambda *a: [])
+    lab = {("ethereum", mv[A][0]): lab_("Gate.io", "exchange")}
+    rec = {r["address"]: r for r in flight.recent(conn, lab, now=NOW + 300)}
+    assert rec[A]["status"] == "watching" and rec[B]["status"] == "frozen"
+    assert rec[A]["source"] == F and rec[A]["hop"] == 1 and rec[A]["freeze_ts"] == fz and rec[A]["label"][0] == "Gate.io"
+    assert rec[A]["alerted"] is True and rec[A]["amount"] == 40_000.0 and rec[A]["tx"].startswith("0x")
+    assert flight.recent(conn, {}, now=NOW + 3 * 86400) == []                       # only the last 24 h
+    st = flight.stats(conn)
+    assert st["moves"] == 2 and st["alerts_24h"] == 0 and "recent" not in st
+    from freezewatch import status
+    assert "flight watch: 4 watched (2 hop 1 / 2 hop 2)" in status.pseudo_sources(conn)["flight"][0]
+
+
+def lab_(entity, cat):
+    return {"entity": entity, "label": entity, "category": cat, "categories": cat, "source": "s", "source_url": "u", "confidence": "high"}
+
+
+def test_every_alert_links_to_the_site_address_page(tmp_path):
+    conn = connect(tmp_path / "a.sqlite")
+    tgt = "TCKiW9WztxAWa6shxdoWn4L4wiKrHeokmd"
+    ensure_proposal(conn, "tron", 5)
+    update_proposal(conn, "tron", 5, destination="x", function="addBlackList", target=tgt, executed=1, executed_at=iso(NOW), confirmations=2,
+                    required=2, status="executed", balance_now=10.0, balance_at_detect=10.0, exec_tx="ab" * 32, delay_seconds=5)
+    r = conn.execute("SELECT * FROM proposals WHERE chain='tron' AND tx_id=5").fetchone()
+    want = f'<a href="{alerts.DASHBOARD}#addr={tgt}">site</a>'
+    for txt in (alerts.fmt_new(r), alerts.fmt_near(r), alerts.fmt_frozen(r), alerts.fmt_destroy(r), alerts.fmt_unfrozen(r)):
+        assert want in txt
+    mv = {"chain": "eth", "address": A, "recipient": B, "amount": 12_000.0, "ts": iso(NOW), "tx_hash": "0x" + "ab" * 32, "source": F, "hop": 1}
+    assert f'{alerts.DASHBOARD}#addr={A}">site</a>' in alerts.fmt_flight(mv)             # the MOVING address, with the explorer link kept
+    assert "explorer</a>" in alerts.fmt_flight(mv)
+    assert f'#addr={F}">site' in alerts.fmt_inflow({"chain": "eth", "token": "USDT", "amount": 5000.0, "sender": A, "frozen_address": F, "tx_hash": "0x" + "cd" * 32})
+    sig = {"address": A, "frozen_on": "eth", "stage": "frozen", "frozen_at": iso(NOW), "at_risk": [["pol", "USDT0", 5000.0, 5000.0]]}
+    assert f'#addr={A}">site' in alerts.fmt_signal(sig)

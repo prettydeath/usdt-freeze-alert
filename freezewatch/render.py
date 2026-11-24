@@ -135,7 +135,8 @@ def build_payload(conn, stats, stale_days, extras=None):
     labels = {k: v["label"] for k, v in chain_meta().items()}
     labels.update(SOURCE_LABELS)
     labels.update({"inflows": "Transfers to frozen addresses", "balances": "Balances of frozen addresses", "outflows": "Funds moved before freezes",
-                   "labels": "Address labels (wallet-attribution)", "signals": "Cross-chain signals"})
+                   "labels": "Address labels (wallet-attribution)", "signals": "Cross-chain signals",
+                   "flight": "Hop-ahead flight watch"})
     src_status = status.build(conn, stats.get("health"), labels)
     write_if_changed(SITE_DIR / "health.json", json.dumps(src_status, ensure_ascii=False, indent=1, sort_keys=True))
     ex2 = extras or {}
@@ -218,7 +219,7 @@ def compute_extras(conn):
     idx_shown = {m: [i for i in ids if i in shown] for m, ids in cl_index.items()}
     return {"labels": lab, "cluster_list": cl_shown, "cluster_index": idx_shown, "cluster_index_full": cl_index, "clusters": cp,
             "outflow_stats": outflows.stats(conn, lab, frozen_usd=analytics.frozen_usd_map(conn), cluster_index=cl_index, watch=watch),
-            "flight": flight.stats(conn),
+            "flight": {**flight.stats(conn), "recent": flight.recent(conn, lab)},   # also in data.json (same object as the embedded blob)
             "exposure": [dict(r) for r in conn.execute("SELECT chain, address, kind, spender, amount, note FROM exposure WHERE kind<>'checked'")],
             "watched": [dict(r) for r in conn.execute("SELECT w.chain, w.address, w.source, w.hop, w.received_usd, "
                                                       "COALESCE((SELECT SUM(amount) FROM watch_moves m WHERE m.chain=w.chain AND m.address=w.address),0) moved "

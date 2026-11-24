@@ -106,9 +106,17 @@ def link(url_base, value, text=None):
     return f'<a href="{html.escape(url_base + str(value), quote=True)}">{e(name)}</a>'
 
 
+def site_link(addr):
+    """Link to the address page of the dashboard (#addr=<address>); every alert carries it next to the explorer link."""
+    from urllib.parse import quote
+    if not addr:
+        return ""
+    return f'<a href="{html.escape(DASHBOARD + "#addr=" + quote(str(addr), safe=""), quote=True)}">site</a>'
+
+
 def footer_links(chain, target):
     lk = link(meta_of(chain).get("addr"), target, text="explorer")
-    return (lk + " · " if lk else "") + f'<a href="{DASHBOARD}">dashboard</a>'
+    return " · ".join(x for x in (lk, site_link(target), f'<a href="{DASHBOARD}">dashboard</a>') if x)
 
 
 def median_30d(conn, chain, now=None):
@@ -160,7 +168,7 @@ def fmt_near(r):
     first = f"<code>{e(r['target'])}</code>" + (f" · 💰 {num(bal)}" if bal is not None else "")
     return NL.join([f"⚠️ <b>LAST SIGNATURE PENDING</b> · {e(short(ch))}", first,
                     f"✍️ {bar(r['confirmations'], r['required'])} {r['confirmations']}/{r['required']} signed",
-                    f"{tag(short(ch))} {tag(r['function'])}"])
+                    f"{tag(short(ch))} {tag(r['function'])}", footer_links(ch, r["target"])])
 
 
 def fmt_frozen(r, advance=True):
@@ -190,14 +198,14 @@ def fmt_destroy(r):
     if bal is not None:
         lines.append(f"💸 <b>{num(bal)} {token_of(ch)}</b> destroyed")
     lines.append(f"<blockquote>tx {e(r['exec_tx'] or 'n/a')}</blockquote>")
-    lines.append(f"{tag(short(ch))} #burned")
+    lines += [f"{tag(short(ch))} #burned", footer_links(ch, r["target"])]
     return NL.join(lines)
 
 
 def fmt_unfrozen(r):
     ch = r["chain"]
     return NL.join([f"🟢 <b>UNFROZEN</b> · {e(short(ch))}", f"<code>{e(r['target'])}</code>",
-                    f"{tag(short(ch))} #unfrozen"])
+                    f"{tag(short(ch))} #unfrozen", footer_links(ch, r["target"])])
 
 
 def fmt_freeze_row(f):
@@ -219,7 +227,7 @@ def fmt_xchain(addr, chain, have, elsewhere):
              f"frozen on {e(', '.join(sorted(short(c) for c in have)))}"]
     for c, b in sorted(elsewhere.items()):
         lines.append(f"still holds 💰 {num(b)} {token_of(c)} on {e(short(c))}")
-    lines.append("#crosschain")
+    lines += ["#crosschain", site_link(addr)]
     return NL.join(lines)
 
 
@@ -233,7 +241,7 @@ def fmt_signal(s):
              f"{verb} <b>{e(short(s['frozen_on']))}</b> at {when} UTC"]
     held = ", ".join(f"<b>${num(x[3])}</b> {e(x[1])} on {e(short(x[0]))}" for x in sorted(risk, key=lambda x: -x[3]))
     lines.append(f"still holds 💰 {held} — not blocked there")
-    lines.append(f"#crosschain {tag(short(s['frozen_on']))}")
+    lines += [f"#crosschain {tag(short(s['frozen_on']))}", site_link(display(s["address"], s["frozen_on"]))]
     return NL.join(lines)
 
 
@@ -248,7 +256,7 @@ def fmt_flight(m):
              f"it received funds from frozen <code>{e(m['source'])}</code> (hop {m['hop']}); no freeze proposal on it yet",
              f"{tag(short(chain))} #preproposalflight"]
     lk = link(meta.get("tx"), m["tx_hash"], text="explorer")
-    return NL.join(lines + ([lk] if lk else []))
+    return NL.join(lines + [" · ".join(x for x in (lk, site_link(m["address"])) if x)])
 
 
 def fmt_authority(ch):
@@ -265,7 +273,7 @@ def fmt_inflow(r):
              "🔒 funds are now locked", f"<blockquote>tx {e(r['tx_hash'])}</blockquote>",
              f"{tag(short(ch))} #lockedfunds"]
     lk = link(meta.get("tx"), r["tx_hash"], text="explorer")
-    return NL.join(lines + ([lk] if lk else []))
+    return NL.join(lines + [" · ".join(x for x in (lk, site_link(r["frozen_address"])) if x)])
 
 
 def fmt_summary(n):

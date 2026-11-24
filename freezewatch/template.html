@@ -302,6 +302,12 @@ footer{margin:30px 0 18px;color:var(--mut);font-size:12px;border-top:1px solid v
   <div class="tw"><table id="pending"></table></div>
 
   <div class="stalehd">
+    <h2 id="flTitle">🏃 Pre-proposal flights (last 24 h)</h2>
+  </div>
+  <div class="mut" style="margin-bottom:6px" id="flHint">An address that received funds from a recently frozen address sent money on before any freeze proposal existed on it. The same events raise the Telegram alert.</div>
+  <div class="tw"><table id="flights"></table></div>
+
+  <div class="stalehd">
     <h2 id="sigTitle">🔗 At risk on other chains</h2>
   </div>
   <div class="mut" style="margin-bottom:6px" id="sigHint">An address that was just frozen (or has a freeze proposal) on one chain and still holds funds on chains where it is not blocked yet. Checked on every run.</div>
@@ -1248,6 +1254,23 @@ const labelHtml = (lb, withUrl) => {
 };
 const lagS = s => s == null ? 'n/a' : dur(s);
 function sigRisk(s){ const done = new Set(s.resolutions.map(x => x.chain)); return s.at_risk.filter(e => !done.has(e[0])); }
+function renderFlights(){
+  const F = D.flight; if(!F) return;
+  const rows = (F.recent || []).filter(x => active(x.chain));
+  $('flTitle').textContent = '🏃 Pre-proposal flights (last 24 h · ' + rows.length + ')';
+  $('flHint').textContent = 'An address that received funds from a recently frozen address sent money on before any freeze proposal existed on it. The same events raise the Telegram alert. Watching ' + (F.watched || 0) + ' addresses (' + (F.hop1 || 0) + ' hop 1, ' + (F.hop2 || 0) + ' hop 2).';
+  const ST = {watching: ['amb', 'watching'], confirmed: ['red', 'confirmed: its own proposal appeared'], frozen: ['red', 'frozen later'], 'proposal existed': ['gry', 'proposal already existed']};
+  let h = '<tr><th>Time (UTC)</th><th>Chain</th><th>Watched address</th><th>Amount</th><th>Sent to</th><th>Funds came from (hop)</th><th>Status</th><th>Tx</th></tr>';
+  for(const x of rows){
+    const st = ST[x.status] || ['gry', x.status];
+    h += `<tr><td class="m">${esc(dstr(x.ts).replace(' UTC', ''))}</td><td class="ch">${esc(cshort(x.chain))}</td>` +
+      `<td class="m addr"><a href="#addr=${encodeURIComponent(x.address)}" title="Open the address page">${esc(x.address)}</a></td><td><b>${usd(x.amount)}</b></td>` +
+      `<td class="m addr">${addrL(x.chain, x.recipient)}${x.label ? ' ' + labelHtml(x.label, false) : ''}</td>` +
+      `<td class="m addr"><a href="#addr=${encodeURIComponent(x.source)}">${esc(x.source)}</a> <span class="mut">(hop ${x.hop}${x.freeze_ts ? ', frozen ' + esc(dstr(x.freeze_ts).slice(0, 10)) : ''})</span></td>` +
+      `<td><span class="chip ${st[0]}">${esc(st[1])}</span></td><td>${(CH[x.chain] || {}).tx ? `<a href="${(CH[x.chain] || {}).tx}${esc(x.tx)}" target="_blank" rel="noopener" title="${esc(x.tx)}">tx ↗</a>` : ''}</td></tr>`;
+  }
+  $('flights').innerHTML = rows.length ? h : '<tr><td class="empty">No flights in the last 24 h.</td></tr>';
+}
 function renderSignals(){
   const S = D.signals; if(!S) return;
   const rows = S.open.filter(s => active(s.frozen_on));
@@ -1791,7 +1814,7 @@ function openWatchFromHash(){
 })();
 function render(){
   if(TAB === 'live'){
-    renderKpis(); renderPending(); renderSignals(); renderSupply(); renderRecent(); renderHero(); renderHist(); renderWeekly(); renderStory();
+    renderKpis(); renderPending(); renderFlights(); renderSignals(); renderSupply(); renderRecent(); renderHero(); renderHist(); renderWeekly(); renderStory();
     renderBadges(); renderCross();
   } else if(TAB === 'analytics'){ renderAnalytics(); renderInsights(); renderReasons(); renderPulse(); }
   else if(TAB === 'watchlist'){ if(!WL.results.length && $('wlText').value.trim()) runWatch(parseAddrs($('wlText').value), false); }

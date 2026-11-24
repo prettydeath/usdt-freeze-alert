@@ -136,10 +136,43 @@ def events(conn, now=None):
     return out
 
 
+def recent(conn, labels, now=None, hours=24, limit=200, min_usd=1000.0):
+    """Moves (>= min_usd; smaller ones are noise) of watched addresses in the last `hours`, newest first, for the Live tab. status: watching (no proposal on the address
+    yet) / proposal existed (it had one already) / confirmed (its own proposal appeared later) / frozen (and it was executed)."""
+    now = now or now_ts()
+    out = []
+    for m in conn.execute("SELECT m.*, w.source, w.hop FROM watch_moves m JOIN watched w ON w.chain=m.chain AND w.address=m.address "
+                          "WHERE m.ts>=? AND m.amount>=? ORDER BY m.ts DESC LIMIT ?", (iso(now - hours * 3600), min_usd, limit)).fetchall():
+        st = {"none": "watching", "before": "proposal existed", "after": "confirmed"}.get(m["own_proposal"], m["own_proposal"])
+        if m["own_proposal"] == "after":
+            for r in conn.execute("SELECT target, chain FROM proposals WHERE chain=? AND executed=1 AND function IN (?,?,?,?) AND target IS NOT NULL",
+                                  (m["chain"], *FREEZE_FNS)):
+                if analytics.norm(m["chain"], r["target"]) == analytics.norm(m["chain"], m["address"]):
+                    st = "frozen"
+                    break
+        fz = conn.execute("SELECT MAX(freeze_ts) FROM outflows WHERE chain=? AND frozen_address=?", (m["chain"], m["source"])).fetchone()[0]
+        net = NETWORK_OF.get(m["chain"])
+        lb = labels.get((net, key_of(net, m["recipient"]))) if net else None
+        out.append({"ts": parse_iso(m["ts"]), "chain": m["chain"], "address": m["address"], "amount": round(m["amount"], 2),
+                    "recipient": m["recipient"], "label": [lb["entity"], lb["label"], lb["category"], lb["source"], lb["source_url"],
+                                                           lb["confidence"]] if lb else None,
+                    "source": m["source"], "hop": m["hop"], "freeze_ts": parse_iso(fz) if fz else None, "status": st, "tx": m["tx_hash"],
+                    "alerted": m["amount"] >= ALERT_MIN_USD and m["own_proposal"] != "before"})
+    return out
+
+
+def alerts_sent(conn, hours=24, now=None):
+    now = now or now_ts()
+    return conn.execute("SELECT COUNT(*) FROM alerts WHERE chain='flight' AND sent_at>=?", (iso(now - hours * 3600),)).fetchone()[0]
+
+
 def stats(conn):
     """For the dashboard: watched addresses, moves, confirmed pre-proposal flights (the address was frozen later)."""
     w = conn.execute("SELECT COUNT(*), SUM(hop=1), SUM(hop=2) FROM watched").fetchone()
     m = conn.execute("SELECT COUNT(*), COALESCE(SUM(amount),0), SUM(own_proposal='after'), "
                      "COALESCE(SUM(CASE WHEN own_proposal='after' THEN amount END),0), SUM(own_proposal='none') FROM watch_moves").fetchone()
+    now = now_ts()
+    m24 = conn.execute("SELECT COUNT(*), COALESCE(SUM(amount),0) FROM watch_moves WHERE ts>=?", (iso(now - 86400),)).fetchone()
     return {"watched": w[0] or 0, "hop1": w[1] or 0, "hop2": w[2] or 0, "moves": m[0] or 0, "moved_usd": round(m[1], 2),
-            "confirmed": m[2] or 0, "confirmed_usd": round(m[3], 2), "unfrozen_yet": m[4] or 0}
+            "confirmed": m[2] or 0, "confirmed_usd": round(m[3], 2), "unfrozen_yet": m[4] or 0, "moves_24h": m24[0], "moved_24h_usd": round(m24[1], 2),
+            "alerts_24h": alerts_sent(conn)}
