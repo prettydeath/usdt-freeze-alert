@@ -101,7 +101,7 @@ def _first_ts_map(conn):
     return out
 
 
-def build(conn, labels=None):
+def build(conn, labels=None, watch=None):
     """All clusters with totals; also returns {(chain, address_key): [cluster ids]} for the address index."""
     labels = labels if labels is not None else {}
     usd = analytics.frozen_usd_map(conn)
@@ -136,6 +136,12 @@ def build(conn, labels=None):
             return False
         if cp in analytics.special_sinks(chain):
             return True
+        if watch:   # verified DEX / bridge routers and service-fee collectors never connect clusters
+            from .addresses import canon_for
+            from .evasion import watch_entry
+            w = watch_entry(watch, chain, canon_for(chain, cp))
+            if w and w["kind"] in ("dex", "bridge", "fee_collector"):
+                return True
         return is_connector(labels.get((net, key_of(net, cp))))
     edges = []
     for r in conn.execute("SELECT chain, frozen_address, sender FROM inflows_after_freeze"):

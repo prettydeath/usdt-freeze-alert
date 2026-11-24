@@ -143,7 +143,7 @@ def build_payload(conn, stats, stale_days, extras=None):
     hint_rows = [(r["chain"], r.get("target")) for r in list(kept) + list(stale) + list(recent[:200])]
     hints = _reasons.hints_for(hint_rows, ex2.get("labels") or {}, ex2.get("curated")) if ex2 else {}
     return {"signals": ex2.get("signals"), "clusters": ex2.get("clusters"), "outflows": ex2.get("outflow_stats"),
-            "reasons": ex2.get("reasons"), "pulse": ex2.get("pulse"), "hints": hints,
+            "reasons": ex2.get("reasons"), "pulse": ex2.get("pulse"), "flight": ex2.get("flight"), "hints": hints,
             "status": src_status, "generated_at": iso(now), "stale_days": stale_days, "live": livecheck.targets(), "stale_total": stale_total, "chains": chains,
             "pending": kept, "supply": supply, "stale": stale, "stale_by_chain": stale_by_chain, "ex": ex, "recent": recent[:200], "signers": signers, "coverage": stats.get("coverage", {}),
             "others": stats.get("others", {}), "health": stats.get("health"), "authority": auth, "cross": xt, "cross_total": xn,
@@ -206,17 +206,23 @@ def write_badges(payload):
 
 def compute_extras(conn):
     """Signals, clusters, outflow statistics and labels for the dashboard / address index (computed once per render)."""
-    from . import analytics, clusters, labels as lb, outflows, pulse, reasons, signals
+    from . import analytics, clusters, evasion, flight, labels as lb, outflows, pulse, reasons, signals
     lab = lb.load_map(conn)
     curated = reasons.load()
-    cl, cl_index = clusters.build(conn, lab)
+    watch = evasion.load_watchlist()
+    cl, cl_index = clusters.build(conn, lab, watch)
     clusters.save(conn, cl)
     cp = clusters.payload(cl, limit=120, member_sample=12, labels=lab)
     shown = {c["id"] for c in cp["top"]}
     cl_shown = [c for c in cl if c["id"] in shown]
     idx_shown = {m: [i for i in ids if i in shown] for m, ids in cl_index.items()}
     return {"labels": lab, "cluster_list": cl_shown, "cluster_index": idx_shown, "cluster_index_full": cl_index, "clusters": cp,
-            "outflow_stats": outflows.stats(conn, lab, frozen_usd=analytics.frozen_usd_map(conn), cluster_index=cl_index),
+            "outflow_stats": outflows.stats(conn, lab, frozen_usd=analytics.frozen_usd_map(conn), cluster_index=cl_index, watch=watch),
+            "flight": flight.stats(conn),
+            "exposure": [dict(r) for r in conn.execute("SELECT chain, address, kind, spender, amount, note FROM exposure WHERE kind<>'checked'")],
+            "watched": [dict(r) for r in conn.execute("SELECT w.chain, w.address, w.source, w.hop, w.received_usd, "
+                                                      "COALESCE((SELECT SUM(amount) FROM watch_moves m WHERE m.chain=w.chain AND m.address=w.address),0) moved "
+                                                      "FROM watched w")],
             "outflow_addr": outflows.per_address(conn, lab, cl_index), "signals": signals.payload(conn),
             "curated": curated, "reasons": reasons.analyze(conn, lab, curated), "pulse": pulse.compute(conn)}
 

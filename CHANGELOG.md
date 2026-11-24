@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- TRON: every TronGrid call goes through one client (key rotation, per-key throttle ~14 req/s, 429 cooldown, bounded, per-key usage counts in the log and on Status); Tronscan token-transfer API as a keyless fallback; recent-first inflow / outflow scans run in parallel.
+- Cross-chain signals: a failed chain check is retried on the next run instead of skipped; FREEZE INCOMING alerts go out right after the core sync, TRON first; Status shows how long after submission new TRON proposals are detected.
+- Hop-ahead watch: recipients of funds that left a freeze target (hop 1 and 2) are polled; a move before the address's own proposal raises a PRE-PROPOSAL FLIGHT alert.
+- Third-party pulls (caller is not the frozen address) and sweeper candidates; allowance / Permit2 / EIP-7702 exposure of pending targets (address page and alert); exit classes (exchange, bridge, DEX, mixer, verified evasion address, unlabelled); clean / racing / partial / weak outcome per freeze with lead times and priority-fee anomalies; service-fee collectors and dust filtered out of repeat-recipient statistics.
+- `config/evasion_watchlist.yaml`: verified addresses with an evidence field.
+
 ## v2.0.1
 
 - Run deadline: one monotonic deadline per `run` (`FREEZEWATCH_RUN_DEADLINE_SEC`, default 420 s). Core proposal / freeze sync of every chain runs first; balances, inflows, outflows, signals, labels and history back-fills get what is left (a 60 s reserve is kept for render and publish) and stop inside their loops.

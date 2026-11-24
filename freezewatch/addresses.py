@@ -156,7 +156,7 @@ def _add_insights(idx, rec, extras):
         for f in freezes[-3:]:
             # freeze time, escaped $, escaped in-window $, recipients [to, $, in-window $, label, internal], internal $, truncated
             lst.append([parse_iso(f["freeze_ts"]), round(f["escaped"], 2), round(f["window"], 2),
-                        [[x["to"], round(x["usd"], 2), round(x["w"], 2), _label_arr(x["label"]), int(x["internal"])]
+                        [[x["to"], round(x["usd"], 2), round(x["w"], 2), _label_arr(x["label"]), int(x["internal"]), x.get("pulled_by")]
                          for x in f["recipients"][:8]], round(f["internal"], 2), int(f["truncated"]), int(f["service"])])
         rec(key).setdefault("o", {})[chain] = lst
     from . import reasons as _r
@@ -176,6 +176,14 @@ def _add_insights(idx, rec, extras):
             if key:
                 rec(key).setdefault("c", [])
                 rec(key)["c"] += [i for i in ids if i not in rec(key)["c"]]
+    for r in extras.get("exposure", []):
+        key = canon_for(r["chain"], r["address"])
+        if key:   # kind, spender, amount, note: who can still move the funds of a pending target
+            rec(key).setdefault("ex", []).append([r["kind"], r["spender"], r["amount"], r["note"]])
+    for r in extras.get("watched", []):
+        key = canon_for(r["chain"], r["address"])
+        if key:   # hop, source frozen address, USD received, USD moved on
+            rec(key)["w"] = [r["hop"], r["source"], round(r["received_usd"] or 0, 2), round(r["moved"] or 0, 2)]
     for s in (extras.get("signals") or {}).get("open", []):
         rec(s["address"]).setdefault("x", []).append([s["frozen_on"], s["stage"], parse_iso(s["frozen_at"]), s["at_risk"]])
 

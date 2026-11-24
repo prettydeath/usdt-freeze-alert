@@ -23,7 +23,7 @@ FRESH_SEC = 3 * 3600          # event time must be this recent
 NEAR_FRESH_SEC = 24 * 3600    # "one signature left" may come later than the proposal
 MIN_XCHAIN_USD = 1000
 TRACKED = FREEZE_FUNCS + UNFREEZE_FUNCS + DESTROY_FUNCS
-PRIO = {"new": 0, "near": 1, "frozen": 2, "destroy": 3, "inflow": 4, "xchain": 5, "unfrozen": 6, "authority": 7}
+PRIO = {"new": 0, "near": 1, "frozen": 2, "flight": 3, "destroy": 3, "inflow": 4, "xchain": 5, "unfrozen": 6, "authority": 7}
 NL = chr(10)
 
 
@@ -127,7 +127,7 @@ def proposal_ref(r):
     return f"Safe nonce {r['tx_id'] // 100}" if r["chain"] in SAFE_CHAINS else f"proposal #{r['tx_id']}"
 
 
-def fmt_new(r, med=None, seen=None):
+def fmt_new(r, med=None, seen=None, exposure=()):
     from .registry import SAFE_CHAINS
     ch, bal = r["chain"], r["balance_now"]
     seen = seen or time.strftime("%H:%M:%S", time.gmtime())
@@ -137,11 +137,22 @@ def fmt_new(r, med=None, seen=None):
     lines.append(f"✍️ {bar(r['confirmations'], r['required'])} {r['confirmations']}/{r['required']} signed")
     if med is not None:
         lines.append(f"⏱ usually lands in <b>{human(med)}</b>")
+    lines += [e(x) for x in exposure]   # allowances / EIP-7702 delegation: who can still move the funds
     detail = f"{proposal_ref(r)} · {e(r['function'])}" + (" · via Safe API (off-chain queue)" if ch in SAFE_CHAINS else "")
     lines.append(f"<blockquote>{detail}{NL}seen {seen} UTC</blockquote>")
     tags = f"{tag(short(ch))} {tag(r['function'])}" + (" #whale" if (bal or 0) >= 100_000 else "")
     lines += [tags, footer_links(ch, r["target"])]
     return NL.join(lines)
+
+
+def _exposure_lines(conn, r):
+    if r["chain"] not in ("eth", "tron") or not r["target"]:
+        return ()
+    try:
+        from . import exposure
+        return exposure.lines(conn, r["chain"], r["target"])
+    except Exception:  # noqa: BLE001
+        return ()
 
 
 def fmt_near(r):
@@ -226,6 +237,20 @@ def fmt_signal(s):
     return NL.join(lines)
 
 
+def fmt_flight(m):
+    """Watched address (recipient of funds that left a frozen address) moved money before any proposal on it."""
+    chain = m["chain"]
+    meta = meta_of(chain)
+    when = time.strftime("%H:%M", time.gmtime(parse_iso(m["ts"]))) if parse_iso(m["ts"]) else "?"
+    lines = [f"🏃 <b>PRE-PROPOSAL FLIGHT</b> · {e(short(chain))}",
+             f"<code>{e(m['address'])}</code>",
+             f"sent 💰 <b>${num(m['amount'])} USDT</b> at {when} UTC → <code>{e(m['recipient'])}</code>",
+             f"it received funds from frozen <code>{e(m['source'])}</code> (hop {m['hop']}); no freeze proposal on it yet",
+             f"{tag(short(chain))} #preproposalflight"]
+    lk = link(meta.get("tx"), m["tx_hash"], text="explorer")
+    return NL.join(lines + ([lk] if lk else []))
+
+
 def fmt_authority(ch):
     return (f"⚠️ <b>SPL MULTISIG CHANGED</b> · {e(ch['source'])}" + NL +
             f"was {e(ch['old'])}" + NL + f"now {e(ch['new'])}")
@@ -274,7 +299,8 @@ def collect_events(conn, before, max_freeze_rowid, before_pairs, auth_changes=()
         if fn in FREEZE_FUNCS and r["status"] == "pending" and prev is None and sub and now - sub <= FRESH_SEC \
                 and (r["balance_now"] or 0) >= min_balance:
             ev.append({"kind": "new", "chain": r["chain"], "id": r["tx_id"], "key_kind": "new",
-                       "text": fmt_new(r, median_30d(conn, r["chain"], now))})
+                       "text": fmt_new(r, median_30d(conn, r["chain"], now),
+                                           exposure=_exposure_lines(conn, r))})
             new_keys.add(key)
         if fn in FREEZE_FUNCS and r["status"] == "pending" and r["required"] and r["required"] > 1 \
                 and r["confirmations"] == r["required"] - 1 and (prev is None or prev[1] < r["confirmations"]) \
@@ -302,6 +328,9 @@ def collect_events(conn, before, max_freeze_rowid, before_pairs, auth_changes=()
                               (max_inflow_rowid, min_inflow)).fetchall():
             if now - (parse_iso(r["ts"]) or 0) <= FRESH_SEC:
                 ev.append({"kind": "inflow", "chain": r["chain"], "id": r["rid"], "key_kind": "inflow", "text": fmt_inflow(r)})
+    if balances is None:
+        from . import flight
+        ev += flight.events(conn, now)
     if balances is not None:  # legacy path (tests inject balances); production uses the signals table
         ev += crosschain_events(conn, before_pairs, now, balances)
     else:

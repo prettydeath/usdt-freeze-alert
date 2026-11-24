@@ -208,6 +208,11 @@ def sync(conn, stale_days=7):
             return
     except Exception as e:  # noqa: BLE001
         log.info("NEAR: change check failed (%s), full sync", str(e)[:60])
+    import time
+    if meta_get(conn, "near_mapping_ok") != "1" and time.time() - float(meta_get(conn, "near_last_full", 0) or 0) < 1800:
+        log.info("NEAR: the last full sync did not complete (nearblocks limits); next attempt in <= 30 min")
+        return
+    meta_set(conn, "near_last_full", int(time.time()))
     txns = fetch_txns()
     fill_args(conn, txns)
     creations, confirms, execs = parse_history(txns)

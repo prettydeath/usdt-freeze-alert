@@ -201,6 +201,51 @@ CREATE TABLE IF NOT EXISTS outflow_cursor (
     PRIMARY KEY (chain, frozen_address, freeze_ts)
 );
 
+CREATE TABLE IF NOT EXISTS outflow_tx (
+    chain TEXT NOT NULL,
+    tx_hash TEXT NOT NULL,
+    caller TEXT,                   -- who sent the transaction (ETH tx.from / TRON owner_address)
+    to_addr TEXT,                  -- contract / address the caller called
+    block INTEGER,
+    tx_index INTEGER,
+    tip_gwei REAL, median_gwei REAL, tip_ratio REAL, flagged INTEGER,   -- priority-fee anomaly (Ethereum, in-window transfers)
+    checked_at TEXT,
+    PRIMARY KEY (chain, tx_hash)
+);
+
+CREATE TABLE IF NOT EXISTS watched (
+    chain TEXT NOT NULL,
+    address TEXT NOT NULL,         -- a recipient of funds that left a frozen address (hop 1) or of those (hop 2)
+    source TEXT NOT NULL,          -- the frozen address it came from
+    hop INTEGER NOT NULL,
+    received_usd REAL,
+    since_ts TEXT NOT NULL,
+    scanned_at TEXT,
+    PRIMARY KEY (chain, address)
+);
+CREATE TABLE IF NOT EXISTS watch_moves (
+    chain TEXT NOT NULL,
+    address TEXT NOT NULL,         -- the watched address that sent the funds
+    recipient TEXT NOT NULL,
+    amount REAL NOT NULL,
+    ts TEXT NOT NULL,
+    tx_hash TEXT NOT NULL,
+    log_index INTEGER NOT NULL DEFAULT 0,
+    own_proposal TEXT,             -- 'none' | 'before' (a proposal on this address already existed) | 'after'
+    PRIMARY KEY (chain, tx_hash, log_index, address)
+);
+
+CREATE TABLE IF NOT EXISTS exposure (
+    chain TEXT NOT NULL,
+    address TEXT NOT NULL,
+    kind TEXT NOT NULL,            -- allowance | eip7702
+    spender TEXT NOT NULL DEFAULT '',   -- spender / delegate address
+    amount REAL,
+    note TEXT,
+    checked_at TEXT,
+    PRIMARY KEY (chain, address, kind, spender)
+);
+
 CREATE TABLE IF NOT EXISTS address_labels (
     network TEXT NOT NULL,
     key TEXT NOT NULL,

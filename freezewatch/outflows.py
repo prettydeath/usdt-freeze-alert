@@ -241,6 +241,11 @@ def _tronscan_out(addr, min_ms, max_ms):
     return trongrid.tronscan_transfers(addr, "out", min_ms, max_ms)
 
 
+def evasion_third_party(caller, frozen):
+    from .evasion import third_party
+    return third_party(caller, frozen)
+
+
 def _scan_one(chain, addr, fts, st, stop):
     """Network part of one scan step (no DB access, so TRON addresses can run in parallel threads).
     -> (rows, truncated, pending, new_state)."""
@@ -374,15 +379,19 @@ def is_internal(chain, frozen, recipient, ts, intervals, cluster_index=None, lab
 def classify(conn, since_iso=None, cluster_index=None, labels=None):
     """-> [dict(chain, frozen, freeze_ts, recipient, amount, in_window, internal)] for every stored outflow."""
     ivs = frozen_intervals(conn)
-    q = "SELECT chain, frozen_address, freeze_ts, recipient, amount, ts, in_window FROM outflows"
+    q = "SELECT chain, frozen_address, freeze_ts, recipient, amount, ts, in_window, tx_hash FROM outflows"
     args = ()
     if since_iso:
         q += " WHERE freeze_ts>=?"
         args = (since_iso,)
+    from .txinfo import callers
+    cal = callers(conn)
     out = []
     for r in conn.execute(q, args):
+        c = cal.get((r["chain"], r["tx_hash"]))
         out.append({"chain": r["chain"], "frozen": r["frozen_address"], "freeze_ts": r["freeze_ts"], "recipient": r["recipient"],
-                    "amount": r["amount"], "in_window": r["in_window"],
+                    "amount": r["amount"], "in_window": r["in_window"], "tx": r["tx_hash"], "ts": parse_iso(r["ts"]),
+                    "caller": c[0] if c else None, "to_contract": c[1] if c else None,
                     "internal": is_internal(r["chain"], r["frozen_address"], r["recipient"], parse_iso(r["ts"]), ivs, cluster_index, labels)})
     return out
 
@@ -401,7 +410,7 @@ def freeze_totals(rows):
     return tot
 
 
-def stats(conn, labels, now=None, frozen_usd=None, cluster_index=None):
+def stats(conn, labels, now=None, frozen_usd=None, cluster_index=None, watch=None):
     """12-month KPIs, top recipient entities and the front-run list - all on ESCAPED funds (internal moves between frozen
     addresses are reported separately). Freezes whose transfer list was truncated never count as front-run."""
     from .labels import NETWORK_OF, key_of
@@ -449,9 +458,43 @@ def stats(conn, labels, now=None, frozen_usd=None, cluster_index=None):
                           "share": round(share, 3), "label": (lb["entity"] or lb["label"]) if lb else None})
     front.sort(key=lambda x: -x["window_out"])
     top = sorted(ents.values(), key=lambda e: -e["usd"])[:15]
-    return {"checked": len(done), "with_out": with_out, "truncated": len(trunc), "moved_12m": round(escaped, 2),
+    extra = evasion_stats(conn, rows, tot, frozen_usd, labels, watch, since)
+    return {**extra, "checked": len(done), "with_out": with_out, "truncated": len(trunc), "moved_12m": round(escaped, 2),
             "internal_12m": round(internal, 2), "service_12m": round(service_usd, 2), "service_n": len(service), "window_12m": round(win, 2), "frozen_12m": round(frozen_total, 2),
             "top_entities": top, "frontrun": front[:25], "n_frontrun": len(front)}
+
+
+def evasion_stats(conn, rows, tot, frozen_usd, labels, watch, since_iso):
+    """Exit classes, outcome classes, lead times, third-party pulls, sweeper candidates, repeat recipients (fee collectors and dust
+    removed) and priority-fee anomalies for the escaped outflows `rows` of the last 12 months (see evasion.py for the definitions)."""
+    from . import evasion
+    watch = watch if watch is not None else evasion.load_watchlist()
+    esc = [r for r in rows if not r["internal"] and r["amount"] >= evasion.DUST_USD]
+    classes, lead_in = {}, []
+    sub = {(c[0], c[1], iso(c[2])): (c[3], c[2]) for c in candidates(conn)}
+    for k, d in tot.items():
+        cls, _share = evasion.outcome_class(d["escaped"], d["window"], (frozen_usd or {}).get(k))
+        if cls:
+            e = classes.setdefault(cls, {"n": 0, "escaped": 0.0})
+            e["n"] += 1
+            e["escaped"] += d["escaped"]
+    for r in esc:
+        s = sub.get((r["chain"], r["frozen"], r["freeze_ts"]))
+        if r["in_window"] and s and s[0]:
+            lead_in += evasion.lead_times([r], s[0], s[1])
+    pulls = [(r["to_contract"], r["frozen"], r["caller"]) for r in esc if r["to_contract"] and evasion.third_party(r["caller"], r["frozen"])]
+    tp = [r for r in esc if r["to_contract"] and evasion.third_party(r["caller"], r["frozen"])]
+    collectors = evasion.fee_collectors([(r["chain"], r["frozen"], r["recipient"]) for r in esc], watch)
+    rep = evasion.repeat_recipients([(r["chain"], r["frozen"], r["recipient"], r["amount"]) for r in esc], collectors)
+    flagged = conn.execute("SELECT COUNT(*) FROM outflow_tx WHERE flagged=1").fetchone()[0]
+    looked = conn.execute("SELECT COUNT(*) FROM outflow_tx").fetchone()[0]
+    return {"exits": evasion.exit_breakdown(rows, labels, watch),
+            "classes": {k: {"n": v["n"], "escaped": round(v["escaped"], 2)} for k, v in sorted(classes.items(), key=lambda kv: -kv[1]["n"])},
+            "lead": evasion.lead_summary(lead_in),
+            "third_party": {"n": len(tp), "usd": round(sum(r["amount"] for r in tp), 2), "looked_up": looked},
+            "sweepers": [{"contract": c, **v} for c, v in sorted(evasion.sweeper_candidates(pulls).items(), key=lambda kv: -kv[1]["victims"])][:10],
+            "repeat": [{"chain": c, "recipient": r, "sources": n, "usd": u} for c, r, n, u in rep[:10]],
+            "fee_collectors": len(collectors), "fee_flagged": flagged}
 
 
 def per_address(conn, labels, cluster_index=None):
@@ -462,10 +505,12 @@ def per_address(conn, labels, cluster_index=None):
     agg = {}
     for r in classify(conn, None, cluster_index, labels):
         k = (r["chain"], r["frozen"], r["freeze_ts"], r["recipient"], r["internal"])
-        e = agg.setdefault(k, [0.0, 0.0])
+        e = agg.setdefault(k, [0.0, 0.0, None])
         e[0] += r["amount"]
         e[1] += r["amount"] if r["in_window"] else 0.0
-    for (chain, addr, fts, rcp, internal), (usd, w) in agg.items():
+        if r["to_contract"] and evasion_third_party(r["caller"], r["frozen"]):
+            e[2] = r["caller"]
+    for (chain, addr, fts, rcp, internal), (usd, w, pulled_by) in agg.items():
         ent = out.setdefault((chain, addr), {}).setdefault(fts, {"freeze_ts": fts, "escaped": 0.0, "window": 0.0, "internal": 0.0,
                                                                   "truncated": (chain, addr, fts) in trunc, "recipients": [],
                                                                   "service": is_service_wallet(labels, chain, addr)})
@@ -475,7 +520,7 @@ def per_address(conn, labels, cluster_index=None):
             ent["escaped"] += usd
             ent["window"] += w
         net = NETWORK_OF.get(chain)
-        ent["recipients"].append({"to": rcp, "usd": usd, "w": w, "internal": internal,
+        ent["recipients"].append({"to": rcp, "usd": usd, "w": w, "internal": internal, "pulled_by": pulled_by,
                                   "label": labels.get((net, key_of(net, rcp))) if net else None})
     for key, d in out.items():
         for e in d.values():

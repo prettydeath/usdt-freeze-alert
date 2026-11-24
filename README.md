@@ -154,7 +154,7 @@ Everything is on the `data` branch (`https://raw.githubusercontent.com/prettydea
 | `site/analytics.json`, `site/health.json`, `site/addresses.json` | aggregates, per-source health, per-address index |
 | `data/freezewatch.sqlite` | the full database |
 
-Every dashboard table has **CSV / JSON** buttons for exactly the rows shown. Curated reasons live in [`config/reasons.yaml`](config/reasons.yaml) (public source required; empty on purpose until verified).
+Every dashboard table has **CSV / JSON** buttons for exactly the rows shown. Curated reasons live in [`config/reasons.yaml`](config/reasons.yaml) (public source required; empty on purpose until verified). Verified evasion / sweeper / fee-collector addresses live in [`config/evasion_watchlist.yaml`](config/evasion_watchlist.yaml) (evidence required for every entry).
 
 ## Limits
 

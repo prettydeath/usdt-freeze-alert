@@ -5,7 +5,7 @@ import sys
 import time
 from datetime import datetime, timezone
 
-from . import (alerts, analytics, crosschain, deadline, trongrid, eth, evmmsw, health, inflows, labels, others, outflows, safe, signals,
+from . import (alerts, analytics, crosschain, deadline, exposure, flight, trongrid, txinfo, eth, evmmsw, health, inflows, labels, others, outflows, safe, signals,
                status, tokenevents, tron)
 from .constants import BALANCE_FUNCS
 from .db import connect, meta_get, meta_set, update_proposal
@@ -192,6 +192,13 @@ def cmd_update(args, conn=None):
         health.check(conn)
     except Exception as e:  # noqa: BLE001
         log.warning("health check failed: %s", str(e)[:80])
+    # who can still move the funds of pending targets (allowances, EIP-7702): known before the FREEZE INCOMING alert is built
+    with deadline.step("exposure", 25, optional=True) as st_exp:
+        if not st_exp.skipped:
+            try:
+                exposure.refresh(conn, min(25, st_exp.budget))
+            except Exception as e:  # noqa: BLE001
+                log.warning("exposure failed: %s", str(e)[:80])
     # alerts for new / executed proposals go out NOW, before any slow optional step (inflow / cross-chain alerts follow at the end;
     # the `alerts` table dedupes, so nothing is sent twice)
     with deadline.step("alerts-early", optional=False):
@@ -201,13 +208,14 @@ def cmd_update(args, conn=None):
             log.warning("early alerts failed: %s", str(e)[:80])
     _log_detect_lag(conn)
     # 2. optional work, each step capped by what is left of the run deadline (reserve kept for render + publish)
-    _optional(box, "signals", lambda c, b: (signals.detect(c, budget_sec=min(90, b)), signals.resolve(c, budget_sec=min(60, b))), 120)
+    _optional(box, "signals", lambda c, b: (signals.detect(c, budget_sec=min(35, b)), signals.resolve(c, budget_sec=min(20, b))), 45)
     budget = int(env("ANALYTICS_BUDGET_SEC", "120"))
     for c in HISTORY_CHAINS:
         if c in chains_of(getattr(args, "chain", "all")):
             _optional(box, f"history:{c}", lambda cn, b, c=c: do_sync(cn, c, None, b, phase="history"), min(budget, 90))
     for name, fn in (("destroy-amounts", analytics.enrich_destroy_amounts), ("balances", analytics.refresh_balances),
-                     ("inflows", inflows.refresh), ("outflows", outflows.refresh), ("labels", labels.refresh)):
+                     ("inflows", inflows.refresh), ("outflows", outflows.refresh), ("txinfo", txinfo.resolve),
+                     ("labels", labels.refresh), ("flight-watch", _flight_step)):
         _optional(box, name, lambda cn, b, fn=fn: fn(cn, b), budget)
     conn = box[0]
     with deadline.step("alerts", optional=False):
@@ -218,6 +226,14 @@ def cmd_update(args, conn=None):
     if own_conn:
         log.info(deadline.summary())
     return 0 if ok else 1
+
+
+def _flight_step(conn, budget):
+    """Hop-ahead watch: refresh the watched set from recent outflows and poll those addresses for moves."""
+    from . import labels as _labels
+    lab = _labels.load_map(conn)
+    flight.refresh_watch(conn, lab)
+    flight.scan(conn, lab, budget_sec=budget)
 
 
 def _log_detect_lag(conn):
