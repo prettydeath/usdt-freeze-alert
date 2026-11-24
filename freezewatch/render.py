@@ -1,4 +1,4 @@
-"""Static dashboard site/index.html, CSV/JSON export and the statistics block in the README."""
+"""Static dashboard (site/classic.html + site/data.json for the React app in web/), CSV/JSON export and the statistics block in the README."""
 import csv
 import json
 import re
@@ -8,6 +8,7 @@ from .constants import DATA_DIR, ROOT, SITE_DIR
 from .util import iso, now_ts, parse_iso
 
 NO_DELAY: set = set()  # chains without reliable submit/execute timestamps (none right now)
+CLASSIC_PAGE = "classic.html"  # the single-file dashboard; site/index.html is the React app
 MARK_A, MARK_B = "<!-- STATS:START -->", "<!-- STATS:END -->"
 COLS = ["chain", "tx_id", "category", "destination", "function", "target", "amount", "raw_data", "submitted_at", "submit_tx",
         "submitter", "executed", "executed_at", "exec_tx", "executor", "confirmations", "required", "status",
@@ -159,15 +160,28 @@ def render_site(conn, stats, stale_days=7, extras=None):
     blob = raw.replace("</", "<\\/")
     tpl = (Path(__file__).parent / "template.html").read_text(encoding="utf-8")
     SITE_DIR.mkdir(parents=True, exist_ok=True)
-    write_if_changed(SITE_DIR / "data.json", raw)  # the same object as the embedded blob, for the React app (web/)
-    out = SITE_DIR / "index.html"
+    write_if_changed(SITE_DIR / "data.json", raw)  # the same object as the embedded blob, read by the React app (web/)
     html = tpl.replace("__DATA__", blob)
-    if out.exists() and _strip(out.read_text(encoding="utf-8")) == _strip(html):
-        payload["_site_changed"] = False
-        return payload  # only the generation time differs: do not rewrite
-    out.write_text(html, encoding="utf-8")
-    payload["_site_changed"] = True
+    out = SITE_DIR / CLASSIC_PAGE
+    changed = not (out.exists() and _strip(out.read_text(encoding="utf-8")) == _strip(html))
+    if changed:
+        out.write_text(html, encoding="utf-8")
+    # site/index.html is the React app (built by `npm run build` in web/). Without that build the classic page also serves
+    # as the root page, so a plain `python -m freezewatch run` still produces a working site.
+    root = SITE_DIR / "index.html"
+    if not (root.exists() and is_react_page(root)):
+        if not (root.exists() and _strip(root.read_text(encoding="utf-8")) == _strip(html)):
+            root.write_text(html, encoding="utf-8")
+    payload["_site_changed"] = changed
     return payload
+
+
+def is_react_page(path):
+    """True if `path` is the built React app (its root element is <div id="root">)."""
+    try:
+        return '<div id="root">' in path.read_text(encoding="utf-8")[:4000]
+    except OSError:
+        return False
 
 
 def _dur(sec):
