@@ -1,0 +1,152 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* shadcn "Dark console": zinc-950 page, zinc-900 cards, zinc-800 borders, blue chart palette */
+:root {
+  --radius: 0.5rem;
+  --background: oklch(0.985 0 0);
+  --foreground: oklch(0.21 0.006 285.9);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.21 0.006 285.9);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.21 0.006 285.9);
+  --primary: oklch(0.546 0.2 262);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.967 0.001 286.4);
+  --secondary-foreground: oklch(0.21 0.006 285.9);
+  --muted: oklch(0.967 0.001 286.4);
+  --muted-foreground: oklch(0.47 0.015 286);
+  --accent: oklch(0.94 0.003 286);
+  --accent-foreground: oklch(0.21 0.006 285.9);
+  --border: oklch(0.9 0.004 286);
+  --input: oklch(0.9 0.004 286);
+  --ring: oklch(0.546 0.2 262);
+  --chart-1: oklch(0.546 0.2 262);
+  --chart-2: oklch(0.7 0.14 230);
+  --chart-3: oklch(0.65 0.15 175);
+  --chart-4: oklch(0.72 0.15 75);
+  --chart-5: oklch(0.6 0.2 320);
+  --danger: oklch(0.52 0.21 27);
+  --danger-bg: oklch(0.96 0.03 20);
+  --warn: oklch(0.5 0.12 70);
+  --warn-bg: oklch(0.96 0.06 90);
+  --ok: oklch(0.45 0.13 150);
+  --ok-bg: oklch(0.96 0.04 150);
+}
+
+.dark {
+  --background: oklch(0.141 0.005 285.8);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.21 0.006 285.9);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.21 0.006 285.9);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.623 0.214 259.8);
+  --primary-foreground: oklch(0.141 0.005 285.8);
+  --secondary: oklch(0.274 0.006 286);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.274 0.006 286);
+  --muted-foreground: oklch(0.705 0.015 286);
+  --accent: oklch(0.274 0.006 286);
+  --accent-foreground: oklch(0.985 0 0);
+  --border: oklch(0.274 0.006 286);
+  --input: oklch(0.31 0.008 286);
+  --ring: oklch(0.623 0.214 259.8);
+  --chart-1: oklch(0.623 0.214 259.8);
+  --chart-2: oklch(0.746 0.14 230);
+  --chart-3: oklch(0.72 0.15 175);
+  --chart-4: oklch(0.8 0.15 80);
+  --chart-5: oklch(0.7 0.2 320);
+  --danger: oklch(0.75 0.17 22);
+  --danger-bg: oklch(0.28 0.08 22);
+  --warn: oklch(0.83 0.14 85);
+  --warn-bg: oklch(0.3 0.06 85);
+  --ok: oklch(0.8 0.16 150);
+  --ok-bg: oklch(0.28 0.06 150);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-danger: var(--danger);
+  --color-danger-bg: var(--danger-bg);
+  --color-warn: var(--warn);
+  --color-warn-bg: var(--warn-bg);
+  --color-ok: var(--ok);
+  --color-ok-bg: var(--ok-bg);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, "JetBrains Mono", SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+@layer base {
+  * { @apply border-border outline-ring/50; }
+  html { color-scheme: light; }
+  html.dark { color-scheme: dark; }
+  body { @apply bg-background text-foreground font-sans text-[13px] leading-[1.45] antialiased; overflow-x: hidden; }
+  a { @apply text-primary no-underline hover:underline; }
+  button { cursor: pointer; }
+}
+
+.mono { font-family: var(--font-mono); font-size: 11.5px; overflow-wrap: anywhere; word-break: break-all; }
+.tabnum { font-variant-numeric: tabular-nums; }
+
+/* live / pending pulse dot (animated by anime.js; static ring when motion is reduced) */
+.pulse-dot { display: inline-block; width: 8px; height: 8px; border-radius: 9999px; background: var(--ok); flex: none; }
+.pulse-dot.old { background: var(--warn); }
+.pulse-dot.pend { background: var(--danger); }
+
+/* heatmap */
+.heat { display: grid; grid-template-columns: 34px repeat(24, minmax(0, 1fr)); gap: 2px; font-size: 10px; align-items: center; }
+.heat .hc { height: 18px; border-radius: 2px; background: var(--muted); }
+.heat .hl { color: var(--muted-foreground); text-align: right; padding-right: 4px; }
+.heat .hh { color: var(--muted-foreground); text-align: center; }
+
+/* mobile (<= 640px): tables become card lists */
+@media (max-width: 640px) {
+  table.cards { display: block; min-width: 0 !important; width: 100%; }
+  table.cards thead { display: none; }
+  table.cards tbody { display: block; }
+  table.cards tbody tr { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; height: auto; }
+  table.cards td { display: inline-flex; align-items: baseline; flex-wrap: wrap; gap: 0 5px; padding: 0 !important; border: 0; font-size: 13px; white-space: normal !important; max-width: 100%; font-variant-numeric: tabular-nums; height: auto; }
+  table.cards td[data-l]::before { content: attr(data-l); color: var(--muted-foreground); font-size: 10px; text-transform: uppercase; letter-spacing: .3px; }
+  table.cards td.wide { flex: 1 1 100%; display: block; overflow-wrap: anywhere; word-break: break-all; }
+  table.cards td.wide[data-l]::before { display: block; margin-bottom: 1px; }
+  table.cards td.full, table.cards td[colspan] { flex: 1 1 100%; display: block; }
+  table.cards td:first-child { font-weight: 600; }
+  .table-wrap { overflow: visible !important; border: 0 !important; background: none !important; }
+}
+
+@media print {
+  header, footer, .no-print, [data-slot="sheet-overlay"] { display: none !important; }
+  body { background: #fff; color: #000; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+}

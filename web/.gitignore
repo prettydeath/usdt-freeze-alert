@@ -1,0 +1,9 @@
+node_modules
+dist
+# local dev fixture (generated from the live site, see README)
+public/data.json
+public/analytics.json
+public/addresses.json
+public/health.json
+public/addr/
+public/index_live.html
