@@ -1,10 +1,10 @@
-// Bundle size report for ../site/app (raw + gzip), marking what the browser loads up-front.
+// Bundle size report for ../site (index.html + assets/) (raw + gzip), marking what the browser loads up-front.
 import { readFileSync, readdirSync } from "node:fs"
 import { gzipSync } from "node:zlib"
 import { join } from "node:path"
 import { fileURLToPath } from "node:url"
 
-const dir = fileURLToPath(new URL("../../site/app/", import.meta.url))
+const dir = fileURLToPath(new URL("../../site/", import.meta.url))
 const html = readFileSync(join(dir, "index.html"), "utf8")
 const initial = new Set([...html.matchAll(/assets\/([^"']+\.(?:js|css))/g)].map((m) => m[1]))
 let rawInit = 0, rawAll = 0, gzInit = 0, gzAll = 0

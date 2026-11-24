@@ -96,6 +96,21 @@ export interface Outflows {
   fee_flagged?: number
 }
 
+/** one row of data.flights (pre-proposal flights, last 24 h); the export lands with main's flight update, fields are optional on purpose */
+export interface FlightRow {
+  ts: number | string
+  chain: string
+  address: string
+  amount: number
+  recipient?: string | null
+  recipient_label?: Label | null
+  source?: string | null
+  hop?: number | null
+  freeze_ts?: number | string | null
+  status?: "watching" | "confirmed" | "frozen_later" | string
+  tx?: string | null
+}
+
 export interface Flight { watched: number; hop1: number; hop2: number; moves: number; moved_usd: number; confirmed: number; confirmed_usd: number; unfrozen_yet?: number }
 
 export interface Reasons {
@@ -145,6 +160,7 @@ export interface Data {
   reasons: Reasons | null
   pulse: Pulse | null
   flight?: Flight | null
+  flights?: FlightRow[]
   hints: Record<string, Reason>
   status: Status
   generated_at: string

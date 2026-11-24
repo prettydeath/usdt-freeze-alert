@@ -1,8 +1,8 @@
 import type { Analytics, Data, AddrRecord, Status } from "./types"
 
-// Where data.json & co live relative to the page. The app is built to site/app/, so the data is one level up.
-// Dev server (public/ fixture) and a future site-root deployment use "./".
-export const DATA_BASE: string = (import.meta.env.VITE_DATA_BASE as string | undefined) ?? (import.meta.env.DEV ? "./" : "../")
+// Where data.json & co live relative to the page: next to index.html (the app is the root page of site/; in `npm run dev`
+// they come from the web/public/ fixture). Override with VITE_DATA_BASE.
+export const DATA_BASE: string = (import.meta.env.VITE_DATA_BASE as string | undefined) ?? "./"
 
 async function getJson<T>(name: string): Promise<T> {
   const r = await fetch(DATA_BASE + name, { cache: "no-cache" })

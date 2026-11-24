@@ -5,6 +5,7 @@ import type { Proposal, Signal } from "@/lib/types"
 import { AddrLink, FnTag, H2, Kpi, KpiGrid, Muted, TxLink } from "@/components/common"
 import { HintChip } from "@/components/chips"
 import { DataTable, type Col } from "@/components/DataTable"
+import { FlightsBlock } from "@/components/FlightsBlock"
 import { SwitchBlock } from "@/components/SwitchBlock"
 import { useFlip } from "@/lib/motion"
 
@@ -115,6 +116,8 @@ export default function Live() {
           <Kpi label="Freezes, 7d" num={k.b7} sub={k.brk} />
         </KpiGrid>
       </div>
+
+      <FlightsBlock />
 
       <H2>Pending queue</H2>
       <DataTable cols={pc} rows={pend} exportName="pending" rowKey={(r) => r.chain + r.tx_id} empty="No live pending proposals." />

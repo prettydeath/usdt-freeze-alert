@@ -24,7 +24,7 @@ class Q(http.server.SimpleHTTPRequestHandler):
 socketserver.TCPServer.allow_reuse_address = True
 srv = socketserver.ThreadingTCPServer(("127.0.0.1", a.port), functools.partial(Q, directory=str(Path(a.site).resolve())))
 threading.Thread(target=srv.serve_forever, daemon=True).start()
-BASE = f"http://127.0.0.1:{a.port}/app/"
+BASE = f"http://127.0.0.1:{a.port}/"
 A1, A2, A3 = "0x5227f603c1ee34ce3c06efe6477003bdfccb2f8c", "TC5ZTuCLYcV1hQimnBcyp88ctEX2vX2jyy", "0x9f2b7c1d4e6a8035b1c2d3e4f5a6b7c8d9e0f1a2"
 fails = []
 def check(c, m):

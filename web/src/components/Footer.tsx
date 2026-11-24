@@ -21,7 +21,7 @@ export function Footer() {
   return (
     <footer className="text-muted-foreground mt-8 mb-5 border-t pt-2.5 text-xs no-print">
       <div>
-        <button type="button" className="text-primary underline" onClick={openGlossary}>Glossary</button> · <a href="#status" onClick={(e) => { e.preventDefault(); go("status") }}>Source status</a> · <a href="https://github.com/prettydeath/usdt-freeze-alert" target="_blank" rel="noopener noreferrer">GitHub</a>
+        <button type="button" className="text-primary underline" onClick={openGlossary}>Glossary</button> · <a href="#status" onClick={(e) => { e.preventDefault(); go("status") }}>Source status</a> · <a href="https://github.com/prettydeath/usdt-freeze-alert" target="_blank" rel="noopener noreferrer">GitHub</a> · <a href="classic.html">Classic view</a>
       </div>
       {Object.entries(d.health || {}).filter(([, h]) => h && h.stale).map(([c, h]) => (
         <div key={c} className="text-warn">⚠ {c.toUpperCase()} data stale: on-chain transaction count {h.onchain_count}, newest id in our data {h.max_id}.</div>

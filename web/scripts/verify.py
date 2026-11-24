@@ -27,7 +27,7 @@ class Q(http.server.SimpleHTTPRequestHandler):
 socketserver.TCPServer.allow_reuse_address = True
 srv = socketserver.ThreadingTCPServer(("127.0.0.1", a.port), functools.partial(Q, directory=str(site)))
 threading.Thread(target=srv.serve_forever, daemon=True).start()
-BASE = f"http://127.0.0.1:{a.port}/app/"
+BASE = f"http://127.0.0.1:{a.port}/"
 
 ADDRS = ["0x5227f603c1ee34ce3c06efe6477003bdfccb2f8c", "TC5ZTuCLYcV1hQimnBcyp88ctEX2vX2jyy",
          "0x8d53903625b8e839b9df4bd28b0efb1cd6b8639a", "0x1234567890abcdef1234567890abcdef12345678", "notanaddress"]
@@ -113,6 +113,18 @@ with sync_playwright() as p:
                 page.keyboard.press("Escape")
             check(not errs, f"{vp}/{theme}: console errors = {errs[:3]}")
             ctx.close()
+    # switch-over: the old page stays reachable and the root keeps every old deep link working
+    ctx = b.new_context(viewport={"width": 1360, "height": 900}); page = ctx.new_page()
+    errs = []
+    page.on("pageerror", lambda e: errs.append(str(e)))
+    page.goto(BASE + "classic.html#live"); page.wait_for_timeout(1500)
+    check(page.locator("#kpis .kpi").count() == 4, "classic.html still renders the old dashboard")
+    for frag, expect in [("#analytics", "Period"), ("#signers", "Signers"), ("#status", "Status of data sources"),
+                         ("#addr=" + ADDRS[0], "BLOCKED"), ("#watch=" + ADDRS[1], "BLOCKED")]:
+        page.goto(BASE + frag); page.reload(); page.wait_for_timeout(1500)
+        check(expect.upper() in page.inner_text("body").upper(), f"root deep link {frag[:20]} opens the right view")
+    check(not errs, f"switch-over page errors: {errs[:2]}")
+    ctx.close()
     b.close()
 
 print("\n".join(report))
