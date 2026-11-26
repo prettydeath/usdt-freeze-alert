@@ -45,18 +45,27 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          REPO="${{ github.repository }}"
           mkdir -p data
-          rm -rf _rel && mkdir _rel
-          # freezewatch-new.sqlite.gz is the half-finished upload of a previous run (see the upload step)
-          if gh release download data-latest -R "${{ github.repository }}" -p freezewatch.sqlite.gz -D _rel 2>/dev/null; then
-            gunzip -c _rel/freezewatch.sqlite.gz > data/freezewatch.sqlite; echo "restored from release"
-          elif gh release download data-latest -R "${{ github.repository }}" -p freezewatch-new.sqlite.gz -D _rel 2>/dev/null; then
-            mv _rel/freezewatch-new.sqlite.gz _rel/freezewatch.sqlite.gz
-            gunzip -c _rel/freezewatch.sqlite.gz > data/freezewatch.sqlite; echo "restored from release (pending upload)"
-          elif [ -f _data/data/freezewatch.sqlite.gz ]; then gunzip -c _data/data/freezewatch.sqlite.gz > data/freezewatch.sqlite; echo "restored from data branch (gz)"
-          elif [ -f _data/data/freezewatch.sqlite ]; then cp _data/data/freezewatch.sqlite data/; echo "restored from data branch"; fi
+          rm -rf _rel _try && mkdir _rel _try
+          # a candidate is used only if it unpacks and passes quick_check; otherwise the next one is tried
+          try_db() {  # $1 = .gz file, $2 = label
+            rm -f data/freezewatch.sqlite
+            gunzip -c "$1" > data/freezewatch.sqlite 2>/dev/null || { echo "  $2: does not unpack"; return 1; }
+            r=$(python3 -c 'import sqlite3; print(sqlite3.connect("data/freezewatch.sqlite").execute("pragma quick_check").fetchone()[0])' 2>&1 || true)
+            [ "$r" = "ok" ] || { echo "  $2: damaged ($r)"; rm -f data/freezewatch.sqlite; return 1; }
+            cp "$1" _rel/freezewatch.sqlite.gz; echo "restored from $2"; echo "source=$2" >> "$GITHUB_OUTPUT"
+          }
+          # order: current copy, half-finished upload of a previous run, newest daily backups, legacy data branch
+          backups=$(gh api "repos/$REPO/releases/tags/data-latest" --jq '[.assets[].name | select(startswith("freezewatch-backup-"))] | sort | reverse | .[]' 2>/dev/null || true)
+          restored=""
+          for name in freezewatch.sqlite.gz freezewatch-new.sqlite.gz $backups; do
+            if gh release download data-latest -R "$REPO" -p "$name" -D _try --clobber 2>/dev/null && try_db "_try/$name" "release:$name"; then restored=1; break; fi
+          done
+          if [ -z "$restored" ] && [ -f _data/data/freezewatch.sqlite.gz ] && try_db _data/data/freezewatch.sqlite.gz "data branch"; then restored=1; fi
           ls -la data | head
-          if [ -s data/freezewatch.sqlite ]; then
+          if [ -n "$restored" ]; then
+            [ "$name" = "freezewatch.sqlite.gz" ] || echo "::warning::Main database copy missing or damaged, restored from a fallback; check the release data-latest"
             echo "ok=true" >> "$GITHUB_OUTPUT"
           elif [ "${{ inputs.backfill }}" = "true" ]; then
             echo "::warning::No database found, starting an empty one (backfill run)"; echo "ok=true" >> "$GITHUB_OUTPUT"
@@ -143,6 +152,18 @@ jobs:
           old_id=$(echo "$assets" | awk '$2=="freezewatch.sqlite.gz"{print $1}')
           [ -n "$old_id" ] && gh api -X DELETE "repos/$REPO/releases/assets/$old_id"
           gh api -X PATCH "repos/$REPO/releases/assets/$new_id" -f name=freezewatch.sqlite.gz --jq '"\(.name) \(.size)"'
+          # one dated backup per day, last 7 kept: even a lost or damaged main copy costs at most a day of data
+          today="freezewatch-backup-$(date -u +%F).sqlite.gz"
+          backups=$(gh api "repos/$REPO/releases/tags/data-latest" --jq '.assets[] | select(.name | startswith("freezewatch-backup-")) | "\(.name) \(.id)"' | sort -r)
+          if ! echo "$backups" | grep -q "^$today "; then
+            cp _db.sqlite.gz "$today"
+            if gh release upload data-latest "$today" -R "$REPO"; then
+              echo "backup $today uploaded"
+              echo "$backups" | awk 'NF' | tail -n +7 | while read -r n id; do gh api -X DELETE "repos/$REPO/releases/assets/$id" && echo "old backup $n removed"; done
+            else
+              echo "::warning::daily backup upload failed (main copy is saved)"
+            fi
+          fi
 
       - name: Publish to the data branch (single orphan commit)
         id: publish
@@ -161,6 +182,41 @@ jobs:
           git commit -q -m "data: update"
           git push -q -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" data
           echo "changed=true" >> "$GITHUB_OUTPUT"
+
+  # Telegram notice when the monitor breaks (1st failed run, then after ~1 h, ~6 h, ~24 h) and when it recovers.
+  # Silent failures are what let the Nov 2026 outage run for 30 hours.
+  notify:
+    needs: run
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions:
+      actions: read
+    steps:
+      - name: Notify on breakage / recovery
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
+          TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
+          RESULT: ${{ needs.run.result }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          # streak of non-successful runs before this one (this run is still in progress, so it is not listed)
+          prev=$(gh api "repos/${{ github.repository }}/actions/workflows/watch.yml/runs?status=completed&per_page=100" \
+                   --jq '[.workflow_runs[] | select(.id != ${{ github.run_id }}) | .conclusion] | (index("success") // length)' || echo 0)
+          echo "result=$RESULT, failed runs before this one: $prev"
+          msg=""
+          if [ "$RESULT" = "success" ]; then
+            [ "$prev" -gt 0 ] && msg="✅ freezewatch recovered after $prev failed run(s)."
+          else
+            streak=$((prev + 1))
+            case "$streak" in 1|6|36|144) msg="🚨 freezewatch is not updating: $streak failed run(s) in a row (last: $RESULT). Data and alerts are stale.";; esac
+          fi
+          [ -n "$msg" ] || { echo "nothing to send"; exit 0; }
+          [ -n "$TG_BOT_TOKEN" ] && [ -n "$TG_CHAT_ID" ] || { echo "::warning::$msg (Telegram not configured)"; exit 0; }
+          curl -sS -m 20 -o /dev/null -w "telegram: %{http_code}\n" "https://api.telegram.org/bot${TG_BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TG_CHAT_ID}" --data-urlencode "text=${msg}
+          ${RUN_URL}" --data-urlencode "disable_web_page_preview=true"
 
   pages:
     needs: run
