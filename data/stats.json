@@ -1,0 +1,8820 @@
+{
+ "generated_at": "2026-11-28T13:12:40Z",
+ "scopes": {
+  "aptos": {
+   "7d": {
+    "all": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    }
+   },
+   "30d": {
+    "all": {
+     "proposed": 1,
+     "executed": 2,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 2,
+      "min": 15352,
+      "p25": 2248513.0,
+      "median": 4481674.0,
+      "p75": 6714835.0,
+      "p90": 8054731.600000001,
+      "max": 8947996,
+      "share_same_block": 0.0,
+      "share_le_60s": 0.0,
+      "share_lt_5m": 0.0,
+      "share_lt_1h": 0.0,
+      "share_lt_6h": 0.5,
+      "share_gt_24h": 0.5
+     },
+     "exec_per_day": 0.07,
+     "exec_per_week": 0.47
+    }
+   },
+   "all": {
+    "all": {
+     "proposed": 32,
+     "executed": 28,
+     "pending": 0,
+     "revoked": 4,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 28,
+      "min": 229,
+      "p25": 4156.25,
+      "median": 18211.0,
+      "p75": 61333.0,
+      "p90": 3595028.0000000047,
+      "max": 8947996,
+      "share_same_block": 0.0,
+      "share_le_60s": 0.0,
+      "share_lt_5m": 0.07142857142857142,
+      "share_lt_1h": 0.25,
+      "share_lt_6h": 0.5357142857142857,
+      "share_gt_24h": 0.25
+     },
+     "exec_per_day": 0.04,
+     "exec_per_week": 0.25
+    }
+   }
+  },
+  "arb1": {
+   "7d": {
+    "all": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    }
+   },
+   "30d": {
+    "all": {
+     "proposed": 3,
+     "executed": 3,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 3,
+      "min": 3068,
+      "p25": 14950.0,
+      "median": 26832.0,
+      "p75": 26909.5,
+      "p90": 26956.0,
+      "max": 26987,
+      "share_same_block": 0.0,
+      "share_le_60s": 0.0,
+      "share_lt_5m": 0.0,
+      "share_lt_1h": 0.3333333333333333,
+      "share_lt_6h": 0.3333333333333333,
+      "share_gt_24h": 0.0
+     },
+     "exec_per_day": 0.1,
+     "exec_per_week": 0.7
+    }
+   },
+   "all": {
+    "all": {
+     "proposed": 12,
+     "executed": 11,
+     "pending": 0,
+     "revoked": 1,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 10,
+      "min": 215,
+      "p25": 380.5,
+      "median": 5413.0,
+      "p75": 24079.75,
+      "p90": 364177.5999999988,
+      "max": 3398893,
+      "share_same_block": 0.0,
+      "share_le_60s": 0.0,
+      "share_lt_5m": 0.2,
+      "share_lt_1h": 0.5,
+      "share_lt_6h": 0.7,
+      "share_gt_24h": 0.1
+     },
+     "exec_per_day": 0.02,
+     "exec_per_week": 0.15
+    }
+   }
+  },
+  "arb_usdt": {
+   "7d": {
+    "all": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    }
+   },
+   "30d": {
+    "all": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    }
+   },
+   "all": {
+    "all": {
+     "proposed": 45,
+     "executed": 41,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 4,
+     "failed": 0,
+     "delay": {
+      "n": 41,
+      "min": 837,
+      "p25": 4818.0,
+      "median": 4835.0,
+      "p75": 526718.0,
+      "p90": 12799508.0,
+      "max": 12799636,
+      "share_same_block": 0.0,
+      "share_le_60s": 0.0,
+      "share_lt_5m": 0.0,
+      "share_lt_1h": 0.07317073170731707,
+      "share_lt_6h": 0.5853658536585366,
+      "share_gt_24h": 0.2926829268292683
+     },
+     "exec_per_day": 0.03,
+     "exec_per_week": 0.19
+    }
+   }
+  },
+  "avax": {
+   "7d": {
+    "all": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    }
+   },
+   "30d": {
+    "all": {
+     "proposed": 2,
+     "executed": 2,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 2,
+      "min": 300,
+      "p25": 335.5,
+      "median": 371.0,
+      "p75": 406.5,
+      "p90": 427.8,
+      "max": 442,
+      "share_same_block": 0.0,
+      "share_le_60s": 0.0,
+      "share_lt_5m": 0.0,
+      "share_lt_1h": 1.0,
+      "share_lt_6h": 1.0,
+      "share_gt_24h": 0.0
+     },
+     "exec_per_day": 0.07,
+     "exec_per_week": 0.47
+    }
+   },
+   "all": {
+    "all": {
+     "proposed": 57,
+     "executed": 51,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 6,
+     "failed": 0,
+     "delay": {
+      "n": 51,
+      "min": 285,
+      "p25": 4609.5,
+      "median": 120949.0,
+      "p75": 1460659.5,
+      "p90": 2860527.0,
+      "max": 47518591,
+      "share_same_block": 0.0,
+      "share_le_60s": 0.0,
+      "share_lt_5m": 0.0196078431372549,
+      "share_lt_1h": 0.23529411764705882,
+      "share_lt_6h": 0.35294117647058826,
+      "share_gt_24h": 0.5294117647058824
+     },
+     "exec_per_day": 0.03,
+     "exec_per_week": 0.19
+    }
+   }
+  },
+  "berachain": {
+   "7d": {
+    "all": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    }
+   },
+   "30d": {
+    "all": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    }
+   },
+   "all": {
+    "all": {
+     "proposed": 1,
+     "executed": 1,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 1,
+      "min": 0,
+      "p25": 0.0,
+      "median": 0.0,
+      "p75": 0.0,
+      "p90": 0.0,
+      "max": 0,
+      "share_same_block": 1.0,
+      "share_le_60s": 1.0,
+      "share_lt_5m": 1.0,
+      "share_lt_1h": 1.0,
+      "share_lt_6h": 1.0,
+      "share_gt_24h": 0.0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.01
+    }
+   }
+  },
+  "celo": {
+   "7d": {
+    "all": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    }
+   },
+   "30d": {
+    "all": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    }
+   },
+   "all": {
+    "all": {
+     "proposed": 13,
+     "executed": 8,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 5,
+     "failed": 0,
+     "delay": {
+      "n": 8,
+      "min": 160,
+      "p25": 5615.0,
+      "median": 6582.5,
+      "p75": 50510.0,
+      "p90": 290990.8999999999,
+      "max": 583348,
+      "share_same_block": 0.0,
+      "share_le_60s": 0.0,
+      "share_lt_5m": 0.125,
+      "share_lt_1h": 0.125,
+      "share_lt_6h": 0.75,
+      "share_gt_24h": 0.25
+     },
+     "exec_per_day": 0.01,
+     "exec_per_week": 0.06
+    }
+   }
+  },
+  "eth": {
+   "7d": {
+    "all": {
+     "proposed": 14,
+     "executed": 17,
+     "pending": 0,
+     "revoked": 1,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 17,
+      "min": 0,
+      "p25": 0.0,
+      "median": 4452.0,
+      "p75": 9360.0,
+      "p90": 81948.0,
+      "max": 81948,
+      "share_same_block": 0.4117647058823529,
+      "share_le_60s": 0.4117647058823529,
+      "share_lt_5m": 0.4117647058823529,
+      "share_lt_1h": 0.47058823529411764,
+      "share_lt_6h": 0.7647058823529411,
+      "share_gt_24h": 0.0
+     },
+     "exec_per_day": 2.43,
+     "exec_per_week": 17.0
+    },
+    "0xa9059cbb": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    },
+    "addBlackList": {
+     "proposed": 13,
+     "executed": 13,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 13,
+      "min": 0,
+      "p25": 0.0,
+      "median": 0.0,
+      "p75": 4524.0,
+      "p90": 6024.000000000002,
+      "max": 9360,
+      "share_same_block": 0.5384615384615384,
+      "share_le_60s": 0.5384615384615384,
+      "share_lt_5m": 0.5384615384615384,
+      "share_lt_1h": 0.6153846153846154,
+      "share_lt_6h": 1.0,
+      "share_gt_24h": 0.0
+     },
+     "exec_per_day": 1.86,
+     "exec_per_week": 13.0
+    },
+    "destroyBlackFunds": {
+     "proposed": 1,
+     "executed": 4,
+     "pending": 0,
+     "revoked": 1,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 4,
+      "min": 81948,
+      "p25": 81948.0,
+      "median": 81948.0,
+      "p75": 81948.0,
+      "p90": 81948.0,
+      "max": 81948,
+      "share_same_block": 0.0,
+      "share_le_60s": 0.0,
+      "share_lt_5m": 0.0,
+      "share_lt_1h": 0.0,
+      "share_lt_6h": 0.0,
+      "share_gt_24h": 0.0
+     },
+     "exec_per_day": 0.57,
+     "exec_per_week": 4.0
+    },
+    "issue": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    },
+    "other_contract": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    },
+    "redeem": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    },
+    "removeBlackList": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    }
+   },
+   "30d": {
+    "all": {
+     "proposed": 95,
+     "executed": 94,
+     "pending": 0,
+     "revoked": 1,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 94,
+      "min": 0,
+      "p25": 0.0,
+      "median": 1122.0,
+      "p75": 11949.0,
+      "p90": 28172.4,
+      "max": 81948,
+      "share_same_block": 0.3617021276595745,
+      "share_le_60s": 0.3617021276595745,
+      "share_lt_5m": 0.4574468085106383,
+      "share_lt_1h": 0.6276595744680851,
+      "share_lt_6h": 0.8297872340425532,
+      "share_gt_24h": 0.0
+     },
+     "exec_per_day": 3.13,
+     "exec_per_week": 21.93
+    },
+    "0xa9059cbb": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    },
+    "addBlackList": {
+     "proposed": 72,
+     "executed": 72,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 72,
+      "min": 0,
+      "p25": 0.0,
+      "median": 108.0,
+      "p75": 3120.0,
+      "p90": 12209.999999999998,
+      "max": 81864,
+      "share_same_block": 0.4722222222222222,
+      "share_le_60s": 0.4722222222222222,
+      "share_lt_5m": 0.5972222222222222,
+      "share_lt_1h": 0.7777777777777778,
+      "share_lt_6h": 0.9444444444444444,
+      "share_gt_24h": 0.0
+     },
+     "exec_per_day": 2.4,
+     "exec_per_week": 16.8
+    },
+    "destroyBlackFunds": {
+     "proposed": 18,
+     "executed": 17,
+     "pending": 0,
+     "revoked": 1,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 17,
+      "min": 5448,
+      "p25": 11952.0,
+      "median": 28164.0,
+      "p75": 28176.0,
+      "p90": 81948.0,
+      "max": 81948,
+      "share_same_block": 0.0,
+      "share_le_60s": 0.0,
+      "share_lt_5m": 0.0,
+      "share_lt_1h": 0.0,
+      "share_lt_6h": 0.29411764705882354,
+      "share_gt_24h": 0.0
+     },
+     "exec_per_day": 0.57,
+     "exec_per_week": 3.97
+    },
+    "issue": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    },
+    "other_contract": {
+     "proposed": 2,
+     "executed": 2,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 2,
+      "min": 348,
+      "p25": 690.0,
+      "median": 1032.0,
+      "p75": 1374.0,
+      "p90": 1579.2,
+      "max": 1716,
+      "share_same_block": 0.0,
+      "share_le_60s": 0.0,
+      "share_lt_5m": 0.0,
+      "share_lt_1h": 1.0,
+      "share_lt_6h": 1.0,
+      "share_gt_24h": 0.0
+     },
+     "exec_per_day": 0.07,
+     "exec_per_week": 0.47
+    },
+    "redeem": {
+     "proposed": 3,
+     "executed": 3,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 3,
+      "min": 672,
+      "p25": 2622.0,
+      "median": 4572.0,
+      "p75": 8670.0,
+      "p90": 11128.8,
+      "max": 12768,
+      "share_same_block": 0.0,
+      "share_le_60s": 0.0,
+      "share_lt_5m": 0.0,
+      "share_lt_1h": 0.3333333333333333,
+      "share_lt_6h": 1.0,
+      "share_gt_24h": 0.0
+     },
+     "exec_per_day": 0.1,
+     "exec_per_week": 0.7
+    },
+    "removeBlackList": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    }
+   },
+   "all": {
+    "all": {
+     "proposed": 5886,
+     "executed": 5529,
+     "pending": 0,
+     "revoked": 16,
+     "stale": 324,
+     "failed": 17,
+     "delay": {
+      "n": 5529,
+      "min": 0,
+      "p25": 4716.0,
+      "median": 20028.0,
+      "p75": 238076.0,
+      "p90": 1980939.0,
+      "max": 58572252,
+      "share_same_block": 0.03508771929824561,
+      "share_le_60s": 0.03581117742810635,
+      "share_lt_5m": 0.048652559233134385,
+      "share_lt_1h": 0.21233496111412553,
+      "share_lt_6h": 0.5163682401880991,
+      "share_gt_24h": 0.3204919515283053
+     },
+     "exec_per_day": 1.64,
+     "exec_per_week": 11.5
+    },
+    "0xa9059cbb": {
+     "proposed": 268,
+     "executed": 239,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 24,
+     "failed": 5,
+     "delay": {
+      "n": 239,
+      "min": 0,
+      "p25": 112273.5,
+      "median": 551139.0,
+      "p75": 1967473.0,
+      "p90": 4544563.199999999,
+      "max": 50478008,
+      "share_same_block": 0.0041841004184100415,
+      "share_le_60s": 0.008368200836820083,
+      "share_lt_5m": 0.02092050209205021,
+      "share_lt_1h": 0.0794979079497908,
+      "share_lt_6h": 0.11715481171548117,
+      "share_gt_24h": 0.7740585774058577
+     },
+     "exec_per_day": 0.07,
+     "exec_per_week": 0.51
+    },
+    "addBlackList": {
+     "proposed": 3352,
+     "executed": 3256,
+     "pending": 0,
+     "revoked": 11,
+     "stale": 85,
+     "failed": 0,
+     "delay": {
+      "n": 3256,
+      "min": 0,
+      "p25": 2724.0,
+      "median": 13080.0,
+      "p75": 59010.0,
+      "p90": 1211317.0,
+      "max": 58572252,
+      "share_same_block": 0.055896805896805894,
+      "share_le_60s": 0.056818181818181816,
+      "share_lt_5m": 0.07616707616707617,
+      "share_lt_1h": 0.28654791154791154,
+      "share_lt_6h": 0.6280712530712531,
+      "share_gt_24h": 0.2076167076167076
+     },
+     "exec_per_day": 0.99,
+     "exec_per_week": 6.93
+    },
+    "destroyBlackFunds": {
+     "proposed": 1464,
+     "executed": 1313,
+     "pending": 0,
+     "revoked": 2,
+     "stale": 149,
+     "failed": 0,
+     "delay": {
+      "n": 1313,
+      "min": 384,
+      "p25": 13260.0,
+      "median": 107359.0,
+      "p75": 1314954.0,
+      "p90": 2362994.6,
+      "max": 12885717,
+      "share_same_block": 0.0,
+      "share_le_60s": 0.0,
+      "share_lt_5m": 0.0,
+      "share_lt_1h": 0.08149276466108149,
+      "share_lt_6h": 0.31987814166031986,
+      "share_gt_24h": 0.511043412033511
+     },
+     "exec_per_day": 0.4,
+     "exec_per_week": 2.8
+    },
+    "issue": {
+     "proposed": 258,
+     "executed": 233,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 25,
+     "failed": 0,
+     "delay": {
+      "n": 233,
+      "min": 366,
+      "p25": 176704.0,
+      "median": 603100.0,
+      "p75": 1995808.0,
+      "p90": 4583032.800000001,
+      "max": 50478086,
+      "share_same_block": 0.0,
+      "share_le_60s": 0.0,
+      "share_lt_5m": 0.0,
+      "share_lt_1h": 0.05150214592274678,
+      "share_lt_6h": 0.09012875536480687,
+      "share_gt_24h": 0.8025751072961373
+     },
+     "exec_per_day": 0.07,
+     "exec_per_week": 0.5
+    },
+    "other_contract": {
+     "proposed": 161,
+     "executed": 124,
+     "pending": 0,
+     "revoked": 3,
+     "stale": 24,
+     "failed": 10,
+     "delay": {
+      "n": 124,
+      "min": 0,
+      "p25": 1309.0,
+      "median": 8149.0,
+      "p75": 55940.75,
+      "p90": 265169.0000000001,
+      "max": 2136471,
+      "share_same_block": 0.056451612903225805,
+      "share_le_60s": 0.056451612903225805,
+      "share_lt_5m": 0.08064516129032258,
+      "share_lt_1h": 0.41935483870967744,
+      "share_lt_6h": 0.6129032258064516,
+      "share_gt_24h": 0.1693548387096774
+     },
+     "exec_per_day": 0.04,
+     "exec_per_week": 0.26
+    },
+    "redeem": {
+     "proposed": 30,
+     "executed": 17,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 11,
+     "failed": 2,
+     "delay": {
+      "n": 17,
+      "min": 600,
+      "p25": 4572.0,
+      "median": 26412.0,
+      "p75": 725616.0,
+      "p90": 1233576.0000000002,
+      "max": 2928192,
+      "share_same_block": 0.0,
+      "share_le_60s": 0.0,
+      "share_lt_5m": 0.0,
+      "share_lt_1h": 0.23529411764705882,
+      "share_lt_6h": 0.47058823529411764,
+      "share_gt_24h": 0.35294117647058826
+     },
+     "exec_per_day": 0.01,
+     "exec_per_week": 0.07
+    },
+    "removeBlackList": {
+     "proposed": 353,
+     "executed": 347,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 6,
+     "failed": 0,
+     "delay": {
+      "n": 347,
+      "min": 0,
+      "p25": 8851.5,
+      "median": 11352.0,
+      "p75": 27642.0,
+      "p90": 75928.8,
+      "max": 770496,
+      "share_same_block": 0.011527377521613832,
+      "share_le_60s": 0.011527377521613832,
+      "share_lt_5m": 0.01729106628242075,
+      "share_lt_1h": 0.13544668587896252,
+      "share_lt_6h": 0.7406340057636888,
+      "share_gt_24h": 0.07492795389048991
+     },
+     "exec_per_day": 0.11,
+     "exec_per_week": 0.74
+    }
+   }
+  },
+  "hyper": {
+   "7d": {
+    "all": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    }
+   },
+   "30d": {
+    "all": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    }
+   },
+   "all": {
+    "all": {
+     "proposed": 6,
+     "executed": 6,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 6,
+      "min": 0,
+      "p25": 0.0,
+      "median": 0.0,
+      "p75": 0.0,
+      "p90": 0.0,
+      "max": 0,
+      "share_same_block": 1.0,
+      "share_le_60s": 1.0,
+      "share_lt_5m": 1.0,
+      "share_lt_1h": 1.0,
+      "share_lt_6h": 1.0,
+      "share_gt_24h": 0.0
+     },
+     "exec_per_day": 0.01,
+     "exec_per_week": 0.09
+    }
+   }
+  },
+  "ink": {
+   "7d": {
+    "all": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    }
+   },
+   "30d": {
+    "all": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    }
+   },
+   "all": {
+    "all": {
+     "proposed": 2,
+     "executed": 2,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 2,
+      "min": 8062,
+      "p25": 9557.5,
+      "median": 11053.0,
+      "p75": 12548.5,
+      "p90": 13445.8,
+      "max": 14044,
+      "share_same_block": 0.0,
+      "share_le_60s": 0.0,
+      "share_lt_5m": 0.0,
+      "share_lt_1h": 0.0,
+      "share_lt_6h": 1.0,
+      "share_gt_24h": 0.0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.02
+    }
+   }
+  },
+  "kaia": {
+   "7d": {
+    "all": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    }
+   },
+   "30d": {
+    "all": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    }
+   },
+   "all": {
+    "all": {
+     "proposed": 11,
+     "executed": 11,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 11,
+      "min": 1247,
+      "p25": 16788.5,
+      "median": 81227.0,
+      "p75": 170715.5,
+      "p90": 265563.0,
+      "max": 2291811,
+      "share_same_block": 0.0,
+      "share_le_60s": 0.0,
+      "share_lt_5m": 0.0,
+      "share_lt_1h": 0.09090909090909091,
+      "share_lt_6h": 0.36363636363636365,
+      "share_gt_24h": 0.2727272727272727
+     },
+     "exec_per_day": 0.02,
+     "exec_per_week": 0.13
+    }
+   }
+  },
+  "kava": {
+   "7d": {
+    "all": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    }
+   },
+   "30d": {
+    "all": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    }
+   },
+   "all": {
+    "all": {
+     "proposed": 8,
+     "executed": 7,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 1,
+     "failed": 0,
+     "delay": {
+      "n": 7,
+      "min": 2470,
+      "p25": 6375.0,
+      "median": 8912.0,
+      "p75": 290606.5,
+      "p90": 3450009.000000003,
+      "max": 7977387,
+      "share_same_block": 0.0,
+      "share_le_60s": 0.0,
+      "share_lt_5m": 0.0,
+      "share_lt_1h": 0.14285714285714285,
+      "share_lt_6h": 0.5714285714285714,
+      "share_gt_24h": 0.42857142857142855
+     },
+     "exec_per_day": 0.01,
+     "exec_per_week": 0.04
+    }
+   }
+  },
+  "near": {
+   "7d": {
+    "all": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    }
+   },
+   "30d": {
+    "all": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    }
+   },
+   "all": {
+    "all": {
+     "proposed": 35,
+     "executed": 32,
+     "pending": 0,
+     "revoked": 1,
+     "stale": 2,
+     "failed": 0,
+     "delay": {
+      "n": 32,
+      "min": 175,
+      "p25": 11107.5,
+      "median": 73791.5,
+      "p75": 159046.75,
+      "p90": 1817378.1,
+      "max": 9258622,
+      "share_same_block": 0.0,
+      "share_le_60s": 0.0,
+      "share_lt_5m": 0.03125,
+      "share_lt_1h": 0.09375,
+      "share_lt_6h": 0.34375,
+      "share_gt_24h": 0.3125
+     },
+     "exec_per_day": 0.02,
+     "exec_per_week": 0.15
+    }
+   }
+  },
+  "plasma": {
+   "7d": {
+    "all": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    }
+   },
+   "30d": {
+    "all": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    }
+   },
+   "all": {
+    "all": {
+     "proposed": 5,
+     "executed": 5,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 5,
+      "min": 0,
+      "p25": 0.0,
+      "median": 0.0,
+      "p75": 0.0,
+      "p90": 124.80000000000001,
+      "max": 208,
+      "share_same_block": 0.8,
+      "share_le_60s": 0.8,
+      "share_lt_5m": 1.0,
+      "share_lt_1h": 1.0,
+      "share_lt_6h": 1.0,
+      "share_gt_24h": 0.0
+     },
+     "exec_per_day": 0.01,
+     "exec_per_week": 0.08
+    }
+   }
+  },
+  "pol": {
+   "7d": {
+    "all": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    }
+   },
+   "30d": {
+    "all": {
+     "proposed": 2,
+     "executed": 2,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 2,
+      "min": 199,
+      "p25": 289.0,
+      "median": 379.0,
+      "p75": 469.0,
+      "p90": 523.0,
+      "max": 559,
+      "share_same_block": 0.0,
+      "share_le_60s": 0.0,
+      "share_lt_5m": 0.5,
+      "share_lt_1h": 1.0,
+      "share_lt_6h": 1.0,
+      "share_gt_24h": 0.0
+     },
+     "exec_per_day": 0.07,
+     "exec_per_week": 0.47
+    }
+   },
+   "all": {
+    "all": {
+     "proposed": 16,
+     "executed": 16,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 16,
+      "min": 199,
+      "p25": 11952.75,
+      "median": 920368.5,
+      "p75": 1283104.5,
+      "p90": 1554799.5,
+      "max": 1826727,
+      "share_same_block": 0.0,
+      "share_le_60s": 0.0,
+      "share_lt_5m": 0.0625,
+      "share_lt_1h": 0.25,
+      "share_lt_6h": 0.3125,
+      "share_gt_24h": 0.6875
+     },
+     "exec_per_day": 0.05,
+     "exec_per_week": 0.37
+    }
+   }
+  },
+  "ton": {
+   "7d": {
+    "all": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    }
+   },
+   "30d": {
+    "all": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    }
+   },
+   "all": {
+    "all": {
+     "proposed": 37,
+     "executed": 34,
+     "pending": 0,
+     "revoked": 3,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 34,
+      "min": 156,
+      "p25": 2055.25,
+      "median": 2745.5,
+      "p75": 124524.0,
+      "p90": 985382.7999999995,
+      "max": 1539230,
+      "share_same_block": 0.0,
+      "share_le_60s": 0.0,
+      "share_lt_5m": 0.058823529411764705,
+      "share_lt_1h": 0.5294117647058824,
+      "share_lt_6h": 0.5882352941176471,
+      "share_gt_24h": 0.2647058823529412
+     },
+     "exec_per_day": 0.04,
+     "exec_per_week": 0.25
+    }
+   }
+  },
+  "tron": {
+   "7d": {
+    "all": {
+     "proposed": 139,
+     "executed": 140,
+     "pending": 0,
+     "revoked": 1,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 140,
+      "min": 57,
+      "p25": 60.0,
+      "median": 69.0,
+      "p75": 819.0,
+      "p90": 8849.1,
+      "max": 116079,
+      "share_same_block": 0.0,
+      "share_le_60s": 0.3357142857142857,
+      "share_lt_5m": 0.7,
+      "share_lt_1h": 0.85,
+      "share_lt_6h": 0.9785714285714285,
+      "share_gt_24h": 0.007142857142857143
+     },
+     "exec_per_day": 20.0,
+     "exec_per_week": 140.0
+    },
+    "0xa9059cbb": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    },
+    "addBlackList": {
+     "proposed": 138,
+     "executed": 138,
+     "pending": 0,
+     "revoked": 1,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 138,
+      "min": 57,
+      "p25": 60.0,
+      "median": 69.0,
+      "p75": 767.25,
+      "p90": 7437.9,
+      "max": 116079,
+      "share_same_block": 0.0,
+      "share_le_60s": 0.34057971014492755,
+      "share_lt_5m": 0.7101449275362319,
+      "share_lt_1h": 0.8623188405797102,
+      "share_lt_6h": 0.9855072463768116,
+      "share_gt_24h": 0.007246376811594203
+     },
+     "exec_per_day": 19.71,
+     "exec_per_week": 138.0
+    },
+    "addToBlockedList": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    },
+    "destroyBlackFunds": {
+     "proposed": 0,
+     "executed": 1,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 1,
+      "min": 81015,
+      "p25": 81015.0,
+      "median": 81015.0,
+      "p75": 81015.0,
+      "p90": 81015.0,
+      "max": 81015,
+      "share_same_block": 0.0,
+      "share_le_60s": 0.0,
+      "share_lt_5m": 0.0,
+      "share_lt_1h": 0.0,
+      "share_lt_6h": 0.0,
+      "share_gt_24h": 0.0
+     },
+     "exec_per_day": 0.14,
+     "exec_per_week": 1.0
+    },
+    "issue": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    },
+    "other_contract": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    },
+    "redeem": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    },
+    "removeBlackList": {
+     "proposed": 1,
+     "executed": 1,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 1,
+      "min": 9504,
+      "p25": 9504.0,
+      "median": 9504.0,
+      "p75": 9504.0,
+      "p90": 9504.0,
+      "max": 9504,
+      "share_same_block": 0.0,
+      "share_le_60s": 0.0,
+      "share_lt_5m": 0.0,
+      "share_lt_1h": 0.0,
+      "share_lt_6h": 1.0,
+      "share_gt_24h": 0.0
+     },
+     "exec_per_day": 0.14,
+     "exec_per_week": 1.0
+    },
+    "removeFromBlockedList": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    }
+   },
+   "30d": {
+    "all": {
+     "proposed": 420,
+     "executed": 413,
+     "pending": 0,
+     "revoked": 2,
+     "stale": 5,
+     "failed": 0,
+     "delay": {
+      "n": 413,
+      "min": 42,
+      "p25": 60.0,
+      "median": 69.0,
+      "p75": 3348.0,
+      "p90": 8870.4,
+      "max": 116079,
+      "share_same_block": 0.0,
+      "share_le_60s": 0.3268765133171913,
+      "share_lt_5m": 0.559322033898305,
+      "share_lt_1h": 0.774818401937046,
+      "share_lt_6h": 0.9709443099273608,
+      "share_gt_24h": 0.002421307506053269
+     },
+     "exec_per_day": 13.77,
+     "exec_per_week": 96.37
+    },
+    "0xa9059cbb": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    },
+    "addBlackList": {
+     "proposed": 361,
+     "executed": 357,
+     "pending": 0,
+     "revoked": 1,
+     "stale": 3,
+     "failed": 0,
+     "delay": {
+      "n": 357,
+      "min": 42,
+      "p25": 60.0,
+      "median": 66.0,
+      "p75": 1080.0,
+      "p90": 6519.0,
+      "max": 116079,
+      "share_same_block": 0.0,
+      "share_le_60s": 0.37815126050420167,
+      "share_lt_5m": 0.6442577030812325,
+      "share_lt_1h": 0.8375350140056023,
+      "share_lt_6h": 0.9859943977591037,
+      "share_gt_24h": 0.0028011204481792717
+     },
+     "exec_per_day": 11.9,
+     "exec_per_week": 83.3
+    },
+    "addToBlockedList": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    },
+    "destroyBlackFunds": {
+     "proposed": 40,
+     "executed": 39,
+     "pending": 0,
+     "revoked": 1,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 39,
+      "min": 3543,
+      "p25": 8728.5,
+      "median": 8733.0,
+      "p75": 11604.0,
+      "p90": 28194.0,
+      "max": 81015,
+      "share_same_block": 0.0,
+      "share_le_60s": 0.0,
+      "share_lt_5m": 0.0,
+      "share_lt_1h": 0.23076923076923078,
+      "share_lt_6h": 0.8205128205128205,
+      "share_gt_24h": 0.0
+     },
+     "exec_per_day": 1.3,
+     "exec_per_week": 9.1
+    },
+    "issue": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    },
+    "other_contract": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    },
+    "redeem": {
+     "proposed": 2,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 2,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    },
+    "removeBlackList": {
+     "proposed": 17,
+     "executed": 17,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 17,
+      "min": 150,
+      "p25": 1848.0,
+      "median": 2832.0,
+      "p75": 6021.0,
+      "p90": 8103.6,
+      "max": 20154,
+      "share_same_block": 0.0,
+      "share_le_60s": 0.0,
+      "share_lt_5m": 0.058823529411764705,
+      "share_lt_1h": 0.7058823529411765,
+      "share_lt_6h": 1.0,
+      "share_gt_24h": 0.0
+     },
+     "exec_per_day": 0.57,
+     "exec_per_week": 3.97
+    },
+    "removeFromBlockedList": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    }
+   },
+   "all": {
+    "all": {
+     "proposed": 11989,
+     "executed": 11868,
+     "pending": 0,
+     "revoked": 12,
+     "stale": 109,
+     "failed": 0,
+     "delay": {
+      "n": 11868,
+      "min": 0,
+      "p25": 648.0,
+      "median": 5032.5,
+      "p75": 20664.0,
+      "p90": 130242.0,
+      "max": 67704318,
+      "share_same_block": 0.00016852039096730705,
+      "share_le_60s": 0.04507920458375463,
+      "share_lt_5m": 0.20222446916076844,
+      "share_lt_1h": 0.4453151331311089,
+      "share_lt_6h": 0.7527805864509606,
+      "share_gt_24h": 0.1350690933602966
+     },
+     "exec_per_day": 6.65,
+     "exec_per_week": 46.52
+    },
+    "0xa9059cbb": {
+     "proposed": 81,
+     "executed": 78,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 3,
+     "failed": 0,
+     "delay": {
+      "n": 78,
+      "min": 69,
+      "p25": 958491.0,
+      "median": 2140801.5,
+      "p75": 4903694.25,
+      "p90": 9285265.799999997,
+      "max": 67704318,
+      "share_same_block": 0.0,
+      "share_le_60s": 0.0,
+      "share_lt_5m": 0.02564102564102564,
+      "share_lt_1h": 0.038461538461538464,
+      "share_lt_6h": 0.038461538461538464,
+      "share_gt_24h": 0.9615384615384616
+     },
+     "exec_per_day": 0.05,
+     "exec_per_week": 0.32
+    },
+    "addBlackList": {
+     "proposed": 9520,
+     "executed": 9425,
+     "pending": 0,
+     "revoked": 4,
+     "stale": 91,
+     "failed": 0,
+     "delay": {
+      "n": 9425,
+      "min": 0,
+      "p25": 309.0,
+      "median": 3642.0,
+      "p75": 16983.0,
+      "p90": 129723.0,
+      "max": 5034426,
+      "share_same_block": 0.00021220159151193635,
+      "share_le_60s": 0.05612732095490716,
+      "share_lt_5m": 0.2473209549071618,
+      "share_lt_1h": 0.4989920424403183,
+      "share_lt_6h": 0.7685941644562334,
+      "share_gt_24h": 0.1249867374005305
+     },
+     "exec_per_day": 5.29,
+     "exec_per_week": 37.01
+    },
+    "addToBlockedList": {
+     "proposed": 1,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 1,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": null,
+     "exec_per_week": null
+    },
+    "destroyBlackFunds": {
+     "proposed": 1270,
+     "executed": 1267,
+     "pending": 0,
+     "revoked": 2,
+     "stale": 1,
+     "failed": 0,
+     "delay": {
+      "n": 1267,
+      "min": 90,
+      "p25": 4203.0,
+      "median": 11142.0,
+      "p75": 46875.0,
+      "p90": 1380162.0,
+      "max": 5034435,
+      "share_same_block": 0.0,
+      "share_le_60s": 0.0,
+      "share_lt_5m": 0.018942383583267563,
+      "share_lt_1h": 0.23599052880820837,
+      "share_lt_6h": 0.6361483820047356,
+      "share_gt_24h": 0.1894238358326756
+     },
+     "exec_per_day": 0.72,
+     "exec_per_week": 5.01
+    },
+    "issue": {
+     "proposed": 84,
+     "executed": 78,
+     "pending": 0,
+     "revoked": 3,
+     "stale": 3,
+     "failed": 0,
+     "delay": {
+      "n": 78,
+      "min": 69,
+      "p25": 958488.75,
+      "median": 2140789.5,
+      "p75": 4903685.25,
+      "p90": 9285250.499999998,
+      "max": 67704318,
+      "share_same_block": 0.0,
+      "share_le_60s": 0.0,
+      "share_lt_5m": 0.02564102564102564,
+      "share_lt_1h": 0.038461538461538464,
+      "share_lt_6h": 0.038461538461538464,
+      "share_gt_24h": 0.9615384615384616
+     },
+     "exec_per_day": 0.05,
+     "exec_per_week": 0.32
+    },
+    "other_contract": {
+     "proposed": 5,
+     "executed": 3,
+     "pending": 0,
+     "revoked": 2,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 3,
+      "min": 1962,
+      "p25": 435621.0,
+      "median": 869280.0,
+      "p75": 1080832.5,
+      "p90": 1207764.0,
+      "max": 1292385,
+      "share_same_block": 0.0,
+      "share_le_60s": 0.0,
+      "share_lt_5m": 0.0,
+      "share_lt_1h": 0.3333333333333333,
+      "share_lt_6h": 0.3333333333333333,
+      "share_gt_24h": 0.6666666666666666
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.01
+    },
+    "redeem": {
+     "proposed": 21,
+     "executed": 13,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 8,
+     "failed": 0,
+     "delay": {
+      "n": 13,
+      "min": 72,
+      "p25": 810.0,
+      "median": 2223.0,
+      "p75": 64596.0,
+      "p90": 2509880.4000000022,
+      "max": 3116055,
+      "share_same_block": 0.0,
+      "share_le_60s": 0.0,
+      "share_lt_5m": 0.07692307692307693,
+      "share_lt_1h": 0.5384615384615384,
+      "share_lt_6h": 0.6153846153846154,
+      "share_gt_24h": 0.15384615384615385
+     },
+     "exec_per_day": 0.01,
+     "exec_per_week": 0.05
+    },
+    "removeBlackList": {
+     "proposed": 1006,
+     "executed": 1004,
+     "pending": 0,
+     "revoked": 1,
+     "stale": 1,
+     "failed": 0,
+     "delay": {
+      "n": 1004,
+      "min": 33,
+      "p25": 2916.0,
+      "median": 12079.5,
+      "p75": 14304.0,
+      "p90": 30438.600000000075,
+      "max": 678336,
+      "share_same_block": 0.0,
+      "share_le_60s": 0.00597609561752988,
+      "share_lt_5m": 0.0398406374501992,
+      "share_lt_1h": 0.2679282868525896,
+      "share_lt_6h": 0.8655378486055777,
+      "share_gt_24h": 0.030876494023904383
+     },
+     "exec_per_day": 0.64,
+     "exec_per_week": 4.48
+    },
+    "removeFromBlockedList": {
+     "proposed": 1,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 1,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": null,
+     "exec_per_week": null
+    }
+   }
+  },
+  "all": {
+   "7d": {
+    "all": {
+     "proposed": 153,
+     "executed": 157,
+     "pending": 0,
+     "revoked": 2,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 157,
+      "min": 0,
+      "p25": 60.0,
+      "median": 69.0,
+      "p75": 825.0,
+      "p90": 9382.800000000001,
+      "max": 116079,
+      "share_same_block": 0.044585987261146494,
+      "share_le_60s": 0.34394904458598724,
+      "share_lt_5m": 0.6687898089171974,
+      "share_lt_1h": 0.8089171974522293,
+      "share_lt_6h": 0.9554140127388535,
+      "share_gt_24h": 0.006369426751592357
+     },
+     "exec_per_day": 22.43,
+     "exec_per_week": 157.0
+    },
+    "0xa9059cbb": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    },
+    "accept_admin": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    },
+    "addBlackList": {
+     "proposed": 151,
+     "executed": 151,
+     "pending": 0,
+     "revoked": 1,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 151,
+      "min": 0,
+      "p25": 60.0,
+      "median": 69.0,
+      "p75": 819.0,
+      "p90": 7419.0,
+      "max": 116079,
+      "share_same_block": 0.046357615894039736,
+      "share_le_60s": 0.3576158940397351,
+      "share_lt_5m": 0.695364238410596,
+      "share_lt_1h": 0.8410596026490066,
+      "share_lt_6h": 0.9867549668874173,
+      "share_gt_24h": 0.006622516556291391
+     },
+     "exec_per_day": 21.57,
+     "exec_per_week": 151.0
+    },
+    "addToBlockedList": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    },
+    "burn": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    },
+    "burn_from": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    },
+    "call_to 0x595f07bc": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    },
+    "destroyBlackFunds": {
+     "proposed": 1,
+     "executed": 5,
+     "pending": 0,
+     "revoked": 1,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 5,
+      "min": 81015,
+      "p25": 81948.0,
+      "median": 81948.0,
+      "p75": 81948.0,
+      "p90": 81948.0,
+      "max": 81948,
+      "share_same_block": 0.0,
+      "share_le_60s": 0.0,
+      "share_lt_5m": 0.0,
+      "share_lt_1h": 0.0,
+      "share_lt_6h": 0.0,
+      "share_gt_24h": 0.0
+     },
+     "exec_per_day": 0.71,
+     "exec_per_week": 5.0
+    },
+    "destroyBlockedFunds": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    },
+    "freeze_accounts": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    },
+    "freeze_wallet": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    },
+    "governance_call": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    },
+    "issue": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    },
+    "mint": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    },
+    "other_contract": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    },
+    "redeem": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    },
+    "removeBlackList": {
+     "proposed": 1,
+     "executed": 1,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 1,
+      "min": 9504,
+      "p25": 9504.0,
+      "median": 9504.0,
+      "p75": 9504.0,
+      "p90": 9504.0,
+      "max": 9504,
+      "share_same_block": 0.0,
+      "share_le_60s": 0.0,
+      "share_lt_5m": 0.0,
+      "share_lt_1h": 0.0,
+      "share_lt_6h": 1.0,
+      "share_gt_24h": 0.0
+     },
+     "exec_per_day": 0.14,
+     "exec_per_week": 1.0
+    },
+    "removeFromBlockedList": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    },
+    "revoke": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    },
+    "setOFTContract": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    },
+    "setTrusted": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    },
+    "transfer": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    },
+    "transferOwnership": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    },
+    "unfreeze_accounts": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    },
+    "unfreeze_wallet": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    },
+    "upgrade": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    }
+   },
+   "30d": {
+    "all": {
+     "proposed": 523,
+     "executed": 516,
+     "pending": 0,
+     "revoked": 3,
+     "stale": 5,
+     "failed": 0,
+     "delay": {
+      "n": 516,
+      "min": 0,
+      "p25": 60.0,
+      "median": 120.0,
+      "p75": 3966.0,
+      "p90": 11907.0,
+      "max": 8947996,
+      "share_same_block": 0.06589147286821706,
+      "share_le_60s": 0.32751937984496127,
+      "share_lt_5m": 0.5329457364341085,
+      "share_lt_1h": 0.7441860465116279,
+      "share_lt_6h": 0.939922480620155,
+      "share_gt_24h": 0.003875968992248062
+     },
+     "exec_per_day": 17.2,
+     "exec_per_week": 120.4
+    },
+    "0xa9059cbb": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    },
+    "accept_admin": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    },
+    "addBlackList": {
+     "proposed": 433,
+     "executed": 429,
+     "pending": 0,
+     "revoked": 1,
+     "stale": 3,
+     "failed": 0,
+     "delay": {
+      "n": 429,
+      "min": 0,
+      "p25": 60.0,
+      "median": 66.0,
+      "p75": 1299.0,
+      "p90": 7373.4,
+      "max": 116079,
+      "share_same_block": 0.07925407925407925,
+      "share_le_60s": 0.3939393939393939,
+      "share_lt_5m": 0.6363636363636364,
+      "share_lt_1h": 0.8275058275058275,
+      "share_lt_6h": 0.9790209790209791,
+      "share_gt_24h": 0.002331002331002331
+     },
+     "exec_per_day": 14.3,
+     "exec_per_week": 100.1
+    },
+    "addToBlockedList": {
+     "proposed": 6,
+     "executed": 6,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 6,
+      "min": 199,
+      "p25": 364.75,
+      "median": 1813.5,
+      "p75": 20891.0,
+      "p90": 26909.5,
+      "max": 26987,
+      "share_same_block": 0.0,
+      "share_le_60s": 0.0,
+      "share_lt_5m": 0.16666666666666666,
+      "share_lt_1h": 0.6666666666666666,
+      "share_lt_6h": 0.6666666666666666,
+      "share_gt_24h": 0.0
+     },
+     "exec_per_day": 0.2,
+     "exec_per_week": 1.4
+    },
+    "burn": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    },
+    "burn_from": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    },
+    "call_to 0x595f07bc": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    },
+    "destroyBlackFunds": {
+     "proposed": 58,
+     "executed": 56,
+     "pending": 0,
+     "revoked": 2,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 56,
+      "min": 3543,
+      "p25": 8730.0,
+      "median": 11602.5,
+      "p75": 28164.0,
+      "p90": 28197.0,
+      "max": 81948,
+      "share_same_block": 0.0,
+      "share_le_60s": 0.0,
+      "share_lt_5m": 0.0,
+      "share_lt_1h": 0.16071428571428573,
+      "share_lt_6h": 0.6607142857142857,
+      "share_gt_24h": 0.0
+     },
+     "exec_per_day": 1.87,
+     "exec_per_week": 13.07
+    },
+    "destroyBlockedFunds": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    },
+    "freeze_accounts": {
+     "proposed": 0,
+     "executed": 1,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 1,
+      "min": 8947996,
+      "p25": 8947996.0,
+      "median": 8947996.0,
+      "p75": 8947996.0,
+      "p90": 8947996.0,
+      "max": 8947996,
+      "share_same_block": 0.0,
+      "share_le_60s": 0.0,
+      "share_lt_5m": 0.0,
+      "share_lt_1h": 0.0,
+      "share_lt_6h": 0.0,
+      "share_gt_24h": 1.0
+     },
+     "exec_per_day": 0.03,
+     "exec_per_week": 0.23
+    },
+    "freeze_wallet": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    },
+    "governance_call": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    },
+    "issue": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    },
+    "mint": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    },
+    "other_contract": {
+     "proposed": 2,
+     "executed": 2,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 2,
+      "min": 348,
+      "p25": 690.0,
+      "median": 1032.0,
+      "p75": 1374.0,
+      "p90": 1579.2,
+      "max": 1716,
+      "share_same_block": 0.0,
+      "share_le_60s": 0.0,
+      "share_lt_5m": 0.0,
+      "share_lt_1h": 1.0,
+      "share_lt_6h": 1.0,
+      "share_gt_24h": 0.0
+     },
+     "exec_per_day": 0.07,
+     "exec_per_week": 0.47
+    },
+    "redeem": {
+     "proposed": 6,
+     "executed": 4,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 2,
+     "failed": 0,
+     "delay": {
+      "n": 4,
+      "min": 442,
+      "p25": 614.5,
+      "median": 2622.0,
+      "p75": 6621.0,
+      "p90": 10309.2,
+      "max": 12768,
+      "share_same_block": 0.0,
+      "share_le_60s": 0.0,
+      "share_lt_5m": 0.0,
+      "share_lt_1h": 0.5,
+      "share_lt_6h": 1.0,
+      "share_gt_24h": 0.0
+     },
+     "exec_per_day": 0.13,
+     "exec_per_week": 0.93
+    },
+    "removeBlackList": {
+     "proposed": 17,
+     "executed": 17,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 17,
+      "min": 150,
+      "p25": 1848.0,
+      "median": 2832.0,
+      "p75": 6021.0,
+      "p90": 8103.6,
+      "max": 20154,
+      "share_same_block": 0.0,
+      "share_le_60s": 0.0,
+      "share_lt_5m": 0.058823529411764705,
+      "share_lt_1h": 0.7058823529411765,
+      "share_lt_6h": 1.0,
+      "share_gt_24h": 0.0
+     },
+     "exec_per_day": 0.57,
+     "exec_per_week": 3.97
+    },
+    "removeFromBlockedList": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    },
+    "revoke": {
+     "proposed": 1,
+     "executed": 1,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 1,
+      "min": 15352,
+      "p25": 15352.0,
+      "median": 15352.0,
+      "p75": 15352.0,
+      "p90": 15352.0,
+      "max": 15352,
+      "share_same_block": 0.0,
+      "share_le_60s": 0.0,
+      "share_lt_5m": 0.0,
+      "share_lt_1h": 0.0,
+      "share_lt_6h": 1.0,
+      "share_gt_24h": 0.0
+     },
+     "exec_per_day": 0.03,
+     "exec_per_week": 0.23
+    },
+    "setOFTContract": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    },
+    "setTrusted": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    },
+    "transfer": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    },
+    "transferOwnership": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    },
+    "unfreeze_accounts": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    },
+    "unfreeze_wallet": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    },
+    "upgrade": {
+     "proposed": 0,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    }
+   },
+   "all": {
+    "all": {
+     "proposed": 18155,
+     "executed": 17650,
+     "pending": 0,
+     "revoked": 37,
+     "stale": 451,
+     "failed": 17,
+     "delay": {
+      "n": 17649,
+      "min": 0,
+      "p25": 1353.0,
+      "median": 8124.0,
+      "p75": 44811.0,
+      "p90": 493820.8,
+      "max": 67704318,
+      "share_same_block": 0.011728709841917389,
+      "share_le_60s": 0.04215536291007989,
+      "share_lt_5m": 0.15247322794492607,
+      "share_lt_1h": 0.36976599240750185,
+      "share_lt_6h": 0.6752223922035243,
+      "share_gt_24h": 0.19604510170547906
+     },
+     "exec_per_day": 5.25,
+     "exec_per_week": 36.72
+    },
+    "0xa9059cbb": {
+     "proposed": 349,
+     "executed": 317,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 27,
+     "failed": 5,
+     "delay": {
+      "n": 317,
+      "min": 0,
+      "p25": 241428.0,
+      "median": 854124.0,
+      "p75": 2649903.0,
+      "p90": 6611189.399999998,
+      "max": 67704318,
+      "share_same_block": 0.0031545741324921135,
+      "share_le_60s": 0.006309148264984227,
+      "share_lt_5m": 0.022082018927444796,
+      "share_lt_1h": 0.0694006309148265,
+      "share_lt_6h": 0.09779179810725552,
+      "share_gt_24h": 0.8201892744479495
+     },
+     "exec_per_day": 0.1,
+     "exec_per_week": 0.68
+    },
+    "accept_admin": {
+     "proposed": 1,
+     "executed": 1,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 1,
+      "min": 145263,
+      "p25": 145263.0,
+      "median": 145263.0,
+      "p75": 145263.0,
+      "p90": 145263.0,
+      "max": 145263,
+      "share_same_block": 0.0,
+      "share_le_60s": 0.0,
+      "share_lt_5m": 0.0,
+      "share_lt_1h": 0.0,
+      "share_lt_6h": 0.0,
+      "share_gt_24h": 1.0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.01
+    },
+    "addBlackList": {
+     "proposed": 12883,
+     "executed": 12692,
+     "pending": 0,
+     "revoked": 15,
+     "stale": 176,
+     "failed": 0,
+     "delay": {
+      "n": 12692,
+      "min": 0,
+      "p25": 648.0,
+      "median": 5349.0,
+      "p75": 25770.75,
+      "p90": 130551.0,
+      "max": 58572252,
+      "share_same_block": 0.014497321147179325,
+      "share_le_60s": 0.05625590923416325,
+      "share_lt_5m": 0.20327765521588403,
+      "share_lt_1h": 0.44413803971005356,
+      "share_lt_6h": 0.7322722975102427,
+      "share_gt_24h": 0.14615505830444375
+     },
+     "exec_per_day": 3.86,
+     "exec_per_week": 27.03
+    },
+    "addToBlockedList": {
+     "proposed": 82,
+     "executed": 72,
+     "pending": 0,
+     "revoked": 1,
+     "stale": 9,
+     "failed": 0,
+     "delay": {
+      "n": 71,
+      "min": 0,
+      "p25": 2026.0,
+      "median": 4834.0,
+      "p75": 35471.5,
+      "p90": 134515.0,
+      "max": 12799509,
+      "share_same_block": 0.028169014084507043,
+      "share_le_60s": 0.028169014084507043,
+      "share_lt_5m": 0.09859154929577464,
+      "share_lt_1h": 0.2676056338028169,
+      "share_lt_6h": 0.6901408450704225,
+      "share_gt_24h": 0.19718309859154928
+     },
+     "exec_per_day": 0.05,
+     "exec_per_week": 0.33
+    },
+    "burn": {
+     "proposed": 1,
+     "executed": 1,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 1,
+      "min": 8062,
+      "p25": 8062.0,
+      "median": 8062.0,
+      "p75": 8062.0,
+      "p90": 8062.0,
+      "max": 8062,
+      "share_same_block": 0.0,
+      "share_le_60s": 0.0,
+      "share_lt_5m": 0.0,
+      "share_lt_1h": 0.0,
+      "share_lt_6h": 1.0,
+      "share_gt_24h": 0.0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.01
+    },
+    "burn_from": {
+     "proposed": 9,
+     "executed": 8,
+     "pending": 0,
+     "revoked": 1,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 8,
+      "min": 3287,
+      "p25": 11321.75,
+      "median": 23217.5,
+      "p75": 25896.25,
+      "p90": 28874.5,
+      "max": 35689,
+      "share_same_block": 0.0,
+      "share_le_60s": 0.0,
+      "share_lt_5m": 0.0,
+      "share_lt_1h": 0.125,
+      "share_lt_6h": 0.375,
+      "share_gt_24h": 0.0
+     },
+     "exec_per_day": 0.01,
+     "exec_per_week": 0.07
+    },
+    "call_to 0x595f07bc": {
+     "proposed": 1,
+     "executed": 1,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 1,
+      "min": 12220,
+      "p25": 12220.0,
+      "median": 12220.0,
+      "p75": 12220.0,
+      "p90": 12220.0,
+      "max": 12220,
+      "share_same_block": 0.0,
+      "share_le_60s": 0.0,
+      "share_lt_5m": 0.0,
+      "share_lt_1h": 0.0,
+      "share_lt_6h": 1.0,
+      "share_gt_24h": 0.0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.01
+    },
+    "destroyBlackFunds": {
+     "proposed": 2743,
+     "executed": 2589,
+     "pending": 0,
+     "revoked": 4,
+     "stale": 150,
+     "failed": 0,
+     "delay": {
+      "n": 2589,
+      "min": 90,
+      "p25": 7137.0,
+      "median": 24036.0,
+      "p75": 590892.0,
+      "p90": 1981090.4,
+      "max": 12885717,
+      "share_same_block": 0.0,
+      "share_le_60s": 0.0,
+      "share_lt_5m": 0.009269988412514484,
+      "share_lt_1h": 0.15681730397837002,
+      "share_lt_6h": 0.4747006566241792,
+      "share_gt_24h": 0.3522595596755504
+     },
+     "exec_per_day": 0.79,
+     "exec_per_week": 5.51
+    },
+    "destroyBlockedFunds": {
+     "proposed": 23,
+     "executed": 23,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 23,
+      "min": 0,
+      "p25": 11774.5,
+      "median": 81827.0,
+      "p75": 904943.5,
+      "p90": 12799514.4,
+      "max": 12799636,
+      "share_same_block": 0.08695652173913043,
+      "share_le_60s": 0.08695652173913043,
+      "share_lt_5m": 0.08695652173913043,
+      "share_lt_1h": 0.08695652173913043,
+      "share_lt_6h": 0.30434782608695654,
+      "share_gt_24h": 0.43478260869565216
+     },
+     "exec_per_day": 0.02,
+     "exec_per_week": 0.13
+    },
+    "freeze_accounts": {
+     "proposed": 8,
+     "executed": 8,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 8,
+      "min": 12144,
+      "p25": 12741.25,
+      "median": 31166.5,
+      "p75": 150060.0,
+      "p90": 2849326.4999999986,
+      "max": 8947996,
+      "share_same_block": 0.0,
+      "share_le_60s": 0.0,
+      "share_lt_5m": 0.0,
+      "share_lt_1h": 0.0,
+      "share_lt_6h": 0.5,
+      "share_gt_24h": 0.375
+     },
+     "exec_per_day": 0.01,
+     "exec_per_week": 0.07
+    },
+    "freeze_wallet": {
+     "proposed": 13,
+     "executed": 13,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 13,
+      "min": 187,
+      "p25": 679.0,
+      "median": 2068.0,
+      "p75": 2081.0,
+      "p90": 21263.800000000017,
+      "max": 76890,
+      "share_same_block": 0.0,
+      "share_le_60s": 0.0,
+      "share_lt_5m": 0.07692307692307693,
+      "share_lt_1h": 0.8461538461538461,
+      "share_lt_6h": 0.8461538461538461,
+      "share_gt_24h": 0.0
+     },
+     "exec_per_day": 0.02,
+     "exec_per_week": 0.11
+    },
+    "governance_call": {
+     "proposed": 21,
+     "executed": 18,
+     "pending": 0,
+     "revoked": 3,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 18,
+      "min": 156,
+      "p25": 4263.25,
+      "median": 102568.0,
+      "p75": 433251.25,
+      "p90": 1477687.3,
+      "max": 1539230,
+      "share_same_block": 0.0,
+      "share_le_60s": 0.0,
+      "share_lt_5m": 0.05555555555555555,
+      "share_lt_1h": 0.2777777777777778,
+      "share_lt_6h": 0.3333333333333333,
+      "share_gt_24h": 0.5
+     },
+     "exec_per_day": 0.02,
+     "exec_per_week": 0.13
+    },
+    "issue": {
+     "proposed": 342,
+     "executed": 311,
+     "pending": 0,
+     "revoked": 3,
+     "stale": 28,
+     "failed": 0,
+     "delay": {
+      "n": 311,
+      "min": 69,
+      "p25": 281916.0,
+      "median": 905424.0,
+      "p75": 2677866.5,
+      "p90": 6678621.0,
+      "max": 67704318,
+      "share_same_block": 0.0,
+      "share_le_60s": 0.0,
+      "share_lt_5m": 0.006430868167202572,
+      "share_lt_1h": 0.04823151125401929,
+      "share_lt_6h": 0.07717041800643087,
+      "share_gt_24h": 0.842443729903537
+     },
+     "exec_per_day": 0.09,
+     "exec_per_week": 0.66
+    },
+    "mint": {
+     "proposed": 71,
+     "executed": 60,
+     "pending": 0,
+     "revoked": 1,
+     "stale": 10,
+     "failed": 0,
+     "delay": {
+      "n": 60,
+      "min": 0,
+      "p25": 6774.0,
+      "median": 800791.5,
+      "p75": 2362399.5,
+      "p90": 7927388.4,
+      "max": 47518591,
+      "share_same_block": 0.05,
+      "share_le_60s": 0.05,
+      "share_lt_5m": 0.06666666666666667,
+      "share_lt_1h": 0.21666666666666667,
+      "share_lt_6h": 0.3,
+      "share_gt_24h": 0.6833333333333333
+     },
+     "exec_per_day": 0.03,
+     "exec_per_week": 0.23
+    },
+    "other_contract": {
+     "proposed": 171,
+     "executed": 132,
+     "pending": 0,
+     "revoked": 5,
+     "stale": 24,
+     "failed": 10,
+     "delay": {
+      "n": 132,
+      "min": 0,
+      "p25": 1309.0,
+      "median": 8149.0,
+      "p75": 62497.25,
+      "p90": 372000.4000000005,
+      "max": 3040511,
+      "share_same_block": 0.05303030303030303,
+      "share_le_60s": 0.05303030303030303,
+      "share_lt_5m": 0.07575757575757576,
+      "share_lt_1h": 0.42424242424242425,
+      "share_lt_6h": 0.6060606060606061,
+      "share_gt_24h": 0.1893939393939394
+     },
+     "exec_per_day": 0.04,
+     "exec_per_week": 0.27
+    },
+    "redeem": {
+     "proposed": 54,
+     "executed": 33,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 19,
+     "failed": 2,
+     "delay": {
+      "n": 33,
+      "min": 72,
+      "p25": 1851.0,
+      "median": 12768.0,
+      "p75": 85530.0,
+      "p90": 1492272.0000000005,
+      "max": 3116055,
+      "share_same_block": 0.0,
+      "share_le_60s": 0.0,
+      "share_lt_5m": 0.030303030303030304,
+      "share_lt_1h": 0.3939393939393939,
+      "share_lt_6h": 0.5454545454545454,
+      "share_gt_24h": 0.24242424242424243
+     },
+     "exec_per_day": 0.02,
+     "exec_per_week": 0.13
+    },
+    "removeBlackList": {
+     "proposed": 1359,
+     "executed": 1351,
+     "pending": 0,
+     "revoked": 1,
+     "stale": 7,
+     "failed": 0,
+     "delay": {
+      "n": 1351,
+      "min": 0,
+      "p25": 4494.0,
+      "median": 11472.0,
+      "p75": 14422.5,
+      "p90": 42810.0,
+      "max": 770496,
+      "share_same_block": 0.0029607698001480384,
+      "share_le_60s": 0.007401924500370096,
+      "share_lt_5m": 0.034048852701702444,
+      "share_lt_1h": 0.23390081421169504,
+      "share_lt_6h": 0.8334566987416728,
+      "share_gt_24h": 0.04219096965210955
+     },
+     "exec_per_day": 0.41,
+     "exec_per_week": 2.88
+    },
+    "removeFromBlockedList": {
+     "proposed": 9,
+     "executed": 8,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 1,
+     "failed": 0,
+     "delay": {
+      "n": 8,
+      "min": 0,
+      "p25": 5972.75,
+      "median": 50691.5,
+      "p75": 1306227.0,
+      "p90": 1982696.3999999997,
+      "max": 3398893,
+      "share_same_block": 0.125,
+      "share_le_60s": 0.125,
+      "share_lt_5m": 0.125,
+      "share_lt_1h": 0.125,
+      "share_lt_6h": 0.5,
+      "share_gt_24h": 0.375
+     },
+     "exec_per_day": 0.01,
+     "exec_per_week": 0.06
+    },
+    "revoke": {
+     "proposed": 3,
+     "executed": 3,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 3,
+      "min": 229,
+      "p25": 258.0,
+      "median": 287.0,
+      "p75": 7819.5,
+      "p90": 12339.0,
+      "max": 15352,
+      "share_same_block": 0.0,
+      "share_le_60s": 0.0,
+      "share_lt_5m": 0.6666666666666666,
+      "share_lt_1h": 0.6666666666666666,
+      "share_lt_6h": 1.0,
+      "share_gt_24h": 0.0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.03
+    },
+    "setOFTContract": {
+     "proposed": 3,
+     "executed": 3,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 3,
+      "min": 0,
+      "p25": 0.0,
+      "median": 0.0,
+      "p75": 7022.0,
+      "p90": 11235.2,
+      "max": 14044,
+      "share_same_block": 0.6666666666666666,
+      "share_le_60s": 0.6666666666666666,
+      "share_lt_5m": 0.6666666666666666,
+      "share_lt_1h": 0.6666666666666666,
+      "share_lt_6h": 1.0,
+      "share_gt_24h": 0.0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.03
+    },
+    "setTrusted": {
+     "proposed": 1,
+     "executed": 1,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 1,
+      "min": 0,
+      "p25": 0.0,
+      "median": 0.0,
+      "p75": 0.0,
+      "p90": 0.0,
+      "max": 0,
+      "share_same_block": 1.0,
+      "share_le_60s": 1.0,
+      "share_lt_5m": 1.0,
+      "share_lt_1h": 1.0,
+      "share_lt_6h": 1.0,
+      "share_gt_24h": 0.0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.01
+    },
+    "transfer": {
+     "proposed": 2,
+     "executed": 0,
+     "pending": 0,
+     "revoked": 2,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    },
+    "transferOwnership": {
+     "proposed": 1,
+     "executed": 1,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 1,
+      "min": 1428,
+      "p25": 1428.0,
+      "median": 1428.0,
+      "p75": 1428.0,
+      "p90": 1428.0,
+      "max": 1428,
+      "share_same_block": 0.0,
+      "share_le_60s": 0.0,
+      "share_lt_5m": 0.0,
+      "share_lt_1h": 1.0,
+      "share_lt_6h": 1.0,
+      "share_gt_24h": 0.0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.01
+    },
+    "unfreeze_accounts": {
+     "proposed": 1,
+     "executed": 1,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 1,
+      "min": 399,
+      "p25": 399.0,
+      "median": 399.0,
+      "p75": 399.0,
+      "p90": 399.0,
+      "max": 399,
+      "share_same_block": 0.0,
+      "share_le_60s": 0.0,
+      "share_lt_5m": 0.0,
+      "share_lt_1h": 1.0,
+      "share_lt_6h": 1.0,
+      "share_gt_24h": 0.0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.01
+    },
+    "unfreeze_wallet": {
+     "proposed": 2,
+     "executed": 2,
+     "pending": 0,
+     "revoked": 0,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 2,
+      "min": 2303,
+      "p25": 2391.25,
+      "median": 2479.5,
+      "p75": 2567.75,
+      "p90": 2620.7,
+      "max": 2656,
+      "share_same_block": 0.0,
+      "share_le_60s": 0.0,
+      "share_lt_5m": 0.0,
+      "share_lt_1h": 1.0,
+      "share_lt_6h": 1.0,
+      "share_gt_24h": 0.0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.02
+    },
+    "upgrade": {
+     "proposed": 2,
+     "executed": 1,
+     "pending": 0,
+     "revoked": 1,
+     "stale": 0,
+     "failed": 0,
+     "delay": {
+      "n": 1,
+      "min": 65759,
+      "p25": 65759.0,
+      "median": 65759.0,
+      "p75": 65759.0,
+      "p90": 65759.0,
+      "max": 65759,
+      "share_same_block": 0.0,
+      "share_le_60s": 0.0,
+      "share_lt_5m": 0.0,
+      "share_lt_1h": 0.0,
+      "share_lt_6h": 0.0,
+      "share_gt_24h": 0.0
+     },
+     "exec_per_day": 0.0,
+     "exec_per_week": 0.0
+    }
+   }
+  }
+ },
+ "signers": {
+  "aptos": {
+   "7d": [],
+   "30d": [
+    {
+     "signer": "0xa51d10bfff2bb85e3cdf1fbc353c8a6838a0fcd9dbf89967e938516dc3029887",
+     "submits": 1,
+     "confirms": 0,
+     "revokes": 0,
+     "avg_confirm_latency": null,
+     "median_confirm_latency": null
+    }
+   ],
+   "all": [
+    {
+     "signer": "0xa51d10bfff2bb85e3cdf1fbc353c8a6838a0fcd9dbf89967e938516dc3029887",
+     "submits": 32,
+     "confirms": 0,
+     "revokes": 0,
+     "avg_confirm_latency": null,
+     "median_confirm_latency": null
+    }
+   ]
+  },
+  "arb1": {
+   "7d": [],
+   "30d": [
+    {
+     "signer": "0x00F6D2b4B69Ce697f913Da16A9D73283dc4C78F2",
+     "submits": 3,
+     "confirms": 0,
+     "revokes": 0,
+     "avg_confirm_latency": null,
+     "median_confirm_latency": null
+    },
+    {
+     "signer": "0x7D8e979dcC6EC933c70FBe28B2B7700907D2aFEA",
+     "submits": 0,
+     "confirms": 3,
+     "revokes": 0,
+     "avg_confirm_latency": 4918.0,
+     "median_confirm_latency": 5839.0
+    },
+    {
+     "signer": "0x488A3d37442F583c1c0a356118d1d6181b22434c",
+     "submits": 0,
+     "confirms": 2,
+     "revokes": 0,
+     "avg_confirm_latency": 25681.0,
+     "median_confirm_latency": 25681.0
+    },
+    {
+     "signer": "0x5F0DcA105195Bd58277aa4b4CABC90a791E1b982",
+     "submits": 0,
+     "confirms": 2,
+     "revokes": 0,
+     "avg_confirm_latency": 26882.5,
+     "median_confirm_latency": 26882.5
+    },
+    {
+     "signer": "0x4192D72c281dB0eF10464dD274EE583C33256ac5",
+     "submits": 0,
+     "confirms": 1,
+     "revokes": 0,
+     "avg_confirm_latency": 112.0,
+     "median_confirm_latency": 112.0
+    }
+   ],
+   "all": [
+    {
+     "signer": "0x00F6D2b4B69Ce697f913Da16A9D73283dc4C78F2",
+     "submits": 10,
+     "confirms": 0,
+     "revokes": 0,
+     "avg_confirm_latency": null,
+     "median_confirm_latency": null
+    },
+    {
+     "signer": "0x7D8e979dcC6EC933c70FBe28B2B7700907D2aFEA",
+     "submits": 2,
+     "confirms": 8,
+     "revokes": 0,
+     "avg_confirm_latency": 9779.125,
+     "median_confirm_latency": 4448.0
+    },
+    {
+     "signer": "0x488A3d37442F583c1c0a356118d1d6181b22434c",
+     "submits": 0,
+     "confirms": 8,
+     "revokes": 0,
+     "avg_confirm_latency": 348305.125,
+     "median_confirm_latency": 4061.0
+    },
+    {
+     "signer": "0x5F0DcA105195Bd58277aa4b4CABC90a791E1b982",
+     "submits": 0,
+     "confirms": 7,
+     "revokes": 0,
+     "avg_confirm_latency": 8893.285714285714,
+     "median_confirm_latency": 621.0
+    },
+    {
+     "signer": "0x4192D72c281dB0eF10464dD274EE583C33256ac5",
+     "submits": 0,
+     "confirms": 3,
+     "revokes": 0,
+     "avg_confirm_latency": 5350.0,
+     "median_confirm_latency": 184.0
+    }
+   ]
+  },
+  "arb_usdt": {
+   "7d": [],
+   "30d": [],
+   "all": [
+    {
+     "signer": "0x4d915dd2c56814bd3db51a1da35b302bcc9c8973",
+     "submits": 45,
+     "confirms": 0,
+     "revokes": 0,
+     "avg_confirm_latency": null,
+     "median_confirm_latency": null
+    },
+    {
+     "signer": "0x61d5a4d5bd270e59e9320243e574288e2a199fed",
+     "submits": 0,
+     "confirms": 41,
+     "revokes": 0,
+     "avg_confirm_latency": 216676.36585365853,
+     "median_confirm_latency": 4663.0
+    },
+    {
+     "signer": "0xac3b242e2e561da9f4ce34746e67d004e6341fa0",
+     "submits": 0,
+     "confirms": 39,
+     "revokes": 0,
+     "avg_confirm_latency": 2736524.641025641,
+     "median_confirm_latency": 4834.0
+    },
+    {
+     "signer": "0xf4b51b14b9ee30dc37ec970b50a486f37686e2a8",
+     "submits": 0,
+     "confirms": 1,
+     "revokes": 0,
+     "avg_confirm_latency": 37546.0,
+     "median_confirm_latency": 37546.0
+    },
+    {
+     "signer": "0x25bb61643e4881147e6aabb65e6dd45cf2904155",
+     "submits": 0,
+     "confirms": 1,
+     "revokes": 0,
+     "avg_confirm_latency": 3037320.0,
+     "median_confirm_latency": 3037320.0
+    }
+   ]
+  },
+  "avax": {
+   "7d": [],
+   "30d": [
+    {
+     "signer": "0x4d915dd2c56814bd3db51a1da35b302bcc9c8973",
+     "submits": 2,
+     "confirms": 0,
+     "revokes": 0,
+     "avg_confirm_latency": null,
+     "median_confirm_latency": null
+    },
+    {
+     "signer": "0x61d5a4d5bd270e59e9320243e574288e2a199fed",
+     "submits": 0,
+     "confirms": 2,
+     "revokes": 0,
+     "avg_confirm_latency": 255.5,
+     "median_confirm_latency": 255.5
+    },
+    {
+     "signer": "0xac3b242e2e561da9f4ce34746e67d004e6341fa0",
+     "submits": 0,
+     "confirms": 2,
+     "revokes": 0,
+     "avg_confirm_latency": 371.0,
+     "median_confirm_latency": 371.0
+    }
+   ],
+   "all": [
+    {
+     "signer": "0x4d915dd2c56814bd3db51a1da35b302bcc9c8973",
+     "submits": 57,
+     "confirms": 0,
+     "revokes": 0,
+     "avg_confirm_latency": null,
+     "median_confirm_latency": null
+    },
+    {
+     "signer": "0x61d5a4d5bd270e59e9320243e574288e2a199fed",
+     "submits": 0,
+     "confirms": 51,
+     "revokes": 0,
+     "avg_confirm_latency": 2785982.68627451,
+     "median_confirm_latency": 120583.0
+    },
+    {
+     "signer": "0xac3b242e2e561da9f4ce34746e67d004e6341fa0",
+     "submits": 0,
+     "confirms": 32,
+     "revokes": 0,
+     "avg_confirm_latency": 4033241.75,
+     "median_confirm_latency": 81589.5
+    },
+    {
+     "signer": "0xf4b51b14b9ee30dc37ec970b50a486f37686e2a8",
+     "submits": 0,
+     "confirms": 17,
+     "revokes": 0,
+     "avg_confirm_latency": 634198.0588235294,
+     "median_confirm_latency": 120978.0
+    },
+    {
+     "signer": "0xee5207d3c88562fc814496af0845b34cfd4afc8c",
+     "submits": 0,
+     "confirms": 2,
+     "revokes": 0,
+     "avg_confirm_latency": 519481.5,
+     "median_confirm_latency": 519481.5
+    }
+   ]
+  },
+  "berachain": {
+   "7d": [],
+   "30d": [],
+   "all": [
+    {
+     "signer": "0x1a6362AD64ccFF5902D46D875B36e8798267d154",
+     "submits": 0,
+     "confirms": 1,
+     "revokes": 0,
+     "avg_confirm_latency": 0.0,
+     "median_confirm_latency": 0.0
+    },
+    {
+     "signer": "0x488A3d37442F583c1c0a356118d1d6181b22434c",
+     "submits": 0,
+     "confirms": 1,
+     "revokes": 0,
+     "avg_confirm_latency": 0.0,
+     "median_confirm_latency": 0.0
+    },
+    {
+     "signer": "0x7D8e979dcC6EC933c70FBe28B2B7700907D2aFEA",
+     "submits": 0,
+     "confirms": 1,
+     "revokes": 0,
+     "avg_confirm_latency": 0.0,
+     "median_confirm_latency": 0.0
+    }
+   ]
+  },
+  "celo": {
+   "7d": [],
+   "30d": [],
+   "all": [
+    {
+     "signer": "0x4d915dd2c56814bd3db51a1da35b302bcc9c8973",
+     "submits": 13,
+     "confirms": 0,
+     "revokes": 0,
+     "avg_confirm_latency": null,
+     "median_confirm_latency": null
+    },
+    {
+     "signer": "0x61d5a4d5bd270e59e9320243e574288e2a199fed",
+     "submits": 0,
+     "confirms": 8,
+     "revokes": 0,
+     "avg_confirm_latency": 98156.0,
+     "median_confirm_latency": 6482.5
+    },
+    {
+     "signer": "0xac3b242e2e561da9f4ce34746e67d004e6341fa0",
+     "submits": 0,
+     "confirms": 8,
+     "revokes": 0,
+     "avg_confirm_latency": 98193.5,
+     "median_confirm_latency": 6582.5
+    }
+   ]
+  },
+  "eth": {
+   "7d": [
+    {
+     "signer": "0x61d5a4d5bd270e59e9320243e574288e2a199fed",
+     "submits": 0,
+     "confirms": 17,
+     "revokes": 0,
+     "avg_confirm_latency": 20908.941176470587,
+     "median_confirm_latency": 4404.0
+    },
+    {
+     "signer": "0xac3b242e2e561da9f4ce34746e67d004e6341fa0",
+     "submits": 0,
+     "confirms": 17,
+     "revokes": 0,
+     "avg_confirm_latency": 21051.529411764706,
+     "median_confirm_latency": 4452.0
+    },
+    {
+     "signer": "0x4d915dd2c56814bd3db51a1da35b302bcc9c8973",
+     "submits": 14,
+     "confirms": 0,
+     "revokes": 1,
+     "avg_confirm_latency": null,
+     "median_confirm_latency": null
+    }
+   ],
+   "30d": [
+    {
+     "signer": "0x4d915dd2c56814bd3db51a1da35b302bcc9c8973",
+     "submits": 94,
+     "confirms": 0,
+     "revokes": 1,
+     "avg_confirm_latency": null,
+     "median_confirm_latency": null
+    },
+    {
+     "signer": "0x61d5a4d5bd270e59e9320243e574288e2a199fed",
+     "submits": 0,
+     "confirms": 94,
+     "revokes": 0,
+     "avg_confirm_latency": 10030.851063829787,
+     "median_confirm_latency": 1086.0
+    },
+    {
+     "signer": "0xac3b242e2e561da9f4ce34746e67d004e6341fa0",
+     "submits": 0,
+     "confirms": 94,
+     "revokes": 0,
+     "avg_confirm_latency": 10067.234042553191,
+     "median_confirm_latency": 1122.0
+    },
+    {
+     "signer": "0x25bb61643e4881147e6aabb65e6dd45cf2904155",
+     "submits": 1,
+     "confirms": 0,
+     "revokes": 0,
+     "avg_confirm_latency": null,
+     "median_confirm_latency": null
+    }
+   ],
+   "all": [
+    {
+     "signer": "0x61d5a4d5bd270e59e9320243e574288e2a199fed",
+     "submits": 3,
+     "confirms": 5519,
+     "revokes": 0,
+     "avg_confirm_latency": 521763.5979344084,
+     "median_confirm_latency": 19224.0
+    },
+    {
+     "signer": "0x4d915dd2c56814bd3db51a1da35b302bcc9c8973",
+     "submits": 4267,
+     "confirms": 51,
+     "revokes": 20,
+     "avg_confirm_latency": 1825985.1960784313,
+     "median_confirm_latency": 4210.0
+    },
+    {
+     "signer": "0xac3b242e2e561da9f4ce34746e67d004e6341fa0",
+     "submits": 0,
+     "confirms": 3646,
+     "revokes": 0,
+     "avg_confirm_latency": 194286.80938014263,
+     "median_confirm_latency": 12552.0
+    },
+    {
+     "signer": "0xf4b51b14b9ee30dc37ec970b50a486f37686e2a8",
+     "submits": 9,
+     "confirms": 1825,
+     "revokes": 1,
+     "avg_confirm_latency": 1234955.429589041,
+     "median_confirm_latency": 521381.0
+    },
+    {
+     "signer": "0xe1f3c653248de6894d683cb2f10de7ca2253046f",
+     "submits": 1403,
+     "confirms": 4,
+     "revokes": 1,
+     "avg_confirm_latency": 26308.0,
+     "median_confirm_latency": 26391.0
+    },
+    {
+     "signer": "0x25bb61643e4881147e6aabb65e6dd45cf2904155",
+     "submits": 96,
+     "confirms": 0,
+     "revokes": 0,
+     "avg_confirm_latency": null,
+     "median_confirm_latency": null
+    },
+    {
+     "signer": "0xee5207d3c88562fc814496af0845b34cfd4afc8c",
+     "submits": 44,
+     "confirms": 31,
+     "revokes": 1,
+     "avg_confirm_latency": 832756.6451612903,
+     "median_confirm_latency": 77007.0
+    },
+    {
+     "signer": "0x36928500bc1dcd7af6a2b4008875cc336b927d57",
+     "submits": 64,
+     "confirms": 2,
+     "revokes": 0,
+     "avg_confirm_latency": 123.5,
+     "median_confirm_latency": 123.5
+    }
+   ]
+  },
+  "hyper": {
+   "7d": [],
+   "30d": [],
+   "all": [
+    {
+     "signer": "0x1a6362AD64ccFF5902D46D875B36e8798267d154",
+     "submits": 0,
+     "confirms": 6,
+     "revokes": 0,
+     "avg_confirm_latency": 0.0,
+     "median_confirm_latency": 0.0
+    },
+    {
+     "signer": "0x5F0DcA105195Bd58277aa4b4CABC90a791E1b982",
+     "submits": 0,
+     "confirms": 6,
+     "revokes": 0,
+     "avg_confirm_latency": 0.0,
+     "median_confirm_latency": 0.0
+    },
+    {
+     "signer": "0x7D8e979dcC6EC933c70FBe28B2B7700907D2aFEA",
+     "submits": 0,
+     "confirms": 6,
+     "revokes": 0,
+     "avg_confirm_latency": 0.0,
+     "median_confirm_latency": 0.0
+    }
+   ]
+  },
+  "ink": {
+   "7d": [],
+   "30d": [],
+   "all": [
+    {
+     "signer": "0x1a6362AD64ccFF5902D46D875B36e8798267d154",
+     "submits": 2,
+     "confirms": 0,
+     "revokes": 0,
+     "avg_confirm_latency": null,
+     "median_confirm_latency": null
+    },
+    {
+     "signer": "0x5F0DcA105195Bd58277aa4b4CABC90a791E1b982",
+     "submits": 0,
+     "confirms": 1,
+     "revokes": 0,
+     "avg_confirm_latency": 6680.0,
+     "median_confirm_latency": 6680.0
+    },
+    {
+     "signer": "0x488A3d37442F583c1c0a356118d1d6181b22434c",
+     "submits": 0,
+     "confirms": 1,
+     "revokes": 0,
+     "avg_confirm_latency": 14020.0,
+     "median_confirm_latency": 14020.0
+    }
+   ]
+  },
+  "kaia": {
+   "7d": [],
+   "30d": [],
+   "all": [
+    {
+     "signer": "0x4d915dd2c56814bd3db51a1da35b302bcc9c8973",
+     "submits": 11,
+     "confirms": 0,
+     "revokes": 0,
+     "avg_confirm_latency": null,
+     "median_confirm_latency": null
+    },
+    {
+     "signer": "0x61d5a4d5bd270e59e9320243e574288e2a199fed",
+     "submits": 0,
+     "confirms": 11,
+     "revokes": 0,
+     "avg_confirm_latency": 268775.1818181818,
+     "median_confirm_latency": 81146.0
+    },
+    {
+     "signer": "0xac3b242e2e561da9f4ce34746e67d004e6341fa0",
+     "submits": 0,
+     "confirms": 11,
+     "revokes": 0,
+     "avg_confirm_latency": 268837.1818181818,
+     "median_confirm_latency": 81227.0
+    }
+   ]
+  },
+  "kava": {
+   "7d": [],
+   "30d": [],
+   "all": [
+    {
+     "signer": "0x4d915dd2c56814bd3db51a1da35b302bcc9c8973",
+     "submits": 8,
+     "confirms": 0,
+     "revokes": 0,
+     "avg_confirm_latency": null,
+     "median_confirm_latency": null
+    },
+    {
+     "signer": "0x61d5a4d5bd270e59e9320243e574288e2a199fed",
+     "submits": 0,
+     "confirms": 7,
+     "revokes": 0,
+     "avg_confirm_latency": 1225992.0,
+     "median_confirm_latency": 8912.0
+    },
+    {
+     "signer": "0xac3b242e2e561da9f4ce34746e67d004e6341fa0",
+     "submits": 0,
+     "confirms": 7,
+     "revokes": 0,
+     "avg_confirm_latency": 1226029.857142857,
+     "median_confirm_latency": 8875.0
+    }
+   ]
+  },
+  "near": {
+   "7d": [],
+   "30d": [],
+   "all": [
+    {
+     "signer": "6a0c62c6fd8a2ae3f03d80ed607a53a6719be7a9be32ce1e8260822d30c08e46",
+     "submits": 35,
+     "confirms": 0,
+     "revokes": 0,
+     "avg_confirm_latency": null,
+     "median_confirm_latency": null
+    },
+    {
+     "signer": "867487d0e6545dc3e34824bbb8213a8b82b8b6248322f509628f68b73ace74e2",
+     "submits": 0,
+     "confirms": 29,
+     "revokes": 0,
+     "avg_confirm_latency": 915717.1724137932,
+     "median_confirm_latency": 73799.0
+    },
+    {
+     "signer": "c3d0a549fd60edbfc09cad51d791efa38b6da9b65bb06f414e6221231b675b0c",
+     "submits": 0,
+     "confirms": 3,
+     "revokes": 0,
+     "avg_confirm_latency": 25230.0,
+     "median_confirm_latency": 8859.0
+    }
+   ]
+  },
+  "plasma": {
+   "7d": [],
+   "30d": [],
+   "all": [
+    {
+     "signer": "0x00F6D2b4B69Ce697f913Da16A9D73283dc4C78F2",
+     "submits": 1,
+     "confirms": 4,
+     "revokes": 0,
+     "avg_confirm_latency": 0.0,
+     "median_confirm_latency": 0.0
+    },
+    {
+     "signer": "0x7D8e979dcC6EC933c70FBe28B2B7700907D2aFEA",
+     "submits": 0,
+     "confirms": 5,
+     "revokes": 0,
+     "avg_confirm_latency": 14.4,
+     "median_confirm_latency": 0.0
+    },
+    {
+     "signer": "0x5F0DcA105195Bd58277aa4b4CABC90a791E1b982",
+     "submits": 0,
+     "confirms": 4,
+     "revokes": 0,
+     "avg_confirm_latency": 0.0,
+     "median_confirm_latency": 0.0
+    },
+    {
+     "signer": "0x488A3d37442F583c1c0a356118d1d6181b22434c",
+     "submits": 0,
+     "confirms": 1,
+     "revokes": 0,
+     "avg_confirm_latency": 177.0,
+     "median_confirm_latency": 177.0
+    }
+   ]
+  },
+  "pol": {
+   "7d": [],
+   "30d": [
+    {
+     "signer": "0x488A3d37442F583c1c0a356118d1d6181b22434c",
+     "submits": 0,
+     "confirms": 2,
+     "revokes": 0,
+     "avg_confirm_latency": 132.0,
+     "median_confirm_latency": 132.0
+    },
+    {
+     "signer": "0x7D8e979dcC6EC933c70FBe28B2B7700907D2aFEA",
+     "submits": 1,
+     "confirms": 0,
+     "revokes": 0,
+     "avg_confirm_latency": null,
+     "median_confirm_latency": null
+    },
+    {
+     "signer": "0x4192D72c281dB0eF10464dD274EE583C33256ac5",
+     "submits": 0,
+     "confirms": 1,
+     "revokes": 0,
+     "avg_confirm_latency": 194.0,
+     "median_confirm_latency": 194.0
+    },
+    {
+     "signer": "0x00F6D2b4B69Ce697f913Da16A9D73283dc4C78F2",
+     "submits": 1,
+     "confirms": 0,
+     "revokes": 0,
+     "avg_confirm_latency": null,
+     "median_confirm_latency": null
+    },
+    {
+     "signer": "0x5F0DcA105195Bd58277aa4b4CABC90a791E1b982",
+     "submits": 0,
+     "confirms": 1,
+     "revokes": 0,
+     "avg_confirm_latency": 194.0,
+     "median_confirm_latency": 194.0
+    }
+   ],
+   "all": [
+    {
+     "signer": "0x00F6D2b4B69Ce697f913Da16A9D73283dc4C78F2",
+     "submits": 15,
+     "confirms": 0,
+     "revokes": 0,
+     "avg_confirm_latency": null,
+     "median_confirm_latency": null
+    },
+    {
+     "signer": "0x5F0DcA105195Bd58277aa4b4CABC90a791E1b982",
+     "submits": 0,
+     "confirms": 13,
+     "revokes": 0,
+     "avg_confirm_latency": 315225.46153846156,
+     "median_confirm_latency": 2190.0
+    },
+    {
+     "signer": "0x7D8e979dcC6EC933c70FBe28B2B7700907D2aFEA",
+     "submits": 1,
+     "confirms": 11,
+     "revokes": 0,
+     "avg_confirm_latency": 390571.0909090909,
+     "median_confirm_latency": 36398.0
+    },
+    {
+     "signer": "0x488A3d37442F583c1c0a356118d1d6181b22434c",
+     "submits": 0,
+     "confirms": 11,
+     "revokes": 0,
+     "avg_confirm_latency": 528612.7272727273,
+     "median_confirm_latency": 233756.0
+    },
+    {
+     "signer": "0x4192D72c281dB0eF10464dD274EE583C33256ac5",
+     "submits": 0,
+     "confirms": 2,
+     "revokes": 0,
+     "avg_confirm_latency": 7900.0,
+     "median_confirm_latency": 7900.0
+    }
+   ]
+  },
+  "ton": {
+   "7d": [],
+   "30d": [],
+   "all": [
+    {
+     "signer": "0:51342aeccbf59f6af68b48feb9319ae1f398b244b03d1db2a8baf3d9402d39cb",
+     "submits": 0,
+     "confirms": 37,
+     "revokes": 0,
+     "avg_confirm_latency": 250.48648648648648,
+     "median_confirm_latency": 112.0
+    },
+    {
+     "signer": "0:6d4470d275c9abdc3f649e3cba62036dd1c20542a1fdcc3ffd7962e552fe07c0",
+     "submits": 0,
+     "confirms": 27,
+     "revokes": 0,
+     "avg_confirm_latency": 278784.4074074074,
+     "median_confirm_latency": 23379.0
+    },
+    {
+     "signer": "0:d2c911e317b162f5e7f9fcd7ba5fa20f867a6b7f215ac686c8abe5f623247342",
+     "submits": 0,
+     "confirms": 7,
+     "revokes": 0,
+     "avg_confirm_latency": 2751.4285714285716,
+     "median_confirm_latency": 741.0
+    }
+   ]
+  },
+  "tron": {
+   "7d": [
+    {
+     "signer": "TRLi4KskHxfACnxKzLrf2wNHauWUQpwziN",
+     "submits": 0,
+     "confirms": 140,
+     "revokes": 0,
+     "avg_confirm_latency": 2970.042857142857,
+     "median_confirm_latency": 69.0
+    },
+    {
+     "signer": "TYn9kGVaNbXCsdqDCvKu4ubDvj3ZSxmyN1",
+     "submits": 139,
+     "confirms": 0,
+     "revokes": 1,
+     "avg_confirm_latency": null,
+     "median_confirm_latency": null
+    }
+   ],
+   "30d": [
+    {
+     "signer": "TYn9kGVaNbXCsdqDCvKu4ubDvj3ZSxmyN1",
+     "submits": 420,
+     "confirms": 0,
+     "revokes": 2,
+     "avg_confirm_latency": null,
+     "median_confirm_latency": null
+    },
+    {
+     "signer": "TRLi4KskHxfACnxKzLrf2wNHauWUQpwziN",
+     "submits": 0,
+     "confirms": 413,
+     "revokes": 0,
+     "avg_confirm_latency": 3410.0702179176756,
+     "median_confirm_latency": 69.0
+    }
+   ],
+   "all": [
+    {
+     "signer": "TRLi4KskHxfACnxKzLrf2wNHauWUQpwziN",
+     "submits": 369,
+     "confirms": 11496,
+     "revokes": 0,
+     "avg_confirm_latency": 129128.91518789144,
+     "median_confirm_latency": 5734.5
+    },
+    {
+     "signer": "TYn9kGVaNbXCsdqDCvKu4ubDvj3ZSxmyN1",
+     "submits": 11475,
+     "confirms": 0,
+     "revokes": 12,
+     "avg_confirm_latency": null,
+     "median_confirm_latency": null
+    },
+    {
+     "signer": "TKHuVq1oKVruCGLvqVexFs6dawKv6fQgFs",
+     "submits": 145,
+     "confirms": 376,
+     "revokes": 0,
+     "avg_confirm_latency": 126233.11436170213,
+     "median_confirm_latency": 327.0
+    }
+   ]
+  }
+ },
+ "histogram": {
+  "aptos": {
+   "7d": [
+    {
+     "label": "0 s (no advance notice)",
+     "count": 0
+    },
+    {
+     "label": "under 5 min",
+     "count": 0
+    },
+    {
+     "label": "5-30 min",
+     "count": 0
+    },
+    {
+     "label": "30-60 min",
+     "count": 0
+    },
+    {
+     "label": "1-3 h",
+     "count": 0
+    },
+    {
+     "label": "3-6 h",
+     "count": 0
+    },
+    {
+     "label": "6-24 h",
+     "count": 0
+    },
+    {
+     "label": ">24 h",
+     "count": 0
+    }
+   ],
+   "30d": [
+    {
+     "label": "0 s (no advance notice)",
+     "count": 0
+    },
+    {
+     "label": "under 5 min",
+     "count": 0
+    },
+    {
+     "label": "5-30 min",
+     "count": 0
+    },
+    {
+     "label": "30-60 min",
+     "count": 0
+    },
+    {
+     "label": "1-3 h",
+     "count": 0
+    },
+    {
+     "label": "3-6 h",
+     "count": 1
+    },
+    {
+     "label": "6-24 h",
+     "count": 0
+    },
+    {
+     "label": ">24 h",
+     "count": 1
+    }
+   ],
+   "all": [
+    {
+     "label": "0 s (no advance notice)",
+     "count": 0
+    },
+    {
+     "label": "under 5 min",
+     "count": 2
+    },
+    {
+     "label": "5-30 min",
+     "count": 3
+    },
+    {
+     "label": "30-60 min",
+     "count": 2
+    },
+    {
+     "label": "1-3 h",
+     "count": 2
+    },
+    {
+     "label": "3-6 h",
+     "count": 6
+    },
+    {
+     "label": "6-24 h",
+     "count": 6
+    },
+    {
+     "label": ">24 h",
+     "count": 7
+    }
+   ]
+  },
+  "arb1": {
+   "7d": [
+    {
+     "label": "0 s (no advance notice)",
+     "count": 0
+    },
+    {
+     "label": "under 5 min",
+     "count": 0
+    },
+    {
+     "label": "5-30 min",
+     "count": 0
+    },
+    {
+     "label": "30-60 min",
+     "count": 0
+    },
+    {
+     "label": "1-3 h",
+     "count": 0
+    },
+    {
+     "label": "3-6 h",
+     "count": 0
+    },
+    {
+     "label": "6-24 h",
+     "count": 0
+    },
+    {
+     "label": ">24 h",
+     "count": 0
+    }
+   ],
+   "30d": [
+    {
+     "label": "0 s (no advance notice)",
+     "count": 0
+    },
+    {
+     "label": "under 5 min",
+     "count": 0
+    },
+    {
+     "label": "5-30 min",
+     "count": 0
+    },
+    {
+     "label": "30-60 min",
+     "count": 1
+    },
+    {
+     "label": "1-3 h",
+     "count": 0
+    },
+    {
+     "label": "3-6 h",
+     "count": 0
+    },
+    {
+     "label": "6-24 h",
+     "count": 2
+    },
+    {
+     "label": ">24 h",
+     "count": 0
+    }
+   ],
+   "all": [
+    {
+     "label": "0 s (no advance notice)",
+     "count": 0
+    },
+    {
+     "label": "under 5 min",
+     "count": 2
+    },
+    {
+     "label": "5-30 min",
+     "count": 2
+    },
+    {
+     "label": "30-60 min",
+     "count": 1
+    },
+    {
+     "label": "1-3 h",
+     "count": 1
+    },
+    {
+     "label": "3-6 h",
+     "count": 1
+    },
+    {
+     "label": "6-24 h",
+     "count": 2
+    },
+    {
+     "label": ">24 h",
+     "count": 1
+    }
+   ]
+  },
+  "arb_usdt": {
+   "7d": [
+    {
+     "label": "0 s (no advance notice)",
+     "count": 0
+    },
+    {
+     "label": "under 5 min",
+     "count": 0
+    },
+    {
+     "label": "5-30 min",
+     "count": 0
+    },
+    {
+     "label": "30-60 min",
+     "count": 0
+    },
+    {
+     "label": "1-3 h",
+     "count": 0
+    },
+    {
+     "label": "3-6 h",
+     "count": 0
+    },
+    {
+     "label": "6-24 h",
+     "count": 0
+    },
+    {
+     "label": ">24 h",
+     "count": 0
+    }
+   ],
+   "30d": [
+    {
+     "label": "0 s (no advance notice)",
+     "count": 0
+    },
+    {
+     "label": "under 5 min",
+     "count": 0
+    },
+    {
+     "label": "5-30 min",
+     "count": 0
+    },
+    {
+     "label": "30-60 min",
+     "count": 0
+    },
+    {
+     "label": "1-3 h",
+     "count": 0
+    },
+    {
+     "label": "3-6 h",
+     "count": 0
+    },
+    {
+     "label": "6-24 h",
+     "count": 0
+    },
+    {
+     "label": ">24 h",
+     "count": 0
+    }
+   ],
+   "all": [
+    {
+     "label": "0 s (no advance notice)",
+     "count": 0
+    },
+    {
+     "label": "under 5 min",
+     "count": 0
+    },
+    {
+     "label": "5-30 min",
+     "count": 3
+    },
+    {
+     "label": "30-60 min",
+     "count": 0
+    },
+    {
+     "label": "1-3 h",
+     "count": 21
+    },
+    {
+     "label": "3-6 h",
+     "count": 0
+    },
+    {
+     "label": "6-24 h",
+     "count": 5
+    },
+    {
+     "label": ">24 h",
+     "count": 12
+    }
+   ]
+  },
+  "avax": {
+   "7d": [
+    {
+     "label": "0 s (no advance notice)",
+     "count": 0
+    },
+    {
+     "label": "under 5 min",
+     "count": 0
+    },
+    {
+     "label": "5-30 min",
+     "count": 0
+    },
+    {
+     "label": "30-60 min",
+     "count": 0
+    },
+    {
+     "label": "1-3 h",
+     "count": 0
+    },
+    {
+     "label": "3-6 h",
+     "count": 0
+    },
+    {
+     "label": "6-24 h",
+     "count": 0
+    },
+    {
+     "label": ">24 h",
+     "count": 0
+    }
+   ],
+   "30d": [
+    {
+     "label": "0 s (no advance notice)",
+     "count": 0
+    },
+    {
+     "label": "under 5 min",
+     "count": 0
+    },
+    {
+     "label": "5-30 min",
+     "count": 2
+    },
+    {
+     "label": "30-60 min",
+     "count": 0
+    },
+    {
+     "label": "1-3 h",
+     "count": 0
+    },
+    {
+     "label": "3-6 h",
+     "count": 0
+    },
+    {
+     "label": "6-24 h",
+     "count": 0
+    },
+    {
+     "label": ">24 h",
+     "count": 0
+    }
+   ],
+   "all": [
+    {
+     "label": "0 s (no advance notice)",
+     "count": 0
+    },
+    {
+     "label": "under 5 min",
+     "count": 1
+    },
+    {
+     "label": "5-30 min",
+     "count": 10
+    },
+    {
+     "label": "30-60 min",
+     "count": 1
+    },
+    {
+     "label": "1-3 h",
+     "count": 6
+    },
+    {
+     "label": "3-6 h",
+     "count": 0
+    },
+    {
+     "label": "6-24 h",
+     "count": 6
+    },
+    {
+     "label": ">24 h",
+     "count": 27
+    }
+   ]
+  },
+  "berachain": {
+   "7d": [
+    {
+     "label": "0 s (no advance notice)",
+     "count": 0
+    },
+    {
+     "label": "under 5 min",
+     "count": 0
+    },
+    {
+     "label": "5-30 min",
+     "count": 0
+    },
+    {
+     "label": "30-60 min",
+     "count": 0
+    },
+    {
+     "label": "1-3 h",
+     "count": 0
+    },
+    {
+     "label": "3-6 h",
+     "count": 0
+    },
+    {
+     "label": "6-24 h",
+     "count": 0
+    },
+    {
+     "label": ">24 h",
+     "count": 0
+    }
+   ],
+   "30d": [
+    {
+     "label": "0 s (no advance notice)",
+     "count": 0
+    },
+    {
+     "label": "under 5 min",
+     "count": 0
+    },
+    {
+     "label": "5-30 min",
+     "count": 0
+    },
+    {
+     "label": "30-60 min",
+     "count": 0
+    },
+    {
+     "label": "1-3 h",
+     "count": 0
+    },
+    {
+     "label": "3-6 h",
+     "count": 0
+    },
+    {
+     "label": "6-24 h",
+     "count": 0
+    },
+    {
+     "label": ">24 h",
+     "count": 0
+    }
+   ],
+   "all": [
+    {
+     "label": "0 s (no advance notice)",
+     "count": 1
+    },
+    {
+     "label": "under 5 min",
+     "count": 0
+    },
+    {
+     "label": "5-30 min",
+     "count": 0
+    },
+    {
+     "label": "30-60 min",
+     "count": 0
+    },
+    {
+     "label": "1-3 h",
+     "count": 0
+    },
+    {
+     "label": "3-6 h",
+     "count": 0
+    },
+    {
+     "label": "6-24 h",
+     "count": 0
+    },
+    {
+     "label": ">24 h",
+     "count": 0
+    }
+   ]
+  },
+  "celo": {
+   "7d": [
+    {
+     "label": "0 s (no advance notice)",
+     "count": 0
+    },
+    {
+     "label": "under 5 min",
+     "count": 0
+    },
+    {
+     "label": "5-30 min",
+     "count": 0
+    },
+    {
+     "label": "30-60 min",
+     "count": 0
+    },
+    {
+     "label": "1-3 h",
+     "count": 0
+    },
+    {
+     "label": "3-6 h",
+     "count": 0
+    },
+    {
+     "label": "6-24 h",
+     "count": 0
+    },
+    {
+     "label": ">24 h",
+     "count": 0
+    }
+   ],
+   "30d": [
+    {
+     "label": "0 s (no advance notice)",
+     "count": 0
+    },
+    {
+     "label": "under 5 min",
+     "count": 0
+    },
+    {
+     "label": "5-30 min",
+     "count": 0
+    },
+    {
+     "label": "30-60 min",
+     "count": 0
+    },
+    {
+     "label": "1-3 h",
+     "count": 0
+    },
+    {
+     "label": "3-6 h",
+     "count": 0
+    },
+    {
+     "label": "6-24 h",
+     "count": 0
+    },
+    {
+     "label": ">24 h",
+     "count": 0
+    }
+   ],
+   "all": [
+    {
+     "label": "0 s (no advance notice)",
+     "count": 0
+    },
+    {
+     "label": "under 5 min",
+     "count": 1
+    },
+    {
+     "label": "5-30 min",
+     "count": 0
+    },
+    {
+     "label": "30-60 min",
+     "count": 0
+    },
+    {
+     "label": "1-3 h",
+     "count": 4
+    },
+    {
+     "label": "3-6 h",
+     "count": 1
+    },
+    {
+     "label": "6-24 h",
+     "count": 0
+    },
+    {
+     "label": ">24 h",
+     "count": 2
+    }
+   ]
+  },
+  "eth": {
+   "7d": [
+    {
+     "label": "0 s (no advance notice)",
+     "count": 7
+    },
+    {
+     "label": "under 5 min",
+     "count": 0
+    },
+    {
+     "label": "5-30 min",
+     "count": 1
+    },
+    {
+     "label": "30-60 min",
+     "count": 0
+    },
+    {
+     "label": "1-3 h",
+     "count": 5
+    },
+    {
+     "label": "3-6 h",
+     "count": 0
+    },
+    {
+     "label": "6-24 h",
+     "count": 4
+    },
+    {
+     "label": ">24 h",
+     "count": 0
+    }
+   ],
+   "30d": [
+    {
+     "label": "0 s (no advance notice)",
+     "count": 34
+    },
+    {
+     "label": "under 5 min",
+     "count": 9
+    },
+    {
+     "label": "5-30 min",
+     "count": 12
+    },
+    {
+     "label": "30-60 min",
+     "count": 4
+    },
+    {
+     "label": "1-3 h",
+     "count": 10
+    },
+    {
+     "label": "3-6 h",
+     "count": 9
+    },
+    {
+     "label": "6-24 h",
+     "count": 16
+    },
+    {
+     "label": ">24 h",
+     "count": 0
+    }
+   ],
+   "all": [
+    {
+     "label": "0 s (no advance notice)",
+     "count": 194
+    },
+    {
+     "label": "under 5 min",
+     "count": 75
+    },
+    {
+     "label": "5-30 min",
+     "count": 452
+    },
+    {
+     "label": "30-60 min",
+     "count": 453
+    },
+    {
+     "label": "1-3 h",
+     "count": 818
+    },
+    {
+     "label": "3-6 h",
+     "count": 863
+    },
+    {
+     "label": "6-24 h",
+     "count": 902
+    },
+    {
+     "label": ">24 h",
+     "count": 1772
+    }
+   ]
+  },
+  "hyper": {
+   "7d": [
+    {
+     "label": "0 s (no advance notice)",
+     "count": 0
+    },
+    {
+     "label": "under 5 min",
+     "count": 0
+    },
+    {
+     "label": "5-30 min",
+     "count": 0
+    },
+    {
+     "label": "30-60 min",
+     "count": 0
+    },
+    {
+     "label": "1-3 h",
+     "count": 0
+    },
+    {
+     "label": "3-6 h",
+     "count": 0
+    },
+    {
+     "label": "6-24 h",
+     "count": 0
+    },
+    {
+     "label": ">24 h",
+     "count": 0
+    }
+   ],
+   "30d": [
+    {
+     "label": "0 s (no advance notice)",
+     "count": 0
+    },
+    {
+     "label": "under 5 min",
+     "count": 0
+    },
+    {
+     "label": "5-30 min",
+     "count": 0
+    },
+    {
+     "label": "30-60 min",
+     "count": 0
+    },
+    {
+     "label": "1-3 h",
+     "count": 0
+    },
+    {
+     "label": "3-6 h",
+     "count": 0
+    },
+    {
+     "label": "6-24 h",
+     "count": 0
+    },
+    {
+     "label": ">24 h",
+     "count": 0
+    }
+   ],
+   "all": [
+    {
+     "label": "0 s (no advance notice)",
+     "count": 6
+    },
+    {
+     "label": "under 5 min",
+     "count": 0
+    },
+    {
+     "label": "5-30 min",
+     "count": 0
+    },
+    {
+     "label": "30-60 min",
+     "count": 0
+    },
+    {
+     "label": "1-3 h",
+     "count": 0
+    },
+    {
+     "label": "3-6 h",
+     "count": 0
+    },
+    {
+     "label": "6-24 h",
+     "count": 0
+    },
+    {
+     "label": ">24 h",
+     "count": 0
+    }
+   ]
+  },
+  "ink": {
+   "7d": [
+    {
+     "label": "0 s (no advance notice)",
+     "count": 0
+    },
+    {
+     "label": "under 5 min",
+     "count": 0
+    },
+    {
+     "label": "5-30 min",
+     "count": 0
+    },
+    {
+     "label": "30-60 min",
+     "count": 0
+    },
+    {
+     "label": "1-3 h",
+     "count": 0
+    },
+    {
+     "label": "3-6 h",
+     "count": 0
+    },
+    {
+     "label": "6-24 h",
+     "count": 0
+    },
+    {
+     "label": ">24 h",
+     "count": 0
+    }
+   ],
+   "30d": [
+    {
+     "label": "0 s (no advance notice)",
+     "count": 0
+    },
+    {
+     "label": "under 5 min",
+     "count": 0
+    },
+    {
+     "label": "5-30 min",
+     "count": 0
+    },
+    {
+     "label": "30-60 min",
+     "count": 0
+    },
+    {
+     "label": "1-3 h",
+     "count": 0
+    },
+    {
+     "label": "3-6 h",
+     "count": 0
+    },
+    {
+     "label": "6-24 h",
+     "count": 0
+    },
+    {
+     "label": ">24 h",
+     "count": 0
+    }
+   ],
+   "all": [
+    {
+     "label": "0 s (no advance notice)",
+     "count": 0
+    },
+    {
+     "label": "under 5 min",
+     "count": 0
+    },
+    {
+     "label": "5-30 min",
+     "count": 0
+    },
+    {
+     "label": "30-60 min",
+     "count": 0
+    },
+    {
+     "label": "1-3 h",
+     "count": 1
+    },
+    {
+     "label": "3-6 h",
+     "count": 1
+    },
+    {
+     "label": "6-24 h",
+     "count": 0
+    },
+    {
+     "label": ">24 h",
+     "count": 0
+    }
+   ]
+  },
+  "kaia": {
+   "7d": [
+    {
+     "label": "0 s (no advance notice)",
+     "count": 0
+    },
+    {
+     "label": "under 5 min",
+     "count": 0
+    },
+    {
+     "label": "5-30 min",
+     "count": 0
+    },
+    {
+     "label": "30-60 min",
+     "count": 0
+    },
+    {
+     "label": "1-3 h",
+     "count": 0
+    },
+    {
+     "label": "3-6 h",
+     "count": 0
+    },
+    {
+     "label": "6-24 h",
+     "count": 0
+    },
+    {
+     "label": ">24 h",
+     "count": 0
+    }
+   ],
+   "30d": [
+    {
+     "label": "0 s (no advance notice)",
+     "count": 0
+    },
+    {
+     "label": "under 5 min",
+     "count": 0
+    },
+    {
+     "label": "5-30 min",
+     "count": 0
+    },
+    {
+     "label": "30-60 min",
+     "count": 0
+    },
+    {
+     "label": "1-3 h",
+     "count": 0
+    },
+    {
+     "label": "3-6 h",
+     "count": 0
+    },
+    {
+     "label": "6-24 h",
+     "count": 0
+    },
+    {
+     "label": ">24 h",
+     "count": 0
+    }
+   ],
+   "all": [
+    {
+     "label": "0 s (no advance notice)",
+     "count": 0
+    },
+    {
+     "label": "under 5 min",
+     "count": 0
+    },
+    {
+     "label": "5-30 min",
+     "count": 1
+    },
+    {
+     "label": "30-60 min",
+     "count": 0
+    },
+    {
+     "label": "1-3 h",
+     "count": 0
+    },
+    {
+     "label": "3-6 h",
+     "count": 3
+    },
+    {
+     "label": "6-24 h",
+     "count": 4
+    },
+    {
+     "label": ">24 h",
+     "count": 3
+    }
+   ]
+  },
+  "kava": {
+   "7d": [
+    {
+     "label": "0 s (no advance notice)",
+     "count": 0
+    },
+    {
+     "label": "under 5 min",
+     "count": 0
+    },
+    {
+     "label": "5-30 min",
+     "count": 0
+    },
+    {
+     "label": "30-60 min",
+     "count": 0
+    },
+    {
+     "label": "1-3 h",
+     "count": 0
+    },
+    {
+     "label": "3-6 h",
+     "count": 0
+    },
+    {
+     "label": "6-24 h",
+     "count": 0
+    },
+    {
+     "label": ">24 h",
+     "count": 0
+    }
+   ],
+   "30d": [
+    {
+     "label": "0 s (no advance notice)",
+     "count": 0
+    },
+    {
+     "label": "under 5 min",
+     "count": 0
+    },
+    {
+     "label": "5-30 min",
+     "count": 0
+    },
+    {
+     "label": "30-60 min",
+     "count": 0
+    },
+    {
+     "label": "1-3 h",
+     "count": 0
+    },
+    {
+     "label": "3-6 h",
+     "count": 0
+    },
+    {
+     "label": "6-24 h",
+     "count": 0
+    },
+    {
+     "label": ">24 h",
+     "count": 0
+    }
+   ],
+   "all": [
+    {
+     "label": "0 s (no advance notice)",
+     "count": 0
+    },
+    {
+     "label": "under 5 min",
+     "count": 0
+    },
+    {
+     "label": "5-30 min",
+     "count": 0
+    },
+    {
+     "label": "30-60 min",
+     "count": 1
+    },
+    {
+     "label": "1-3 h",
+     "count": 3
+    },
+    {
+     "label": "3-6 h",
+     "count": 0
+    },
+    {
+     "label": "6-24 h",
+     "count": 0
+    },
+    {
+     "label": ">24 h",
+     "count": 3
+    }
+   ]
+  },
+  "near": {
+   "7d": [
+    {
+     "label": "0 s (no advance notice)",
+     "count": 0
+    },
+    {
+     "label": "under 5 min",
+     "count": 0
+    },
+    {
+     "label": "5-30 min",
+     "count": 0
+    },
+    {
+     "label": "30-60 min",
+     "count": 0
+    },
+    {
+     "label": "1-3 h",
+     "count": 0
+    },
+    {
+     "label": "3-6 h",
+     "count": 0
+    },
+    {
+     "label": "6-24 h",
+     "count": 0
+    },
+    {
+     "label": ">24 h",
+     "count": 0
+    }
+   ],
+   "30d": [
+    {
+     "label": "0 s (no advance notice)",
+     "count": 0
+    },
+    {
+     "label": "under 5 min",
+     "count": 0
+    },
+    {
+     "label": "5-30 min",
+     "count": 0
+    },
+    {
+     "label": "30-60 min",
+     "count": 0
+    },
+    {
+     "label": "1-3 h",
+     "count": 0
+    },
+    {
+     "label": "3-6 h",
+     "count": 0
+    },
+    {
+     "label": "6-24 h",
+     "count": 0
+    },
+    {
+     "label": ">24 h",
+     "count": 0
+    }
+   ],
+   "all": [
+    {
+     "label": "0 s (no advance notice)",
+     "count": 0
+    },
+    {
+     "label": "under 5 min",
+     "count": 1
+    },
+    {
+     "label": "5-30 min",
+     "count": 1
+    },
+    {
+     "label": "30-60 min",
+     "count": 1
+    },
+    {
+     "label": "1-3 h",
+     "count": 5
+    },
+    {
+     "label": "3-6 h",
+     "count": 3
+    },
+    {
+     "label": "6-24 h",
+     "count": 11
+    },
+    {
+     "label": ">24 h",
+     "count": 10
+    }
+   ]
+  },
+  "plasma": {
+   "7d": [
+    {
+     "label": "0 s (no advance notice)",
+     "count": 0
+    },
+    {
+     "label": "under 5 min",
+     "count": 0
+    },
+    {
+     "label": "5-30 min",
+     "count": 0
+    },
+    {
+     "label": "30-60 min",
+     "count": 0
+    },
+    {
+     "label": "1-3 h",
+     "count": 0
+    },
+    {
+     "label": "3-6 h",
+     "count": 0
+    },
+    {
+     "label": "6-24 h",
+     "count": 0
+    },
+    {
+     "label": ">24 h",
+     "count": 0
+    }
+   ],
+   "30d": [
+    {
+     "label": "0 s (no advance notice)",
+     "count": 0
+    },
+    {
+     "label": "under 5 min",
+     "count": 0
+    },
+    {
+     "label": "5-30 min",
+     "count": 0
+    },
+    {
+     "label": "30-60 min",
+     "count": 0
+    },
+    {
+     "label": "1-3 h",
+     "count": 0
+    },
+    {
+     "label": "3-6 h",
+     "count": 0
+    },
+    {
+     "label": "6-24 h",
+     "count": 0
+    },
+    {
+     "label": ">24 h",
+     "count": 0
+    }
+   ],
+   "all": [
+    {
+     "label": "0 s (no advance notice)",
+     "count": 4
+    },
+    {
+     "label": "under 5 min",
+     "count": 1
+    },
+    {
+     "label": "5-30 min",
+     "count": 0
+    },
+    {
+     "label": "30-60 min",
+     "count": 0
+    },
+    {
+     "label": "1-3 h",
+     "count": 0
+    },
+    {
+     "label": "3-6 h",
+     "count": 0
+    },
+    {
+     "label": "6-24 h",
+     "count": 0
+    },
+    {
+     "label": ">24 h",
+     "count": 0
+    }
+   ]
+  },
+  "pol": {
+   "7d": [
+    {
+     "label": "0 s (no advance notice)",
+     "count": 0
+    },
+    {
+     "label": "under 5 min",
+     "count": 0
+    },
+    {
+     "label": "5-30 min",
+     "count": 0
+    },
+    {
+     "label": "30-60 min",
+     "count": 0
+    },
+    {
+     "label": "1-3 h",
+     "count": 0
+    },
+    {
+     "label": "3-6 h",
+     "count": 0
+    },
+    {
+     "label": "6-24 h",
+     "count": 0
+    },
+    {
+     "label": ">24 h",
+     "count": 0
+    }
+   ],
+   "30d": [
+    {
+     "label": "0 s (no advance notice)",
+     "count": 0
+    },
+    {
+     "label": "under 5 min",
+     "count": 1
+    },
+    {
+     "label": "5-30 min",
+     "count": 1
+    },
+    {
+     "label": "30-60 min",
+     "count": 0
+    },
+    {
+     "label": "1-3 h",
+     "count": 0
+    },
+    {
+     "label": "3-6 h",
+     "count": 0
+    },
+    {
+     "label": "6-24 h",
+     "count": 0
+    },
+    {
+     "label": ">24 h",
+     "count": 0
+    }
+   ],
+   "all": [
+    {
+     "label": "0 s (no advance notice)",
+     "count": 0
+    },
+    {
+     "label": "under 5 min",
+     "count": 1
+    },
+    {
+     "label": "5-30 min",
+     "count": 3
+    },
+    {
+     "label": "30-60 min",
+     "count": 0
+    },
+    {
+     "label": "1-3 h",
+     "count": 0
+    },
+    {
+     "label": "3-6 h",
+     "count": 1
+    },
+    {
+     "label": "6-24 h",
+     "count": 0
+    },
+    {
+     "label": ">24 h",
+     "count": 11
+    }
+   ]
+  },
+  "ton": {
+   "7d": [
+    {
+     "label": "0 s (no advance notice)",
+     "count": 0
+    },
+    {
+     "label": "under 5 min",
+     "count": 0
+    },
+    {
+     "label": "5-30 min",
+     "count": 0
+    },
+    {
+     "label": "30-60 min",
+     "count": 0
+    },
+    {
+     "label": "1-3 h",
+     "count": 0
+    },
+    {
+     "label": "3-6 h",
+     "count": 0
+    },
+    {
+     "label": "6-24 h",
+     "count": 0
+    },
+    {
+     "label": ">24 h",
+     "count": 0
+    }
+   ],
+   "30d": [
+    {
+     "label": "0 s (no advance notice)",
+     "count": 0
+    },
+    {
+     "label": "under 5 min",
+     "count": 0
+    },
+    {
+     "label": "5-30 min",
+     "count": 0
+    },
+    {
+     "label": "30-60 min",
+     "count": 0
+    },
+    {
+     "label": "1-3 h",
+     "count": 0
+    },
+    {
+     "label": "3-6 h",
+     "count": 0
+    },
+    {
+     "label": "6-24 h",
+     "count": 0
+    },
+    {
+     "label": ">24 h",
+     "count": 0
+    }
+   ],
+   "all": [
+    {
+     "label": "0 s (no advance notice)",
+     "count": 0
+    },
+    {
+     "label": "under 5 min",
+     "count": 2
+    },
+    {
+     "label": "5-30 min",
+     "count": 6
+    },
+    {
+     "label": "30-60 min",
+     "count": 10
+    },
+    {
+     "label": "1-3 h",
+     "count": 1
+    },
+    {
+     "label": "3-6 h",
+     "count": 1
+    },
+    {
+     "label": "6-24 h",
+     "count": 5
+    },
+    {
+     "label": ">24 h",
+     "count": 9
+    }
+   ]
+  },
+  "tron": {
+   "7d": [
+    {
+     "label": "0 s (no advance notice)",
+     "count": 0
+    },
+    {
+     "label": "under 5 min",
+     "count": 98
+    },
+    {
+     "label": "5-30 min",
+     "count": 18
+    },
+    {
+     "label": "30-60 min",
+     "count": 3
+    },
+    {
+     "label": "1-3 h",
+     "count": 17
+    },
+    {
+     "label": "3-6 h",
+     "count": 1
+    },
+    {
+     "label": "6-24 h",
+     "count": 2
+    },
+    {
+     "label": ">24 h",
+     "count": 1
+    }
+   ],
+   "30d": [
+    {
+     "label": "0 s (no advance notice)",
+     "count": 0
+    },
+    {
+     "label": "under 5 min",
+     "count": 231
+    },
+    {
+     "label": "5-30 min",
+     "count": 53
+    },
+    {
+     "label": "30-60 min",
+     "count": 36
+    },
+    {
+     "label": "1-3 h",
+     "count": 63
+    },
+    {
+     "label": "3-6 h",
+     "count": 18
+    },
+    {
+     "label": "6-24 h",
+     "count": 11
+    },
+    {
+     "label": ">24 h",
+     "count": 1
+    }
+   ],
+   "all": [
+    {
+     "label": "0 s (no advance notice)",
+     "count": 2
+    },
+    {
+     "label": "under 5 min",
+     "count": 2398
+    },
+    {
+     "label": "5-30 min",
+     "count": 1805
+    },
+    {
+     "label": "30-60 min",
+     "count": 1080
+    },
+    {
+     "label": "1-3 h",
+     "count": 2242
+    },
+    {
+     "label": "3-6 h",
+     "count": 1407
+    },
+    {
+     "label": "6-24 h",
+     "count": 1331
+    },
+    {
+     "label": ">24 h",
+     "count": 1603
+    }
+   ]
+  },
+  "all": {
+   "7d": [
+    {
+     "label": "0 s (no advance notice)",
+     "count": 7
+    },
+    {
+     "label": "under 5 min",
+     "count": 98
+    },
+    {
+     "label": "5-30 min",
+     "count": 19
+    },
+    {
+     "label": "30-60 min",
+     "count": 3
+    },
+    {
+     "label": "1-3 h",
+     "count": 22
+    },
+    {
+     "label": "3-6 h",
+     "count": 1
+    },
+    {
+     "label": "6-24 h",
+     "count": 6
+    },
+    {
+     "label": ">24 h",
+     "count": 1
+    }
+   ],
+   "30d": [
+    {
+     "label": "0 s (no advance notice)",
+     "count": 34
+    },
+    {
+     "label": "under 5 min",
+     "count": 241
+    },
+    {
+     "label": "5-30 min",
+     "count": 68
+    },
+    {
+     "label": "30-60 min",
+     "count": 41
+    },
+    {
+     "label": "1-3 h",
+     "count": 73
+    },
+    {
+     "label": "3-6 h",
+     "count": 28
+    },
+    {
+     "label": "6-24 h",
+     "count": 29
+    },
+    {
+     "label": ">24 h",
+     "count": 2
+    }
+   ],
+   "all": [
+    {
+     "label": "0 s (no advance notice)",
+     "count": 207
+    },
+    {
+     "label": "under 5 min",
+     "count": 2484
+    },
+    {
+     "label": "5-30 min",
+     "count": 2286
+    },
+    {
+     "label": "30-60 min",
+     "count": 1549
+    },
+    {
+     "label": "1-3 h",
+     "count": 3104
+    },
+    {
+     "label": "3-6 h",
+     "count": 2287
+    },
+    {
+     "label": "6-24 h",
+     "count": 2272
+    },
+    {
+     "label": ">24 h",
+     "count": 3460
+    }
+   ]
+  }
+ },
+ "weekly": {
+  "aptos": [
+   {
+    "week": "2024-10-14",
+    "total": 3,
+    "by_function": {
+     "accept_admin": 1,
+     "mint": 1,
+     "freeze_accounts": 1
+    }
+   },
+   {
+    "week": "2024-10-21",
+    "total": 5,
+    "by_function": {
+     "freeze_accounts": 1,
+     "burn_from": 1,
+     "unfreeze_accounts": 1,
+     "revoke": 2
+    }
+   },
+   {
+    "week": "2024-10-28",
+    "total": 1,
+    "by_function": {
+     "mint": 1
+    }
+   },
+   {
+    "week": "2024-11-18",
+    "total": 1,
+    "by_function": {
+     "mint": 1
+    }
+   },
+   {
+    "week": "2024-11-25",
+    "total": 1,
+    "by_function": {
+     "mint": 1
+    }
+   },
+   {
+    "week": "2024-12-16",
+    "total": 1,
+    "by_function": {
+     "mint": 1
+    }
+   },
+   {
+    "week": "2025-03-17",
+    "total": 1,
+    "by_function": {
+     "mint": 1
+    }
+   },
+   {
+    "week": "2025-05-05",
+    "total": 1,
+    "by_function": {
+     "freeze_accounts": 1
+    }
+   },
+   {
+    "week": "2025-05-26",
+    "total": 3,
+    "by_function": {
+     "freeze_accounts": 1,
+     "burn_from": 2
+    }
+   },
+   {
+    "week": "2025-10-27",
+    "total": 5,
+    "by_function": {
+     "mint": 1,
+     "freeze_accounts": 1,
+     "burn_from": 3
+    }
+   },
+   {
+    "week": "2025-12-15",
+    "total": 2,
+    "by_function": {
+     "freeze_accounts": 1,
+     "burn_from": 1
+    }
+   },
+   {
+    "week": "2026-02-23",
+    "total": 2,
+    "by_function": {
+     "freeze_accounts": 1,
+     "burn_from": 1
+    }
+   },
+   {
+    "week": "2026-11-02",
+    "total": 2,
+    "by_function": {
+     "freeze_accounts": 1,
+     "revoke": 1
+    }
+   }
+  ],
+  "arb1": [
+   {
+    "week": "2025-07-07",
+    "total": 1,
+    "by_function": {
+     "addToBlockedList": 1
+    }
+   },
+   {
+    "week": "2026-03-09",
+    "total": 1,
+    "by_function": {
+     "addToBlockedList": 1
+    }
+   },
+   {
+    "week": "2026-05-25",
+    "total": 1,
+    "by_function": {
+     "addToBlockedList": 1
+    }
+   },
+   {
+    "week": "2026-06-15",
+    "total": 1,
+    "by_function": {
+     "addToBlockedList": 1
+    }
+   },
+   {
+    "week": "2026-06-22",
+    "total": 2,
+    "by_function": {
+     "addToBlockedList": 2
+    }
+   },
+   {
+    "week": "2026-10-12",
+    "total": 2,
+    "by_function": {
+     "addToBlockedList": 1,
+     "removeFromBlockedList": 1
+    }
+   },
+   {
+    "week": "2026-10-26",
+    "total": 2,
+    "by_function": {
+     "addToBlockedList": 2
+    }
+   },
+   {
+    "week": "2026-11-09",
+    "total": 1,
+    "by_function": {
+     "addToBlockedList": 1
+    }
+   }
+  ],
+  "arb_usdt": [
+   {
+    "week": "2022-10-03",
+    "total": 1,
+    "by_function": {
+     "addToBlockedList": 1
+    }
+   },
+   {
+    "week": "2024-07-15",
+    "total": 3,
+    "by_function": {
+     "other_contract": 2,
+     "addToBlockedList": 1
+    }
+   },
+   {
+    "week": "2024-11-04",
+    "total": 11,
+    "by_function": {
+     "addToBlockedList": 5,
+     "destroyBlockedFunds": 5,
+     "mint": 1
+    }
+   },
+   {
+    "week": "2024-12-02",
+    "total": 3,
+    "by_function": {
+     "addToBlockedList": 3
+    }
+   },
+   {
+    "week": "2024-12-09",
+    "total": 21,
+    "by_function": {
+     "addToBlockedList": 21
+    }
+   },
+   {
+    "week": "2025-01-27",
+    "total": 2,
+    "by_function": {
+     "other_contract": 1,
+     "transferOwnership": 1
+    }
+   }
+  ],
+  "avax": [
+   {
+    "week": "2021-10-18",
+    "total": 1,
+    "by_function": {
+     "mint": 1
+    }
+   },
+   {
+    "week": "2021-11-08",
+    "total": 1,
+    "by_function": {
+     "mint": 1
+    }
+   },
+   {
+    "week": "2022-01-10",
+    "total": 1,
+    "by_function": {
+     "mint": 1
+    }
+   },
+   {
+    "week": "2022-02-21",
+    "total": 1,
+    "by_function": {
+     "mint": 1
+    }
+   },
+   {
+    "week": "2022-03-07",
+    "total": 1,
+    "by_function": {
+     "mint": 1
+    }
+   },
+   {
+    "week": "2022-03-21",
+    "total": 2,
+    "by_function": {
+     "mint": 2
+    }
+   },
+   {
+    "week": "2022-03-28",
+    "total": 1,
+    "by_function": {
+     "mint": 1
+    }
+   },
+   {
+    "week": "2022-04-18",
+    "total": 1,
+    "by_function": {
+     "mint": 1
+    }
+   },
+   {
+    "week": "2022-09-12",
+    "total": 6,
+    "by_function": {
+     "addToBlockedList": 6
+    }
+   },
+   {
+    "week": "2022-10-03",
+    "total": 1,
+    "by_function": {
+     "addToBlockedList": 1
+    }
+   },
+   {
+    "week": "2022-11-07",
+    "total": 1,
+    "by_function": {
+     "addToBlockedList": 1
+    }
+   },
+   {
+    "week": "2023-02-13",
+    "total": 1,
+    "by_function": {
+     "addToBlockedList": 1
+    }
+   },
+   {
+    "week": "2023-02-27",
+    "total": 2,
+    "by_function": {
+     "other_contract": 2
+    }
+   },
+   {
+    "week": "2023-07-24",
+    "total": 2,
+    "by_function": {
+     "addToBlockedList": 1,
+     "destroyBlockedFunds": 1
+    }
+   },
+   {
+    "week": "2023-10-02",
+    "total": 2,
+    "by_function": {
+     "mint": 2
+    }
+   },
+   {
+    "week": "2023-11-20",
+    "total": 6,
+    "by_function": {
+     "destroyBlockedFunds": 6
+    }
+   },
+   {
+    "week": "2024-02-26",
+    "total": 1,
+    "by_function": {
+     "mint": 1
+    }
+   },
+   {
+    "week": "2024-03-11",
+    "total": 2,
+    "by_function": {
+     "addToBlockedList": 1,
+     "destroyBlockedFunds": 1
+    }
+   },
+   {
+    "week": "2024-04-01",
+    "total": 1,
+    "by_function": {
+     "mint": 1
+    }
+   },
+   {
+    "week": "2024-04-22",
+    "total": 1,
+    "by_function": {
+     "mint": 1
+    }
+   },
+   {
+    "week": "2024-06-03",
+    "total": 2,
+    "by_function": {
+     "addToBlockedList": 1,
+     "destroyBlockedFunds": 1
+    }
+   },
+   {
+    "week": "2024-08-19",
+    "total": 1,
+    "by_function": {
+     "mint": 1
+    }
+   },
+   {
+    "week": "2024-09-16",
+    "total": 1,
+    "by_function": {
+     "mint": 1
+    }
+   },
+   {
+    "week": "2024-11-04",
+    "total": 1,
+    "by_function": {
+     "redeem": 1
+    }
+   },
+   {
+    "week": "2024-11-18",
+    "total": 1,
+    "by_function": {
+     "mint": 1
+    }
+   },
+   {
+    "week": "2024-11-25",
+    "total": 1,
+    "by_function": {
+     "mint": 1
+    }
+   },
+   {
+    "week": "2024-12-09",
+    "total": 1,
+    "by_function": {
+     "mint": 1
+    }
+   },
+   {
+    "week": "2025-03-03",
+    "total": 3,
+    "by_function": {
+     "addToBlockedList": 3
+    }
+   },
+   {
+    "week": "2025-11-10",
+    "total": 1,
+    "by_function": {
+     "removeFromBlockedList": 1
+    }
+   },
+   {
+    "week": "2025-12-08",
+    "total": 1,
+    "by_function": {
+     "removeFromBlockedList": 1
+    }
+   },
+   {
+    "week": "2026-06-15",
+    "total": 1,
+    "by_function": {
+     "addToBlockedList": 1
+    }
+   },
+   {
+    "week": "2026-10-26",
+    "total": 1,
+    "by_function": {
+     "addToBlockedList": 1
+    }
+   },
+   {
+    "week": "2026-11-02",
+    "total": 1,
+    "by_function": {
+     "redeem": 1
+    }
+   }
+  ],
+  "berachain": [
+   {
+    "week": "2025-01-20",
+    "total": 1,
+    "by_function": {
+     "setOFTContract": 1
+    }
+   }
+  ],
+  "celo": [
+   {
+    "week": "2024-03-18",
+    "total": 1,
+    "by_function": {
+     "mint": 1
+    }
+   },
+   {
+    "week": "2024-03-25",
+    "total": 4,
+    "by_function": {
+     "mint": 1,
+     "addToBlockedList": 1,
+     "destroyBlockedFunds": 1,
+     "removeFromBlockedList": 1
+    }
+   },
+   {
+    "week": "2024-06-03",
+    "total": 1,
+    "by_function": {
+     "mint": 1
+    }
+   },
+   {
+    "week": "2024-07-15",
+    "total": 1,
+    "by_function": {
+     "mint": 1
+    }
+   },
+   {
+    "week": "2024-07-22",
+    "total": 1,
+    "by_function": {
+     "mint": 1
+    }
+   }
+  ],
+  "eth": [
+   {
+    "week": "2025-10-06",
+    "total": 38,
+    "by_function": {
+     "issue": 1,
+     "0xa9059cbb": 1,
+     "addBlackList": 19,
+     "removeBlackList": 2,
+     "destroyBlackFunds": 15
+    }
+   },
+   {
+    "week": "2025-10-13",
+    "total": 30,
+    "by_function": {
+     "issue": 3,
+     "0xa9059cbb": 3,
+     "addBlackList": 16,
+     "other_contract": 2,
+     "destroyBlackFunds": 6
+    }
+   },
+   {
+    "week": "2025-10-20",
+    "total": 19,
+    "by_function": {
+     "destroyBlackFunds": 4,
+     "issue": 1,
+     "0xa9059cbb": 1,
+     "addBlackList": 13
+    }
+   },
+   {
+    "week": "2025-10-27",
+    "total": 32,
+    "by_function": {
+     "addBlackList": 26,
+     "removeBlackList": 2,
+     "destroyBlackFunds": 4
+    }
+   },
+   {
+    "week": "2025-11-03",
+    "total": 34,
+    "by_function": {
+     "addBlackList": 21,
+     "removeBlackList": 1,
+     "destroyBlackFunds": 12
+    }
+   },
+   {
+    "week": "2025-11-10",
+    "total": 12,
+    "by_function": {
+     "issue": 1,
+     "0xa9059cbb": 1,
+     "addBlackList": 5,
+     "destroyBlackFunds": 5
+    }
+   },
+   {
+    "week": "2025-11-17",
+    "total": 19,
+    "by_function": {
+     "addBlackList": 17,
+     "destroyBlackFunds": 2
+    }
+   },
+   {
+    "week": "2025-11-24",
+    "total": 11,
+    "by_function": {
+     "addBlackList": 6,
+     "destroyBlackFunds": 5
+    }
+   },
+   {
+    "week": "2025-12-01",
+    "total": 14,
+    "by_function": {
+     "addBlackList": 14
+    }
+   },
+   {
+    "week": "2025-12-08",
+    "total": 11,
+    "by_function": {
+     "addBlackList": 10,
+     "other_contract": 1
+    }
+   },
+   {
+    "week": "2025-12-15",
+    "total": 21,
+    "by_function": {
+     "addBlackList": 13,
+     "destroyBlackFunds": 8
+    }
+   },
+   {
+    "week": "2025-12-22",
+    "total": 5,
+    "by_function": {
+     "addBlackList": 5
+    }
+   },
+   {
+    "week": "2025-12-29",
+    "total": 17,
+    "by_function": {
+     "addBlackList": 7,
+     "removeBlackList": 2,
+     "destroyBlackFunds": 8
+    }
+   },
+   {
+    "week": "2026-01-05",
+    "total": 15,
+    "by_function": {
+     "addBlackList": 6,
+     "removeBlackList": 2,
+     "destroyBlackFunds": 7
+    }
+   },
+   {
+    "week": "2026-01-12",
+    "total": 16,
+    "by_function": {
+     "addBlackList": 14,
+     "destroyBlackFunds": 2
+    }
+   },
+   {
+    "week": "2026-01-19",
+    "total": 25,
+    "by_function": {
+     "addBlackList": 18,
+     "removeBlackList": 4,
+     "redeem": 1,
+     "destroyBlackFunds": 2
+    }
+   },
+   {
+    "week": "2026-01-26",
+    "total": 9,
+    "by_function": {
+     "addBlackList": 5,
+     "destroyBlackFunds": 3,
+     "other_contract": 1
+    }
+   },
+   {
+    "week": "2026-02-02",
+    "total": 16,
+    "by_function": {
+     "addBlackList": 9,
+     "destroyBlackFunds": 5,
+     "removeBlackList": 2
+    }
+   },
+   {
+    "week": "2026-02-09",
+    "total": 14,
+    "by_function": {
+     "redeem": 1,
+     "removeBlackList": 1,
+     "addBlackList": 6,
+     "destroyBlackFunds": 6
+    }
+   },
+   {
+    "week": "2026-02-16",
+    "total": 32,
+    "by_function": {
+     "addBlackList": 19,
+     "destroyBlackFunds": 10,
+     "other_contract": 3
+    }
+   },
+   {
+    "week": "2026-02-23",
+    "total": 12,
+    "by_function": {
+     "addBlackList": 9,
+     "removeBlackList": 2,
+     "destroyBlackFunds": 1
+    }
+   },
+   {
+    "week": "2026-03-02",
+    "total": 17,
+    "by_function": {
+     "destroyBlackFunds": 9,
+     "addBlackList": 7,
+     "other_contract": 1
+    }
+   },
+   {
+    "week": "2026-03-09",
+    "total": 24,
+    "by_function": {
+     "addBlackList": 21,
+     "removeBlackList": 2,
+     "destroyBlackFunds": 1
+    }
+   },
+   {
+    "week": "2026-03-16",
+    "total": 38,
+    "by_function": {
+     "addBlackList": 30,
+     "destroyBlackFunds": 8
+    }
+   },
+   {
+    "week": "2026-03-23",
+    "total": 84,
+    "by_function": {
+     "destroyBlackFunds": 9,
+     "addBlackList": 67,
+     "other_contract": 1,
+     "removeBlackList": 7
+    }
+   },
+   {
+    "week": "2026-03-30",
+    "total": 15,
+    "by_function": {
+     "addBlackList": 9,
+     "destroyBlackFunds": 2,
+     "removeBlackList": 4
+    }
+   },
+   {
+    "week": "2026-04-06",
+    "total": 22,
+    "by_function": {
+     "destroyBlackFunds": 9,
+     "removeBlackList": 5,
+     "addBlackList": 8
+    }
+   },
+   {
+    "week": "2026-04-13",
+    "total": 9,
+    "by_function": {
+     "issue": 1,
+     "0xa9059cbb": 1,
+     "addBlackList": 4,
+     "removeBlackList": 3
+    }
+   },
+   {
+    "week": "2026-04-20",
+    "total": 18,
+    "by_function": {
+     "issue": 2,
+     "0xa9059cbb": 2,
+     "addBlackList": 9,
+     "removeBlackList": 5
+    }
+   },
+   {
+    "week": "2026-04-27",
+    "total": 19,
+    "by_function": {
+     "destroyBlackFunds": 4,
+     "addBlackList": 15
+    }
+   },
+   {
+    "week": "2026-05-04",
+    "total": 9,
+    "by_function": {
+     "removeBlackList": 1,
+     "addBlackList": 7,
+     "redeem": 1
+    }
+   },
+   {
+    "week": "2026-05-11",
+    "total": 56,
+    "by_function": {
+     "addBlackList": 5,
+     "removeBlackList": 51
+    }
+   },
+   {
+    "week": "2026-05-18",
+    "total": 17,
+    "by_function": {
+     "addBlackList": 16,
+     "other_contract": 1
+    }
+   },
+   {
+    "week": "2026-05-25",
+    "total": 5,
+    "by_function": {
+     "destroyBlackFunds": 1,
+     "addBlackList": 4
+    }
+   },
+   {
+    "week": "2026-06-01",
+    "total": 15,
+    "by_function": {
+     "destroyBlackFunds": 4,
+     "addBlackList": 10,
+     "removeBlackList": 1
+    }
+   },
+   {
+    "week": "2026-06-08",
+    "total": 13,
+    "by_function": {
+     "addBlackList": 12,
+     "removeBlackList": 1
+    }
+   },
+   {
+    "week": "2026-06-15",
+    "total": 26,
+    "by_function": {
+     "addBlackList": 8,
+     "destroyBlackFunds": 18
+    }
+   },
+   {
+    "week": "2026-06-22",
+    "total": 25,
+    "by_function": {
+     "addBlackList": 25
+    }
+   },
+   {
+    "week": "2026-06-29",
+    "total": 9,
+    "by_function": {
+     "destroyBlackFunds": 3,
+     "addBlackList": 4,
+     "removeBlackList": 2
+    }
+   },
+   {
+    "week": "2026-07-06",
+    "total": 18,
+    "by_function": {
+     "redeem": 2,
+     "addBlackList": 16
+    }
+   },
+   {
+    "week": "2026-07-13",
+    "total": 19,
+    "by_function": {
+     "destroyBlackFunds": 7,
+     "addBlackList": 12
+    }
+   },
+   {
+    "week": "2026-07-20",
+    "total": 11,
+    "by_function": {
+     "addBlackList": 5,
+     "destroyBlackFunds": 6
+    }
+   },
+   {
+    "week": "2026-07-27",
+    "total": 11,
+    "by_function": {
+     "addBlackList": 11
+    }
+   },
+   {
+    "week": "2026-08-03",
+    "total": 22,
+    "by_function": {
+     "addBlackList": 8,
+     "destroyBlackFunds": 14
+    }
+   },
+   {
+    "week": "2026-08-10",
+    "total": 10,
+    "by_function": {
+     "redeem": 1,
+     "addBlackList": 7,
+     "removeBlackList": 2
+    }
+   },
+   {
+    "week": "2026-08-17",
+    "total": 8,
+    "by_function": {
+     "redeem": 1,
+     "addBlackList": 4,
+     "destroyBlackFunds": 1,
+     "other_contract": 1,
+     "removeBlackList": 1
+    }
+   },
+   {
+    "week": "2026-08-24",
+    "total": 29,
+    "by_function": {
+     "addBlackList": 28,
+     "destroyBlackFunds": 1
+    }
+   },
+   {
+    "week": "2026-08-31",
+    "total": 6,
+    "by_function": {
+     "addBlackList": 4,
+     "destroyBlackFunds": 1,
+     "other_contract": 1
+    }
+   },
+   {
+    "week": "2026-09-07",
+    "total": 15,
+    "by_function": {
+     "destroyBlackFunds": 4,
+     "addBlackList": 10,
+     "other_contract": 1
+    }
+   },
+   {
+    "week": "2026-09-14",
+    "total": 4,
+    "by_function": {
+     "destroyBlackFunds": 1,
+     "addBlackList": 3
+    }
+   },
+   {
+    "week": "2026-09-21",
+    "total": 18,
+    "by_function": {
+     "addBlackList": 18
+    }
+   },
+   {
+    "week": "2026-09-28",
+    "total": 12,
+    "by_function": {
+     "other_contract": 2,
+     "addBlackList": 4,
+     "destroyBlackFunds": 6
+    }
+   },
+   {
+    "week": "2026-10-05",
+    "total": 18,
+    "by_function": {
+     "addBlackList": 14,
+     "destroyBlackFunds": 4
+    }
+   },
+   {
+    "week": "2026-10-12",
+    "total": 16,
+    "by_function": {
+     "addBlackList": 16
+    }
+   },
+   {
+    "week": "2026-10-19",
+    "total": 15,
+    "by_function": {
+     "destroyBlackFunds": 8,
+     "addBlackList": 7
+    }
+   },
+   {
+    "week": "2026-10-26",
+    "total": 18,
+    "by_function": {
+     "addBlackList": 17,
+     "other_contract": 1
+    }
+   },
+   {
+    "week": "2026-11-02",
+    "total": 23,
+    "by_function": {
+     "addBlackList": 11,
+     "other_contract": 1,
+     "redeem": 2,
+     "destroyBlackFunds": 9
+    }
+   },
+   {
+    "week": "2026-11-09",
+    "total": 20,
+    "by_function": {
+     "destroyBlackFunds": 4,
+     "addBlackList": 16
+    }
+   },
+   {
+    "week": "2026-11-16",
+    "total": 24,
+    "by_function": {
+     "addBlackList": 19,
+     "redeem": 1,
+     "destroyBlackFunds": 4
+    }
+   },
+   {
+    "week": "2026-11-23",
+    "total": 13,
+    "by_function": {
+     "addBlackList": 13
+    }
+   }
+  ],
+  "hyper": [
+   {
+    "week": "2025-07-21",
+    "total": 5,
+    "by_function": {
+     "addToBlockedList": 1,
+     "destroyBlockedFunds": 1,
+     "removeFromBlockedList": 1,
+     "mint": 2
+    }
+   },
+   {
+    "week": "2025-07-28",
+    "total": 1,
+    "by_function": {
+     "setTrusted": 1
+    }
+   }
+  ],
+  "ink": [
+   {
+    "week": "2025-01-06",
+    "total": 2,
+    "by_function": {
+     "setOFTContract": 1,
+     "burn": 1
+    }
+   }
+  ],
+  "kaia": [
+   {
+    "week": "2025-03-24",
+    "total": 4,
+    "by_function": {
+     "mint": 1,
+     "redeem": 1,
+     "addToBlockedList": 1,
+     "removeFromBlockedList": 1
+    }
+   },
+   {
+    "week": "2025-03-31",
+    "total": 2,
+    "by_function": {
+     "destroyBlockedFunds": 1,
+     "removeFromBlockedList": 1
+    }
+   },
+   {
+    "week": "2025-05-05",
+    "total": 1,
+    "by_function": {
+     "mint": 1
+    }
+   },
+   {
+    "week": "2025-12-15",
+    "total": 2,
+    "by_function": {
+     "addToBlockedList": 1,
+     "destroyBlockedFunds": 1
+    }
+   },
+   {
+    "week": "2026-01-26",
+    "total": 1,
+    "by_function": {
+     "mint": 1
+    }
+   },
+   {
+    "week": "2026-05-04",
+    "total": 1,
+    "by_function": {
+     "mint": 1
+    }
+   }
+  ],
+  "kava": [
+   {
+    "week": "2023-07-03",
+    "total": 2,
+    "by_function": {
+     "mint": 2
+    }
+   },
+   {
+    "week": "2023-07-10",
+    "total": 1,
+    "by_function": {
+     "mint": 1
+    }
+   },
+   {
+    "week": "2023-07-17",
+    "total": 1,
+    "by_function": {
+     "mint": 1
+    }
+   },
+   {
+    "week": "2023-11-06",
+    "total": 1,
+    "by_function": {
+     "mint": 1
+    }
+   },
+   {
+    "week": "2025-03-31",
+    "total": 2,
+    "by_function": {
+     "addToBlockedList": 1,
+     "destroyBlockedFunds": 1
+    }
+   }
+  ],
+  "near": [
+   {
+    "week": "2022-09-05",
+    "total": 1,
+    "by_function": {
+     "mint": 1
+    }
+   },
+   {
+    "week": "2022-09-12",
+    "total": 2,
+    "by_function": {
+     "upgrade": 1,
+     "mint": 1
+    }
+   },
+   {
+    "week": "2023-06-26",
+    "total": 1,
+    "by_function": {
+     "mint": 1
+    }
+   },
+   {
+    "week": "2024-02-26",
+    "total": 1,
+    "by_function": {
+     "mint": 1
+    }
+   },
+   {
+    "week": "2024-03-25",
+    "total": 1,
+    "by_function": {
+     "mint": 1
+    }
+   },
+   {
+    "week": "2024-04-15",
+    "total": 1,
+    "by_function": {
+     "mint": 1
+    }
+   },
+   {
+    "week": "2024-05-06",
+    "total": 1,
+    "by_function": {
+     "mint": 1
+    }
+   },
+   {
+    "week": "2024-07-01",
+    "total": 1,
+    "by_function": {
+     "mint": 1
+    }
+   },
+   {
+    "week": "2024-07-22",
+    "total": 1,
+    "by_function": {
+     "mint": 1
+    }
+   },
+   {
+    "week": "2024-09-09",
+    "total": 1,
+    "by_function": {
+     "mint": 1
+    }
+   },
+   {
+    "week": "2024-11-04",
+    "total": 9,
+    "by_function": {
+     "mint": 1,
+     "addBlackList": 4,
+     "destroyBlackFunds": 4
+    }
+   },
+   {
+    "week": "2025-05-26",
+    "total": 2,
+    "by_function": {
+     "addBlackList": 1,
+     "destroyBlackFunds": 1
+    }
+   },
+   {
+    "week": "2025-10-27",
+    "total": 2,
+    "by_function": {
+     "addBlackList": 1,
+     "destroyBlackFunds": 1
+    }
+   },
+   {
+    "week": "2025-12-15",
+    "total": 2,
+    "by_function": {
+     "addBlackList": 1,
+     "destroyBlackFunds": 1
+    }
+   },
+   {
+    "week": "2026-02-23",
+    "total": 2,
+    "by_function": {
+     "addBlackList": 1,
+     "destroyBlackFunds": 1
+    }
+   },
+   {
+    "week": "2026-03-16",
+    "total": 2,
+    "by_function": {
+     "addBlackList": 1,
+     "destroyBlackFunds": 1
+    }
+   },
+   {
+    "week": "2026-04-13",
+    "total": 1,
+    "by_function": {
+     "addBlackList": 1
+    }
+   },
+   {
+    "week": "2026-06-15",
+    "total": 1,
+    "by_function": {
+     "addBlackList": 1
+    }
+   }
+  ],
+  "plasma": [
+   {
+    "week": "2025-09-08",
+    "total": 1,
+    "by_function": {
+     "setOFTContract": 1
+    }
+   },
+   {
+    "week": "2025-12-08",
+    "total": 1,
+    "by_function": {
+     "addToBlockedList": 1
+    }
+   },
+   {
+    "week": "2026-01-19",
+    "total": 2,
+    "by_function": {
+     "mint": 1,
+     "destroyBlockedFunds": 1
+    }
+   },
+   {
+    "week": "2026-04-20",
+    "total": 1,
+    "by_function": {
+     "addToBlockedList": 1
+    }
+   }
+  ],
+  "pol": [
+   {
+    "week": "2026-01-26",
+    "total": 5,
+    "by_function": {
+     "mint": 2,
+     "removeFromBlockedList": 1,
+     "destroyBlockedFunds": 1,
+     "addToBlockedList": 1
+    }
+   },
+   {
+    "week": "2026-03-09",
+    "total": 1,
+    "by_function": {
+     "addToBlockedList": 1
+    }
+   },
+   {
+    "week": "2026-06-15",
+    "total": 1,
+    "by_function": {
+     "addToBlockedList": 1
+    }
+   },
+   {
+    "week": "2026-06-22",
+    "total": 1,
+    "by_function": {
+     "addToBlockedList": 1
+    }
+   },
+   {
+    "week": "2026-08-24",
+    "total": 4,
+    "by_function": {
+     "mint": 2,
+     "destroyBlockedFunds": 1,
+     "addToBlockedList": 1
+    }
+   },
+   {
+    "week": "2026-10-12",
+    "total": 2,
+    "by_function": {
+     "destroyBlockedFunds": 1,
+     "mint": 1
+    }
+   },
+   {
+    "week": "2026-10-26",
+    "total": 1,
+    "by_function": {
+     "addToBlockedList": 1
+    }
+   },
+   {
+    "week": "2026-11-02",
+    "total": 1,
+    "by_function": {
+     "addToBlockedList": 1
+    }
+   }
+  ],
+  "ton": [
+   {
+    "week": "2024-04-15",
+    "total": 6,
+    "by_function": {
+     "governance_call": 6
+    }
+   },
+   {
+    "week": "2024-04-22",
+    "total": 2,
+    "by_function": {
+     "governance_call": 2
+    }
+   },
+   {
+    "week": "2024-05-06",
+    "total": 2,
+    "by_function": {
+     "governance_call": 2
+    }
+   },
+   {
+    "week": "2024-05-13",
+    "total": 1,
+    "by_function": {
+     "governance_call": 1
+    }
+   },
+   {
+    "week": "2024-05-27",
+    "total": 1,
+    "by_function": {
+     "governance_call": 1
+    }
+   },
+   {
+    "week": "2024-06-10",
+    "total": 1,
+    "by_function": {
+     "governance_call": 1
+    }
+   },
+   {
+    "week": "2024-07-15",
+    "total": 1,
+    "by_function": {
+     "governance_call": 1
+    }
+   },
+   {
+    "week": "2024-09-02",
+    "total": 2,
+    "by_function": {
+     "freeze_wallet": 2
+    }
+   },
+   {
+    "week": "2024-09-09",
+    "total": 2,
+    "by_function": {
+     "governance_call": 2
+    }
+   },
+   {
+    "week": "2024-11-04",
+    "total": 2,
+    "by_function": {
+     "governance_call": 1,
+     "call_to 0x595f07bc": 1
+    }
+   },
+   {
+    "week": "2024-11-25",
+    "total": 8,
+    "by_function": {
+     "governance_call": 1,
+     "freeze_wallet": 7
+    }
+   },
+   {
+    "week": "2024-12-23",
+    "total": 1,
+    "by_function": {
+     "unfreeze_wallet": 1
+    }
+   },
+   {
+    "week": "2026-01-19",
+    "total": 2,
+    "by_function": {
+     "freeze_wallet": 2
+    }
+   },
+   {
+    "week": "2026-03-23",
+    "total": 1,
+    "by_function": {
+     "unfreeze_wallet": 1
+    }
+   },
+   {
+    "week": "2026-06-15",
+    "total": 1,
+    "by_function": {
+     "freeze_wallet": 1
+    }
+   },
+   {
+    "week": "2026-08-17",
+    "total": 1,
+    "by_function": {
+     "freeze_wallet": 1
+    }
+   }
+  ],
+  "tron": [
+   {
+    "week": "2025-10-06",
+    "total": 67,
+    "by_function": {
+     "addBlackList": 42,
+     "destroyBlackFunds": 22,
+     "removeBlackList": 3
+    }
+   },
+   {
+    "week": "2025-10-13",
+    "total": 50,
+    "by_function": {
+     "removeBlackList": 5,
+     "destroyBlackFunds": 4,
+     "addBlackList": 41
+    }
+   },
+   {
+    "week": "2025-10-20",
+    "total": 38,
+    "by_function": {
+     "destroyBlackFunds": 6,
+     "addBlackList": 28,
+     "removeBlackList": 4
+    }
+   },
+   {
+    "week": "2025-10-27",
+    "total": 96,
+    "by_function": {
+     "addBlackList": 72,
+     "destroyBlackFunds": 18,
+     "removeBlackList": 6
+    }
+   },
+   {
+    "week": "2025-11-03",
+    "total": 97,
+    "by_function": {
+     "addBlackList": 83,
+     "destroyBlackFunds": 8,
+     "removeBlackList": 6
+    }
+   },
+   {
+    "week": "2025-11-10",
+    "total": 77,
+    "by_function": {
+     "addBlackList": 51,
+     "destroyBlackFunds": 20,
+     "removeBlackList": 6
+    }
+   },
+   {
+    "week": "2025-11-17",
+    "total": 81,
+    "by_function": {
+     "addBlackList": 61,
+     "removeBlackList": 4,
+     "destroyBlackFunds": 16
+    }
+   },
+   {
+    "week": "2025-11-24",
+    "total": 29,
+    "by_function": {
+     "removeBlackList": 3,
+     "addBlackList": 11,
+     "destroyBlackFunds": 15
+    }
+   },
+   {
+    "week": "2025-12-01",
+    "total": 59,
+    "by_function": {
+     "removeBlackList": 2,
+     "addBlackList": 40,
+     "0xa9059cbb": 1,
+     "issue": 1,
+     "destroyBlackFunds": 15
+    }
+   },
+   {
+    "week": "2025-12-08",
+    "total": 38,
+    "by_function": {
+     "addBlackList": 31,
+     "destroyBlackFunds": 3,
+     "removeBlackList": 2,
+     "0xa9059cbb": 1,
+     "issue": 1
+    }
+   },
+   {
+    "week": "2025-12-15",
+    "total": 46,
+    "by_function": {
+     "addBlackList": 36,
+     "destroyBlackFunds": 10
+    }
+   },
+   {
+    "week": "2025-12-22",
+    "total": 35,
+    "by_function": {
+     "addBlackList": 35
+    }
+   },
+   {
+    "week": "2025-12-29",
+    "total": 31,
+    "by_function": {
+     "destroyBlackFunds": 10,
+     "addBlackList": 17,
+     "removeBlackList": 2,
+     "0xa9059cbb": 1,
+     "issue": 1
+    }
+   },
+   {
+    "week": "2026-01-05",
+    "total": 70,
+    "by_function": {
+     "addBlackList": 37,
+     "removeBlackList": 12,
+     "destroyBlackFunds": 19,
+     "0xa9059cbb": 1,
+     "issue": 1
+    }
+   },
+   {
+    "week": "2026-01-12",
+    "total": 61,
+    "by_function": {
+     "addBlackList": 40,
+     "removeBlackList": 7,
+     "destroyBlackFunds": 14
+    }
+   },
+   {
+    "week": "2026-01-19",
+    "total": 32,
+    "by_function": {
+     "addBlackList": 18,
+     "removeBlackList": 4,
+     "destroyBlackFunds": 8,
+     "0xa9059cbb": 1,
+     "issue": 1
+    }
+   },
+   {
+    "week": "2026-01-26",
+    "total": 70,
+    "by_function": {
+     "addBlackList": 55,
+     "destroyBlackFunds": 11,
+     "removeBlackList": 4
+    }
+   },
+   {
+    "week": "2026-02-02",
+    "total": 40,
+    "by_function": {
+     "addBlackList": 35,
+     "0xa9059cbb": 2,
+     "issue": 2,
+     "removeBlackList": 1
+    }
+   },
+   {
+    "week": "2026-02-09",
+    "total": 77,
+    "by_function": {
+     "addBlackList": 60,
+     "destroyBlackFunds": 14,
+     "removeBlackList": 3
+    }
+   },
+   {
+    "week": "2026-02-16",
+    "total": 71,
+    "by_function": {
+     "addBlackList": 39,
+     "destroyBlackFunds": 28,
+     "removeBlackList": 4
+    }
+   },
+   {
+    "week": "2026-02-23",
+    "total": 64,
+    "by_function": {
+     "addBlackList": 57,
+     "destroyBlackFunds": 5,
+     "removeBlackList": 2
+    }
+   },
+   {
+    "week": "2026-03-02",
+    "total": 105,
+    "by_function": {
+     "addBlackList": 88,
+     "removeBlackList": 3,
+     "destroyBlackFunds": 14
+    }
+   },
+   {
+    "week": "2026-03-09",
+    "total": 134,
+    "by_function": {
+     "addBlackList": 117,
+     "0xa9059cbb": 1,
+     "issue": 1,
+     "removeBlackList": 7,
+     "destroyBlackFunds": 8
+    }
+   },
+   {
+    "week": "2026-03-16",
+    "total": 82,
+    "by_function": {
+     "removeBlackList": 4,
+     "addBlackList": 65,
+     "destroyBlackFunds": 13
+    }
+   },
+   {
+    "week": "2026-03-23",
+    "total": 365,
+    "by_function": {
+     "addBlackList": 356,
+     "removeBlackList": 6,
+     "destroyBlackFunds": 3
+    }
+   },
+   {
+    "week": "2026-03-30",
+    "total": 301,
+    "by_function": {
+     "addBlackList": 280,
+     "removeBlackList": 16,
+     "destroyBlackFunds": 5
+    }
+   },
+   {
+    "week": "2026-04-06",
+    "total": 104,
+    "by_function": {
+     "removeBlackList": 43,
+     "addBlackList": 31,
+     "destroyBlackFunds": 30
+    }
+   },
+   {
+    "week": "2026-04-13",
+    "total": 80,
+    "by_function": {
+     "addBlackList": 69,
+     "destroyBlackFunds": 6,
+     "removeBlackList": 5
+    }
+   },
+   {
+    "week": "2026-04-20",
+    "total": 126,
+    "by_function": {
+     "addBlackList": 103,
+     "removeBlackList": 23
+    }
+   },
+   {
+    "week": "2026-04-27",
+    "total": 127,
+    "by_function": {
+     "addBlackList": 93,
+     "destroyBlackFunds": 14,
+     "removeBlackList": 18,
+     "0xa9059cbb": 1,
+     "issue": 1
+    }
+   },
+   {
+    "week": "2026-05-04",
+    "total": 73,
+    "by_function": {
+     "addBlackList": 61,
+     "removeBlackList": 4,
+     "destroyBlackFunds": 6,
+     "0xa9059cbb": 1,
+     "issue": 1
+    }
+   },
+   {
+    "week": "2026-05-11",
+    "total": 578,
+    "by_function": {
+     "addBlackList": 119,
+     "removeBlackList": 451,
+     "destroyBlackFunds": 6,
+     "0xa9059cbb": 1,
+     "issue": 1
+    }
+   },
+   {
+    "week": "2026-05-18",
+    "total": 50,
+    "by_function": {
+     "addBlackList": 38,
+     "destroyBlackFunds": 11,
+     "removeBlackList": 1
+    }
+   },
+   {
+    "week": "2026-05-25",
+    "total": 48,
+    "by_function": {
+     "removeBlackList": 2,
+     "addBlackList": 39,
+     "destroyBlackFunds": 7
+    }
+   },
+   {
+    "week": "2026-06-01",
+    "total": 106,
+    "by_function": {
+     "addBlackList": 90,
+     "removeBlackList": 5,
+     "destroyBlackFunds": 11
+    }
+   },
+   {
+    "week": "2026-06-08",
+    "total": 71,
+    "by_function": {
+     "addBlackList": 71
+    }
+   },
+   {
+    "week": "2026-06-15",
+    "total": 96,
+    "by_function": {
+     "addBlackList": 70,
+     "removeBlackList": 1,
+     "destroyBlackFunds": 25
+    }
+   },
+   {
+    "week": "2026-06-22",
+    "total": 74,
+    "by_function": {
+     "addBlackList": 68,
+     "removeBlackList": 6
+    }
+   },
+   {
+    "week": "2026-06-29",
+    "total": 240,
+    "by_function": {
+     "addBlackList": 213,
+     "removeBlackList": 7,
+     "destroyBlackFunds": 20
+    }
+   },
+   {
+    "week": "2026-07-06",
+    "total": 77,
+    "by_function": {
+     "addBlackList": 54,
+     "removeBlackList": 10,
+     "destroyBlackFunds": 11,
+     "0xa9059cbb": 1,
+     "issue": 1
+    }
+   },
+   {
+    "week": "2026-07-13",
+    "total": 69,
+    "by_function": {
+     "addBlackList": 59,
+     "removeBlackList": 5,
+     "destroyBlackFunds": 5
+    }
+   },
+   {
+    "week": "2026-07-20",
+    "total": 88,
+    "by_function": {
+     "addBlackList": 74,
+     "removeBlackList": 3,
+     "destroyBlackFunds": 11
+    }
+   },
+   {
+    "week": "2026-07-27",
+    "total": 60,
+    "by_function": {
+     "addBlackList": 52,
+     "destroyBlackFunds": 3,
+     "removeBlackList": 5
+    }
+   },
+   {
+    "week": "2026-08-03",
+    "total": 71,
+    "by_function": {
+     "addBlackList": 48,
+     "destroyBlackFunds": 21,
+     "removeBlackList": 2
+    }
+   },
+   {
+    "week": "2026-08-10",
+    "total": 88,
+    "by_function": {
+     "addBlackList": 78,
+     "destroyBlackFunds": 6,
+     "removeBlackList": 2,
+     "0xa9059cbb": 1,
+     "issue": 1
+    }
+   },
+   {
+    "week": "2026-08-17",
+    "total": 69,
+    "by_function": {
+     "addBlackList": 58,
+     "0xa9059cbb": 3,
+     "issue": 3,
+     "removeBlackList": 3,
+     "destroyBlackFunds": 2
+    }
+   },
+   {
+    "week": "2026-08-24",
+    "total": 52,
+    "by_function": {
+     "addBlackList": 44,
+     "removeBlackList": 4,
+     "destroyBlackFunds": 4
+    }
+   },
+   {
+    "week": "2026-08-31",
+    "total": 95,
+    "by_function": {
+     "addBlackList": 94,
+     "destroyBlackFunds": 1
+    }
+   },
+   {
+    "week": "2026-09-07",
+    "total": 185,
+    "by_function": {
+     "addBlackList": 163,
+     "destroyBlackFunds": 22
+    }
+   },
+   {
+    "week": "2026-09-14",
+    "total": 123,
+    "by_function": {
+     "addBlackList": 111,
+     "destroyBlackFunds": 12
+    }
+   },
+   {
+    "week": "2026-09-21",
+    "total": 116,
+    "by_function": {
+     "addBlackList": 112,
+     "removeBlackList": 4
+    }
+   },
+   {
+    "week": "2026-09-28",
+    "total": 128,
+    "by_function": {
+     "addBlackList": 101,
+     "destroyBlackFunds": 25,
+     "removeBlackList": 1,
+     "other_contract": 1
+    }
+   },
+   {
+    "week": "2026-10-05",
+    "total": 151,
+    "by_function": {
+     "addBlackList": 125,
+     "removeBlackList": 6,
+     "destroyBlackFunds": 20
+    }
+   },
+   {
+    "week": "2026-10-12",
+    "total": 132,
+    "by_function": {
+     "addBlackList": 120,
+     "removeBlackList": 4,
+     "destroyBlackFunds": 8
+    }
+   },
+   {
+    "week": "2026-10-19",
+    "total": 97,
+    "by_function": {
+     "addBlackList": 78,
+     "destroyBlackFunds": 12,
+     "removeBlackList": 7
+    }
+   },
+   {
+    "week": "2026-10-26",
+    "total": 128,
+    "by_function": {
+     "addBlackList": 126,
+     "removeBlackList": 2
+    }
+   },
+   {
+    "week": "2026-11-02",
+    "total": 77,
+    "by_function": {
+     "addBlackList": 53,
+     "removeBlackList": 9,
+     "destroyBlackFunds": 15
+    }
+   },
+   {
+    "week": "2026-11-09",
+    "total": 80,
+    "by_function": {
+     "addBlackList": 50,
+     "removeBlackList": 7,
+     "destroyBlackFunds": 23
+    }
+   },
+   {
+    "week": "2026-11-16",
+    "total": 50,
+    "by_function": {
+     "addBlackList": 49,
+     "destroyBlackFunds": 1
+    }
+   },
+   {
+    "week": "2026-11-23",
+    "total": 136,
+    "by_function": {
+     "addBlackList": 135,
+     "removeBlackList": 1
+    }
+   }
+  ]
+ },
+ "pending_usdt": {
+  "aptos": {
+   "n": 0,
+   "total_usdt": 0,
+   "addblacklist_usdt": 0
+  },
+  "arb1": {
+   "n": 0,
+   "total_usdt": 0,
+   "addblacklist_usdt": 0
+  },
+  "arb_usdt": {
+   "n": 0,
+   "total_usdt": 0,
+   "addblacklist_usdt": 0
+  },
+  "avax": {
+   "n": 0,
+   "total_usdt": 0,
+   "addblacklist_usdt": 0
+  },
+  "berachain": {
+   "n": 0,
+   "total_usdt": 0,
+   "addblacklist_usdt": 0
+  },
+  "celo": {
+   "n": 0,
+   "total_usdt": 0,
+   "addblacklist_usdt": 0
+  },
+  "eth": {
+   "n": 0,
+   "total_usdt": 0,
+   "addblacklist_usdt": 0
+  },
+  "hyper": {
+   "n": 0,
+   "total_usdt": 0,
+   "addblacklist_usdt": 0
+  },
+  "ink": {
+   "n": 0,
+   "total_usdt": 0,
+   "addblacklist_usdt": 0
+  },
+  "kaia": {
+   "n": 0,
+   "total_usdt": 0,
+   "addblacklist_usdt": 0
+  },
+  "kava": {
+   "n": 0,
+   "total_usdt": 0,
+   "addblacklist_usdt": 0
+  },
+  "near": {
+   "n": 0,
+   "total_usdt": 0,
+   "addblacklist_usdt": 0
+  },
+  "plasma": {
+   "n": 0,
+   "total_usdt": 0,
+   "addblacklist_usdt": 0
+  },
+  "pol": {
+   "n": 0,
+   "total_usdt": 0,
+   "addblacklist_usdt": 0
+  },
+  "ton": {
+   "n": 0,
+   "total_usdt": 0,
+   "addblacklist_usdt": 0
+  },
+  "tron": {
+   "n": 0,
+   "total_usdt": 0,
+   "addblacklist_usdt": 0
+  }
+ },
+ "coverage": {
+  "aptos": {
+   "proposals": 32,
+   "min_id": 1,
+   "max_id": 32,
+   "first_submitted": "2024-10-14T22:21:47Z",
+   "last_submitted": "2026-11-03T22:55:57Z",
+   "executed": 28,
+   "freezes": 8,
+   "no_public": 0,
+   "without_submit_time": 0
+  },
+  "arb1": {
+   "proposals": 12,
+   "min_id": 6300,
+   "max_id": 1355900225017,
+   "first_submitted": "2025-07-09T13:41:21Z",
+   "last_submitted": "2026-11-09T00:44:48Z",
+   "executed": 11,
+   "freezes": 10,
+   "no_public": 1,
+   "without_submit_time": 1
+  },
+  "arb_usdt": {
+   "proposals": 45,
+   "min_id": 0,
+   "max_id": 44,
+   "first_submitted": "2022-10-06T22:35:10Z",
+   "last_submitted": "2025-01-28T14:51:24Z",
+   "executed": 41,
+   "freezes": 31,
+   "no_public": 0,
+   "without_submit_time": 0
+  },
+  "avax": {
+   "proposals": 57,
+   "min_id": 0,
+   "max_id": 56,
+   "first_submitted": "2021-10-15T14:51:36Z",
+   "last_submitted": "2026-11-02T16:21:18Z",
+   "executed": 51,
+   "freezes": 17,
+   "no_public": 0,
+   "without_submit_time": 0
+  },
+  "berachain": {
+   "proposals": 1,
+   "min_id": 0,
+   "max_id": 0,
+   "first_submitted": "2025-01-24T00:30:43Z",
+   "last_submitted": "2025-01-24T00:30:43Z",
+   "executed": 1,
+   "freezes": 0,
+   "no_public": 0,
+   "without_submit_time": 0
+  },
+  "celo": {
+   "proposals": 13,
+   "min_id": 0,
+   "max_id": 12,
+   "first_submitted": "2024-03-22T15:53:55Z",
+   "last_submitted": "2024-07-23T14:55:25Z",
+   "executed": 8,
+   "freezes": 1,
+   "no_public": 0,
+   "without_submit_time": 0
+  },
+  "eth": {
+   "proposals": 5886,
+   "min_id": 0,
+   "max_id": 5885,
+   "first_submitted": "2017-09-11T11:41:11Z",
+   "last_submitted": "2026-11-27T13:43:47Z",
+   "executed": 5529,
+   "freezes": 3256,
+   "no_public": 0,
+   "without_submit_time": 0
+  },
+  "hyper": {
+   "proposals": 6,
+   "min_id": 4200,
+   "max_id": 4300,
+   "first_submitted": "2025-07-23T06:32:34Z",
+   "last_submitted": "2025-07-28T11:41:59Z",
+   "executed": 6,
+   "freezes": 1,
+   "no_public": 0,
+   "without_submit_time": 0
+  },
+  "ink": {
+   "proposals": 2,
+   "min_id": 100,
+   "max_id": 200,
+   "first_submitted": "2025-01-07T19:48:51Z",
+   "last_submitted": "2025-01-09T16:43:24Z",
+   "executed": 2,
+   "freezes": 0,
+   "no_public": 0,
+   "without_submit_time": 0
+  },
+  "kaia": {
+   "proposals": 11,
+   "min_id": 0,
+   "max_id": 10,
+   "first_submitted": "2025-03-27T17:26:29Z",
+   "last_submitted": "2026-04-07T19:44:36Z",
+   "executed": 11,
+   "freezes": 2,
+   "no_public": 0,
+   "without_submit_time": 0
+  },
+  "kava": {
+   "proposals": 8,
+   "min_id": 0,
+   "max_id": 7,
+   "first_submitted": "2023-06-28T21:34:03Z",
+   "last_submitted": "2025-04-04T20:20:24Z",
+   "executed": 7,
+   "freezes": 1,
+   "no_public": 0,
+   "without_submit_time": 0
+  },
+  "near": {
+   "proposals": 35,
+   "min_id": 0,
+   "max_id": 34,
+   "first_submitted": "2022-09-07T12:40:27Z",
+   "last_submitted": "2026-06-16T16:03:47Z",
+   "executed": 32,
+   "freezes": 11,
+   "no_public": 0,
+   "without_submit_time": 0
+  },
+  "plasma": {
+   "proposals": 5,
+   "min_id": 100,
+   "max_id": 14800,
+   "first_submitted": "2025-09-11T19:51:31Z",
+   "last_submitted": "2026-04-20T20:12:08Z",
+   "executed": 5,
+   "freezes": 2,
+   "no_public": 0,
+   "without_submit_time": 0
+  },
+  "pol": {
+   "proposals": 16,
+   "min_id": 8600,
+   "max_id": 14000,
+   "first_submitted": "2026-01-13T16:43:25Z",
+   "last_submitted": "2026-11-02T10:12:32Z",
+   "executed": 16,
+   "freezes": 7,
+   "no_public": 0,
+   "without_submit_time": 0
+  },
+  "ton": {
+   "proposals": 37,
+   "min_id": 1,
+   "max_id": 37,
+   "first_submitted": "2024-04-15T13:33:58Z",
+   "last_submitted": "2026-08-21T13:59:35Z",
+   "executed": 34,
+   "freezes": 13,
+   "no_public": 0,
+   "without_submit_time": 0
+  },
+  "tron": {
+   "proposals": 11989,
+   "min_id": 116,
+   "max_id": 12104,
+   "first_submitted": "2022-01-07T15:28:03Z",
+   "last_submitted": "2026-11-27T23:52:09Z",
+   "executed": 11868,
+   "freezes": 9425,
+   "no_public": 0,
+   "without_submit_time": 0
+  }
+ },
+ "chains": [
+  "aptos",
+  "arb1",
+  "arb_usdt",
+  "avax",
+  "berachain",
+  "celo",
+  "eth",
+  "hyper",
+  "ink",
+  "kaia",
+  "kava",
+  "near",
+  "plasma",
+  "pol",
+  "ton",
+  "tron"
+ ],
+ "others": {
+  "usdc_eth": {
+   "label": "USDC - Ethereum",
+   "delay": "N/A",
+   "freezes": 969,
+   "unfreezes": 229,
+   "freezes_7d": 1,
+   "freezes_30d": 52,
+   "first": "2020-06-16T04:39:08Z",
+   "last": "2026-11-25T01:24:47Z",
+   "distinct_subjects": 915,
+   "amount_known_n": 969,
+   "amount_sum": 973408460.986386,
+   "amount_kind": "current",
+   "weekly": [
+    {
+     "week": "2025-05-12",
+     "freeze": 1,
+     "unfreeze": 0
+    },
+    {
+     "week": "2025-05-26",
+     "freeze": 10,
+     "unfreeze": 0
+    },
+    {
+     "week": "2025-06-09",
+     "freeze": 2,
+     "unfreeze": 0
+    },
+    {
+     "week": "2025-06-16",
+     "freeze": 1,
+     "unfreeze": 0
+    },
+    {
+     "week": "2025-06-23",
+     "freeze": 4,
+     "unfreeze": 0
+    },
+    {
+     "week": "2025-06-30",
+     "freeze": 3,
+     "unfreeze": 31
+    },
+    {
+     "week": "2025-07-07",
+     "freeze": 2,
+     "unfreeze": 0
+    },
+    {
+     "week": "2025-07-14",
+     "freeze": 3,
+     "unfreeze": 0
+    },
+    {
+     "week": "2025-07-28",
+     "freeze": 4,
+     "unfreeze": 0
+    },
+    {
+     "week": "2025-08-04",
+     "freeze": 4,
+     "unfreeze": 0
+    },
+    {
+     "week": "2025-08-11",
+     "freeze": 21,
+     "unfreeze": 0
+    },
+    {
+     "week": "2025-08-18",
+     "freeze": 1,
+     "unfreeze": 0
+    },
+    {
+     "week": "2025-09-15",
+     "freeze": 8,
+     "unfreeze": 0
+    },
+    {
+     "week": "2025-09-22",
+     "freeze": 3,
+     "unfreeze": 0
+    },
+    {
+     "week": "2025-10-06",
+     "freeze": 6,
+     "unfreeze": 0
+    },
+    {
+     "week": "2025-10-13",
+     "freeze": 8,
+     "unfreeze": 4
+    },
+    {
+     "week": "2025-10-20",
+     "freeze": 6,
+     "unfreeze": 0
+    },
+    {
+     "week": "2025-10-27",
+     "freeze": 3,
+     "unfreeze": 0
+    },
+    {
+     "week": "2025-11-03",
+     "freeze": 79,
+     "unfreeze": 0
+    },
+    {
+     "week": "2025-11-17",
+     "freeze": 10,
+     "unfreeze": 0
+    },
+    {
+     "week": "2025-11-24",
+     "freeze": 2,
+     "unfreeze": 0
+    },
+    {
+     "week": "2025-12-01",
+     "freeze": 1,
+     "unfreeze": 0
+    },
+    {
+     "week": "2025-12-15",
+     "freeze": 2,
+     "unfreeze": 0
+    },
+    {
+     "week": "2025-12-22",
+     "freeze": 5,
+     "unfreeze": 0
+    },
+    {
+     "week": "2026-01-26",
+     "freeze": 11,
+     "unfreeze": 0
+    },
+    {
+     "week": "2026-02-09",
+     "freeze": 1,
+     "unfreeze": 1
+    },
+    {
+     "week": "2026-03-02",
+     "freeze": 1,
+     "unfreeze": 0
+    },
+    {
+     "week": "2026-03-09",
+     "freeze": 22,
+     "unfreeze": 0
+    },
+    {
+     "week": "2026-03-16",
+     "freeze": 1,
+     "unfreeze": 0
+    },
+    {
+     "week": "2026-03-23",
+     "freeze": 85,
+     "unfreeze": 7
+    },
+    {
+     "week": "2026-03-30",
+     "freeze": 1,
+     "unfreeze": 15
+    },
+    {
+     "week": "2026-04-06",
+     "freeze": 12,
+     "unfreeze": 2
+    },
+    {
+     "week": "2026-04-13",
+     "freeze": 3,
+     "unfreeze": 4
+    },
+    {
+     "week": "2026-04-20",
+     "freeze": 3,
+     "unfreeze": 1
+    },
+    {
+     "week": "2026-04-27",
+     "freeze": 3,
+     "unfreeze": 0
+    },
+    {
+     "week": "2026-05-11",
+     "freeze": 3,
+     "unfreeze": 42
+    },
+    {
+     "week": "2026-05-18",
+     "freeze": 7,
+     "unfreeze": 0
+    },
+    {
+     "week": "2026-05-25",
+     "freeze": 5,
+     "unfreeze": 14
+    },
+    {
+     "week": "2026-06-01",
+     "freeze": 0,
+     "unfreeze": 1
+    },
+    {
+     "week": "2026-06-08",
+     "freeze": 1,
+     "unfreeze": 0
+    },
+    {
+     "week": "2026-06-22",
+     "freeze": 2,
+     "unfreeze": 0
+    },
+    {
+     "week": "2026-06-29",
+     "freeze": 131,
+     "unfreeze": 0
+    },
+    {
+     "week": "2026-07-06",
+     "freeze": 8,
+     "unfreeze": 0
+    },
+    {
+     "week": "2026-07-13",
+     "freeze": 10,
+     "unfreeze": 0
+    },
+    {
+     "week": "2026-07-20",
+     "freeze": 9,
+     "unfreeze": 0
+    },
+    {
+     "week": "2026-07-27",
+     "freeze": 2,
+     "unfreeze": 0
+    },
+    {
+     "week": "2026-08-03",
+     "freeze": 7,
+     "unfreeze": 0
+    },
+    {
+     "week": "2026-08-17",
+     "freeze": 1,
+     "unfreeze": 1
+    },
+    {
+     "week": "2026-08-24",
+     "freeze": 23,
+     "unfreeze": 0
+    },
+    {
+     "week": "2026-09-07",
+     "freeze": 54,
+     "unfreeze": 0
+    },
+    {
+     "week": "2026-09-14",
+     "freeze": 1,
+     "unfreeze": 0
+    },
+    {
+     "week": "2026-09-21",
+     "freeze": 4,
+     "unfreeze": 2
+    },
+    {
+     "week": "2026-09-28",
+     "freeze": 11,
+     "unfreeze": 0
+    },
+    {
+     "week": "2026-10-12",
+     "freeze": 1,
+     "unfreeze": 0
+    },
+    {
+     "week": "2026-10-19",
+     "freeze": 3,
+     "unfreeze": 0
+    },
+    {
+     "week": "2026-10-26",
+     "freeze": 24,
+     "unfreeze": 0
+    },
+    {
+     "week": "2026-11-02",
+     "freeze": 19,
+     "unfreeze": 1
+    },
+    {
+     "week": "2026-11-09",
+     "freeze": 8,
+     "unfreeze": 0
+    },
+    {
+     "week": "2026-11-16",
+     "freeze": 11,
+     "unfreeze": 1
+    },
+    {
+     "week": "2026-11-23",
+     "freeze": 1,
+     "unfreeze": 1
+    }
+   ],
+   "coverage": {
+    "from": "full history (from the first Blacklisted event)",
+    "complete": true
+   }
+  },
+  "sol_usdc": {
+   "label": "USDC - Solana",
+   "delay": "N/A",
+   "freezes": 10,
+   "unfreezes": 0,
+   "freezes_7d": 0,
+   "freezes_30d": 4,
+   "first": "2026-08-07T21:47:56Z",
+   "last": "2026-11-07T01:40:37Z",
+   "distinct_subjects": 10,
+   "amount_known_n": 10,
+   "amount_sum": 2343183.158368,
+   "amount_kind": "at_tx",
+   "weekly": [
+    {
+     "week": "2026-08-03",
+     "freeze": 2,
+     "unfreeze": 0
+    },
+    {
+     "week": "2026-08-10",
+     "freeze": 1,
+     "unfreeze": 0
+    },
+    {
+     "week": "2026-10-05",
+     "freeze": 2,
+     "unfreeze": 0
+    },
+    {
+     "week": "2026-10-19",
+     "freeze": 1,
+     "unfreeze": 0
+    },
+    {
+     "week": "2026-10-26",
+     "freeze": 1,
+     "unfreeze": 0
+    },
+    {
+     "week": "2026-11-02",
+     "freeze": 3,
+     "unfreeze": 0
+    }
+   ],
+   "coverage": {
+    "from": "full history",
+    "complete": true
+   }
+  },
+  "sol_usdt": {
+   "label": "USDT - Solana",
+   "delay": "N/A",
+   "freezes": 11,
+   "unfreezes": 0,
+   "freezes_7d": 2,
+   "freezes_30d": 4,
+   "first": "2026-06-10T07:23:28Z",
+   "last": "2026-11-25T15:04:42Z",
+   "distinct_subjects": 11,
+   "amount_known_n": 11,
+   "amount_sum": 2109473.372461,
+   "amount_kind": "at_tx",
+   "weekly": [
+    {
+     "week": "2026-06-08",
+     "freeze": 1,
+     "unfreeze": 0
+    },
+    {
+     "week": "2026-07-13",
+     "freeze": 2,
+     "unfreeze": 0
+    },
+    {
+     "week": "2026-08-03",
+     "freeze": 2,
+     "unfreeze": 0
+    },
+    {
+     "week": "2026-09-28",
+     "freeze": 1,
+     "unfreeze": 0
+    },
+    {
+     "week": "2026-10-05",
+     "freeze": 1,
+     "unfreeze": 0
+    },
+    {
+     "week": "2026-11-02",
+     "freeze": 2,
+     "unfreeze": 0
+    },
+    {
+     "week": "2026-11-23",
+     "freeze": 2,
+     "unfreeze": 0
+    }
+   ],
+   "coverage": {
+    "from": "2026-04-18T16:50:01Z",
+    "complete": false
+   }
+  }
+ },
+ "health": {
+  "eth": {
+   "gap": 0,
+   "max_id": 5885,
+   "onchain_count": 5886,
+   "stale": false
+  },
+  "tron": {
+   "gap": 0,
+   "max_id": 12104,
+   "onchain_count": 12105,
+   "stale": false
+  }
+ }
+}

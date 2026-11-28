@@ -1,0 +1,796 @@
+{
+ "bad": [],
+ "detect": {
+  "excluded": 59,
+  "interval_s": 598,
+  "median_24h_s": 544,
+  "median_s": 541,
+  "n": 53,
+  "n_24h": 49,
+  "p90_s": 597
+ },
+ "overall": "ok",
+ "run": {
+  "at": "2026-11-28T13:12:40Z",
+  "deadline_s": 420.0,
+  "run_s": 100.6,
+  "steps": [
+   [
+    "tron",
+    3.5,
+    ""
+   ],
+   [
+    "eth",
+    0.8,
+    ""
+   ],
+   [
+    "usdc_eth",
+    0.3,
+    ""
+   ],
+   [
+    "sol_usdc",
+    2.7,
+    ""
+   ],
+   [
+    "sol_usdt",
+    2.6,
+    ""
+   ],
+   [
+    "avax",
+    0.4,
+    ""
+   ],
+   [
+    "celo",
+    0.6,
+    ""
+   ],
+   [
+    "kaia",
+    1.1,
+    ""
+   ],
+   [
+    "arb_usdt",
+    0.5,
+    ""
+   ],
+   [
+    "kava",
+    0.7,
+    ""
+   ],
+   [
+    "arb1",
+    2.6,
+    ""
+   ],
+   [
+    "pol",
+    2.6,
+    ""
+   ],
+   [
+    "plasma",
+    2.1,
+    ""
+   ],
+   [
+    "mantle",
+    2.0,
+    ""
+   ],
+   [
+    "oeth",
+    3.5,
+    ""
+   ],
+   [
+    "monad",
+    2.1,
+    ""
+   ],
+   [
+    "unichain",
+    2.0,
+    ""
+   ],
+   [
+    "stable",
+    2.0,
+    ""
+   ],
+   [
+    "morph",
+    2.6,
+    ""
+   ],
+   [
+    "ink",
+    2.5,
+    ""
+   ],
+   [
+    "hyper",
+    2.1,
+    ""
+   ],
+   [
+    "berachain",
+    1.8,
+    ""
+   ],
+   [
+    "xlayer",
+    2.0,
+    ""
+   ],
+   [
+    "flare",
+    1.2,
+    ""
+   ],
+   [
+    "conflux",
+    2.6,
+    ""
+   ],
+   [
+    "sei",
+    0.4,
+    ""
+   ],
+   [
+    "megaeth",
+    1.9,
+    ""
+   ],
+   [
+    "rootstock",
+    1.1,
+    ""
+   ],
+   [
+    "near",
+    6.2,
+    ""
+   ],
+   [
+    "aptos",
+    1.7,
+    ""
+   ],
+   [
+    "ton",
+    0.3,
+    ""
+   ],
+   [
+    "balances-open",
+    0.0,
+    ""
+   ],
+   [
+    "exposure",
+    0.0,
+    ""
+   ],
+   [
+    "alerts-early",
+    0.1,
+    ""
+   ],
+   [
+    "signals",
+    0.2,
+    ""
+   ],
+   [
+    "destroy-amounts",
+    1.1,
+    "",
+    "1 done"
+   ],
+   [
+    "balances",
+    0.2,
+    "",
+    "0 done"
+   ],
+   [
+    "inflows",
+    0.2,
+    "",
+    "0 done"
+   ],
+   [
+    "outflows",
+    0.1,
+    "",
+    "0 done"
+   ],
+   [
+    "txinfo",
+    0.3,
+    "",
+    "0 done"
+   ],
+   [
+    "flight-watch",
+    7.7,
+    ""
+   ],
+   [
+    "labels",
+    3.7,
+    "",
+    "844 done"
+   ],
+   [
+    "history:sol_usdc",
+    2.7,
+    "",
+    "True done"
+   ],
+   [
+    "history:sol_usdt",
+    2.4,
+    "",
+    "True done"
+   ],
+   [
+    "history:xlayer",
+    20.7,
+    "deadline",
+    "True done"
+   ],
+   [
+    "history:oeth",
+    1.4,
+    "",
+    "True done"
+   ],
+   [
+    "maintenance",
+    0.6,
+    ""
+   ],
+   [
+    "alerts",
+    0.1,
+    ""
+   ],
+   [
+    "daily-report",
+    0.0,
+    ""
+   ]
+  ],
+  "tron_keys": "TronGrid usage: key#1 24 req, key#2 24 req, key#3 23 req"
+ },
+ "sources": [
+  {
+   "coverage": "32 proposals, newest executed 2026-11-04",
+   "fails": 0,
+   "gap": null,
+   "label": "USDt - Aptos",
+   "last_error": null,
+   "last_error_at": null,
+   "last_ok": "2026-11-28T13:11:58Z",
+   "note": null,
+   "partial": false,
+   "rows_added": 0,
+   "source": "aptos",
+   "status": "ok"
+  },
+  {
+   "coverage": "token events via v2; Safe history complete; 12 rows",
+   "fails": 0,
+   "gap": null,
+   "label": "USDT0 - Arbitrum",
+   "last_error": null,
+   "last_error_at": null,
+   "last_ok": "2026-11-28T13:11:15Z",
+   "note": null,
+   "partial": false,
+   "rows_added": 0,
+   "source": "arb1",
+   "status": "ok"
+  },
+  {
+   "coverage": "45 proposals, newest executed 2025-01-28",
+   "fails": 0,
+   "gap": null,
+   "label": "USDT - Arbitrum (Tether, pre-USDT0)",
+   "last_error": null,
+   "last_error_at": null,
+   "last_ok": "2026-11-28T13:11:12Z",
+   "note": null,
+   "partial": false,
+   "rows_added": 0,
+   "source": "arb_usdt",
+   "status": "ok"
+  },
+  {
+   "coverage": "57 proposals, newest executed 2026-11-02",
+   "fails": 0,
+   "gap": null,
+   "label": "USDt - Avalanche",
+   "last_error": null,
+   "last_error_at": null,
+   "last_ok": "2026-11-28T13:11:10Z",
+   "note": null,
+   "partial": false,
+   "rows_added": 0,
+   "source": "avax",
+   "status": "ok"
+  },
+  {
+   "coverage": "balances 9650/9650",
+   "fails": 0,
+   "gap": null,
+   "label": "Balances of frozen addresses",
+   "last_error": null,
+   "last_error_at": null,
+   "last_ok": null,
+   "note": "Current balances of frozen addresses, refreshed once a day per address.",
+   "partial": false,
+   "rows_added": 0,
+   "source": "balances",
+   "status": "ok"
+  },
+  {
+   "coverage": "token events via v2; Safe history complete; 1 rows",
+   "fails": 0,
+   "gap": null,
+   "label": "USDT0 - Berachain",
+   "last_error": null,
+   "last_error_at": null,
+   "last_ok": "2026-11-28T13:11:41Z",
+   "note": null,
+   "partial": false,
+   "rows_added": 0,
+   "source": "berachain",
+   "status": "ok"
+  },
+  {
+   "coverage": "13 proposals, newest executed 2024-07-23",
+   "fails": 0,
+   "gap": null,
+   "label": "USDT - Celo",
+   "last_error": null,
+   "last_error_at": null,
+   "last_ok": "2026-11-28T13:11:11Z",
+   "note": null,
+   "partial": false,
+   "rows_added": 0,
+   "source": "celo",
+   "status": "ok"
+  },
+  {
+   "coverage": "token events via blockscout",
+   "fails": 0,
+   "gap": null,
+   "label": "USDT0 - Conflux",
+   "last_error": null,
+   "last_error_at": null,
+   "last_ok": "2026-11-28T13:11:47Z",
+   "note": null,
+   "partial": false,
+   "rows_added": 0,
+   "source": "conflux",
+   "status": "ok"
+  },
+  {
+   "coverage": "daily report: last sent 2026-11-27",
+   "fails": 0,
+   "gap": null,
+   "label": "Daily Telegram report",
+   "last_error": null,
+   "last_error_at": null,
+   "last_ok": null,
+   "note": null,
+   "partial": false,
+   "rows_added": 0,
+   "source": "daily",
+   "status": "ok"
+  },
+  {
+   "coverage": "on-chain 5886 / DB newest id 5885 (gap 0); 5886 rows",
+   "fails": 0,
+   "gap": 0,
+   "label": "USDT - Ethereum",
+   "last_error": null,
+   "last_error_at": null,
+   "last_ok": "2026-11-28T13:11:04Z",
+   "note": null,
+   "partial": false,
+   "rows_added": 0,
+   "source": "eth",
+   "status": "ok"
+  },
+  {
+   "coverage": "token events via blockscout",
+   "fails": 0,
+   "gap": null,
+   "label": "USDT0 - Flare",
+   "last_error": "no event source worked for flare: https://flare-explorer.flare.network/api: retries exhausted (HTTP 503)",
+   "last_error_at": "2026-11-27T11:12:04Z",
+   "last_ok": "2026-11-28T13:11:44Z",
+   "note": null,
+   "partial": false,
+   "rows_added": 0,
+   "source": "flare",
+   "status": "ok"
+  },
+  {
+   "coverage": "token events via v2; Safe history complete; 6 rows",
+   "fails": 0,
+   "gap": null,
+   "label": "USDT0 - HyperEVM",
+   "last_error": null,
+   "last_error_at": null,
+   "last_ok": "2026-11-28T13:11:39Z",
+   "note": null,
+   "partial": false,
+   "rows_added": 0,
+   "source": "hyper",
+   "status": "ok"
+  },
+  {
+   "coverage": "inflows 13564/13564 (avax 17/17, celo 1/1, eth 3242/3242, tron 9389/9389, usdc_eth 915/915)",
+   "fails": 0,
+   "gap": null,
+   "label": "Transfers to frozen addresses",
+   "last_error": null,
+   "last_error_at": null,
+   "last_ok": null,
+   "note": "Transfers to frozen addresses are scanned address by address; TronGrid is the slow part.",
+   "partial": false,
+   "rows_added": 0,
+   "source": "inflows",
+   "status": "ok"
+  },
+  {
+   "coverage": "token events via blockscout; Safe history complete; 2 rows",
+   "fails": 0,
+   "gap": null,
+   "label": "USDT0 - Ink",
+   "last_error": null,
+   "last_error_at": null,
+   "last_ok": "2026-11-28T13:11:37Z",
+   "note": null,
+   "partial": false,
+   "rows_added": 0,
+   "source": "ink",
+   "status": "ok"
+  },
+  {
+   "coverage": "11 proposals, newest executed 2026-05-04",
+   "fails": 0,
+   "gap": null,
+   "label": "USDT - Kaia",
+   "last_error": null,
+   "last_error_at": null,
+   "last_ok": "2026-11-28T13:11:12Z",
+   "note": null,
+   "partial": false,
+   "rows_added": 0,
+   "source": "kaia",
+   "status": "ok"
+  },
+  {
+   "coverage": "8 proposals, newest executed 2025-04-04",
+   "fails": 0,
+   "gap": null,
+   "label": "USDT - Kava EVM",
+   "last_error": null,
+   "last_error_at": null,
+   "last_ok": "2026-11-28T13:11:13Z",
+   "note": null,
+   "partial": false,
+   "rows_added": 0,
+   "source": "kava",
+   "status": "ok"
+  },
+  {
+   "coverage": "46480 addresses matched against wallet-attribution",
+   "fails": 0,
+   "gap": null,
+   "label": "Address labels (wallet-attribution)",
+   "last_error": null,
+   "last_error_at": null,
+   "last_ok": null,
+   "note": "Labels come from the public wallet-attribution dataset (MIT) and its upstream sources, refreshed once a day.",
+   "partial": false,
+   "rows_added": 0,
+   "source": "labels",
+   "status": "ok"
+  },
+  {
+   "coverage": "token events via v2; Safe history complete",
+   "fails": 0,
+   "gap": null,
+   "label": "USDT0 - Mantle",
+   "last_error": null,
+   "last_error_at": null,
+   "last_ok": "2026-11-28T13:11:22Z",
+   "note": null,
+   "partial": false,
+   "rows_added": 0,
+   "source": "mantle",
+   "status": "ok"
+  },
+  {
+   "coverage": "token events via v2",
+   "fails": 0,
+   "gap": null,
+   "label": "USDT0 - MegaETH",
+   "last_error": null,
+   "last_error_at": null,
+   "last_ok": "2026-11-28T13:11:49Z",
+   "note": null,
+   "partial": false,
+   "rows_added": 0,
+   "source": "megaeth",
+   "status": "ok"
+  },
+  {
+   "coverage": "token events via v2; Safe history complete",
+   "fails": 0,
+   "gap": null,
+   "label": "USDT0 - Monad",
+   "last_error": "https://api.safe.global/tx-service/monad/api/v1/safes/0x4DFF9b5b0143E642a3F63a5bcf2d1C328e600bf8/: retries exhausted (HTTP 503)",
+   "last_error_at": "2026-11-24T10:27:37Z",
+   "last_ok": "2026-11-28T13:11:28Z",
+   "note": null,
+   "partial": false,
+   "rows_added": 0,
+   "source": "monad",
+   "status": "ok"
+  },
+  {
+   "coverage": "token events via blockscout; Safe history complete",
+   "fails": 0,
+   "gap": null,
+   "label": "USDT0 - Morph",
+   "last_error": null,
+   "last_error_at": null,
+   "last_ok": "2026-11-28T13:11:34Z",
+   "note": null,
+   "partial": false,
+   "rows_added": 0,
+   "source": "morph",
+   "status": "ok"
+  },
+  {
+   "coverage": "35 proposals, newest executed 2026-06-16",
+   "fails": 0,
+   "gap": null,
+   "label": "USDt - NEAR",
+   "last_error": null,
+   "last_error_at": null,
+   "last_ok": "2026-11-28T13:11:56Z",
+   "note": null,
+   "partial": false,
+   "rows_added": 0,
+   "source": "near",
+   "status": "ok"
+  },
+  {
+   "coverage": "log scan complete; Safe history complete",
+   "fails": 0,
+   "gap": null,
+   "label": "USDT0 - Optimism",
+   "last_error": null,
+   "last_error_at": null,
+   "last_ok": "2026-11-28T13:11:26Z",
+   "note": "Optimism Blockscout times out on wide ranges; events are read with eth_getLogs from the public RPC (10,000-block ranges, resumable).",
+   "partial": false,
+   "rows_added": 0,
+   "source": "oeth",
+   "status": "ok"
+  },
+  {
+   "coverage": "outflows 13664/13664 freezes scanned (newest first)",
+   "fails": 0,
+   "gap": null,
+   "label": "Funds moved before freezes",
+   "last_error": null,
+   "last_error_at": null,
+   "last_ok": null,
+   "note": "Outgoing transfers before each freeze (72 h window); TronGrid and Etherscan limits make this a slow, resumable scan.",
+   "partial": false,
+   "rows_added": 0,
+   "source": "outflows",
+   "status": "ok"
+  },
+  {
+   "coverage": "token events via v2; Safe history complete; 5 rows",
+   "fails": 0,
+   "gap": null,
+   "label": "USDT0 - Plasma",
+   "last_error": null,
+   "last_error_at": null,
+   "last_ok": "2026-11-28T13:11:20Z",
+   "note": null,
+   "partial": false,
+   "rows_added": 0,
+   "source": "plasma",
+   "status": "ok"
+  },
+  {
+   "coverage": "token events via v2; Safe history complete; 16 rows",
+   "fails": 0,
+   "gap": null,
+   "label": "USDT0 - Polygon",
+   "last_error": "token events: no event source worked for pol: Etherscan: {'status': '0', 'message': 'Unexpected error, timeout or server too busy. Please try agai",
+   "last_error_at": "2026-11-24T03:42:44Z",
+   "last_ok": "2026-11-28T13:11:18Z",
+   "note": null,
+   "partial": false,
+   "rows_added": 0,
+   "source": "pol",
+   "status": "ok"
+  },
+  {
+   "coverage": "token events via blockscout",
+   "fails": 0,
+   "gap": null,
+   "label": "USDT0 - Rootstock",
+   "last_error": null,
+   "last_error_at": null,
+   "last_ok": "2026-11-28T13:11:50Z",
+   "note": null,
+   "partial": false,
+   "rows_added": 0,
+   "source": "rootstock",
+   "status": "ok"
+  },
+  {
+   "coverage": "token events via v2",
+   "fails": 0,
+   "gap": null,
+   "label": "USDT0 - Sei",
+   "last_error": null,
+   "last_error_at": null,
+   "last_ok": "2026-11-28T13:11:47Z",
+   "note": null,
+   "partial": false,
+   "rows_added": 0,
+   "source": "sei",
+   "status": "ok"
+  },
+  {
+   "coverage": "1 open / 1 cross-chain signals",
+   "fails": 0,
+   "gap": null,
+   "label": "Cross-chain signals",
+   "last_error": null,
+   "last_error_at": null,
+   "last_ok": null,
+   "note": "Cross-chain signals: other chains are re-checked on every run while a signal is open.",
+   "partial": false,
+   "rows_added": 0,
+   "source": "signals",
+   "status": "ok"
+  },
+  {
+   "coverage": "full history",
+   "fails": 0,
+   "gap": null,
+   "label": "USDC - Solana",
+   "last_error": "Solana RPC getSignaturesForAddress: retries exhausted (ReadTimeout(ReadTimeoutError(\"HTTPSConnectionPool(host='api.mainnet-beta.solana.com', port=443): Read tim",
+   "last_error_at": "2026-11-28T09:13:45Z",
+   "last_ok": "2026-11-28T13:11:07Z",
+   "note": "The public Solana RPC is slow and rate-limited; history is back-filled a few pages per run.",
+   "partial": false,
+   "rows_added": 0,
+   "source": "sol_usdc",
+   "status": "ok"
+  },
+  {
+   "coverage": "history back to 2026-04-18",
+   "fails": 0,
+   "gap": null,
+   "label": "USDT - Solana",
+   "last_error": "Solana RPC getAccountInfo: retries exhausted (ReadTimeout(ReadTimeoutError(\"HTTPSConnectionPool(host='api.mainnet-beta.solana.com', port=443): Read timed out. (",
+   "last_error_at": "2026-11-28T07:04:39Z",
+   "last_ok": "2026-11-28T13:11:10Z",
+   "note": "The public Solana RPC is slow and rate-limited; history is back-filled a few pages per run.",
+   "partial": true,
+   "rows_added": 0,
+   "source": "sol_usdt",
+   "status": "ok"
+  },
+  {
+   "coverage": "token events via v2; Safe history complete",
+   "fails": 0,
+   "gap": null,
+   "label": "USDT0 - Stable",
+   "last_error": null,
+   "last_error_at": null,
+   "last_ok": "2026-11-28T13:11:32Z",
+   "note": null,
+   "partial": false,
+   "rows_added": 0,
+   "source": "stable",
+   "status": "ok"
+  },
+  {
+   "coverage": "37 proposals, newest executed 2026-08-21",
+   "fails": 0,
+   "gap": null,
+   "label": "USDT - TON",
+   "last_error": null,
+   "last_error_at": null,
+   "last_ok": "2026-11-28T13:11:58Z",
+   "note": null,
+   "partial": false,
+   "rows_added": 0,
+   "source": "ton",
+   "status": "ok"
+  },
+  {
+   "coverage": "on-chain 12105 / DB newest id 12104 (gap 0); 11989 rows",
+   "fails": 0,
+   "gap": 0,
+   "label": "USDT - TRON",
+   "last_error": null,
+   "last_error_at": null,
+   "last_ok": "2026-11-28T13:11:03Z",
+   "note": "TronGrid and Tronscan are rate-limited; the on-chain queue is read first, timestamps may arrive a run later.",
+   "partial": false,
+   "rows_added": 0,
+   "source": "tron",
+   "status": "ok"
+  },
+  {
+   "coverage": "token events via v2; Safe history complete",
+   "fails": 0,
+   "gap": null,
+   "label": "USDT0 - Unichain",
+   "last_error": null,
+   "last_error_at": null,
+   "last_ok": "2026-11-28T13:11:30Z",
+   "note": null,
+   "partial": false,
+   "rows_added": 0,
+   "source": "unichain",
+   "status": "ok"
+  },
+  {
+   "coverage": "-",
+   "fails": 0,
+   "gap": null,
+   "label": "USDC - Ethereum",
+   "last_error": null,
+   "last_error_at": null,
+   "last_ok": "2026-11-28T13:11:04Z",
+   "note": null,
+   "partial": false,
+   "rows_added": 0,
+   "source": "usdc_eth",
+   "status": "ok"
+  },
+  {
+   "coverage": "log scan 17.1% (back to block 69,549,745, 2026-09-02)",
+   "fails": 0,
+   "gap": null,
+   "label": "USDT0 - X Layer",
+   "last_error": null,
+   "last_error_at": null,
+   "last_ok": "2026-11-28T13:11:43Z",
+   "note": "X Layer has no free log API (OKLink needs a key); the public RPC allows 100-block ranges, so history is scanned in small resumable steps on every run.",
+   "partial": true,
+   "rows_added": 0,
+   "source": "xlayer",
+   "status": "ok"
+  }
+ ]
+}
