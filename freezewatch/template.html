@@ -301,11 +301,13 @@ footer{margin:30px 0 18px;color:var(--mut);font-size:12px;border-top:1px solid v
   <h2>Pending queue</h2>
   <div class="tw"><table id="pending"></table></div>
 
+  <div id="flBox" style="display:none">
   <div class="stalehd">
     <h2 id="flTitle">🏃 Pre-proposal flights (last 24 h)</h2>
   </div>
   <div class="mut" style="margin-bottom:6px" id="flHint">An address that received funds from a recently frozen address sent money on before any freeze proposal existed on it. The same events raise the Telegram alert.</div>
   <div class="tw"><table id="flights"></table></div>
+  </div>
 
   <div class="stalehd">
     <h2 id="sigTitle">🔗 At risk on other chains</h2>
@@ -443,7 +445,6 @@ footer{margin:30px 0 18px;color:var(--mut);font-size:12px;border-top:1px solid v
       <dt>Address page</dt><dd>#addr=&lt;address&gt; opens a shareable full page for one address with a copyable Markdown report (.md / .json download, or Print to PDF).</dd>
       <dt>Third-party pull / sweeper candidate</dt><dd>The transaction that moved the money was sent by someone other than the frozen address (a bot or a contract pulled it). A contract that did this to two or more later-frozen addresses is listed as a sweeper candidate: a lead, not proof.</dd>
       <dt>Allowance / EIP-7702</dt><dd>At proposal time, a spender with an ERC-20 / TRC-20 allowance (Permit2 included), or an EIP-7702 delegation of the account, can still move the funds even though the proposal is public. Shown on the address page and in the FREEZE INCOMING alert.</dd>
-      <dt>Pre-proposal flight</dt><dd>An address that received funds from a frozen address sends money on before any freeze proposal exists on it. Recipients (hop 1) and their recipients (hop 2) are watched.</dd>
       <dt>Outcome classes</dt><dd>clean / racing / partial / weak are this tool's own heuristic over the 72 h before a freeze (see Analytics), not a finding about anyone's intent.</dd>
       <dt>Labels</dt><dd>Entity labels come from the public wallet-attribution dataset (MIT) and its upstream sources (DefiLlama CEX lists, GraphSense, OFAC SDN and others). They are shown as "label from wallet-attribution", never as our own claim.</dd>
       <dt>Sinks (excluded)</dt><dd>Zero address and token-contract addresses are blacklisted to burn mistaken sends; they are excluded from totals and lists.</dd>
@@ -1269,7 +1270,7 @@ const labelHtml = (lb, withUrl) => {
 const lagS = s => s == null ? 'n/a' : dur(s);
 function sigRisk(s){ const done = new Set(s.resolutions.map(x => x.chain)); return s.at_risk.filter(e => !done.has(e[0])); }
 function renderFlights(){
-  const F = D.flight; if(!F) return;
+  const F = D.flight; if(!F) return; $('flBox').style.display = '';
   const rows = (F.recent || []).filter(x => active(x.chain));
   $('flTitle').textContent = '🏃 Pre-proposal flights (last 24 h · ' + rows.length + ')';
   $('flHint').textContent = 'An address that received funds from a recently frozen address sent money on before any freeze proposal existed on it. The same events raise the Telegram alert. Watching ' + (F.watched || 0) + ' addresses (' + (F.hop1 || 0) + ' hop 1, ' + (F.hop2 || 0) + ' hop 2).';

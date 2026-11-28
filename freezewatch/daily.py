@@ -137,8 +137,9 @@ def fmt_daily(d):
         lines.append(f"💸 Moved out in the 72 h before these freezes: <b>${num(es['usd'])}</b> · front-run: <b>{es['front_run']}</b>"
                      + (f" <i>({es['scanned']} of {es['freezes']} scanned)</i>" if es["scanned"] < es["freezes"] else ""))
         fl, sg = d["flights"], d["signals"]
-        lines.append(f"🏃 Pre-proposal flights (≥ $10k): <b>{fl['n']}</b>" + (f" · ${num(fl['usd'])}" if fl["n"] else "")
-                     + f" · 🔗 cross-chain signals: {sg['opened']} opened, {sg['resolved']} resolved · ⚖ OFAC-listed freezes: <b>{d['ofac']}</b>")
+        from .constants import FLIGHT_PUBLIC
+        lines.append((f"🏃 Pre-proposal flights (≥ $10k): <b>{fl['n']}</b>" + (f" · ${num(fl['usd'])}" if fl["n"] else "") + " · " if FLIGHT_PUBLIC else "")
+                     + f"🔗 cross-chain signals: {sg['opened']} opened, {sg['resolved']} resolved · ⚖ OFAC-listed freezes: <b>{d['ofac']}</b>")
         if d["top"]:
             lines.append("🏆 Top freezes by amount:")
             for t in d["top"]:

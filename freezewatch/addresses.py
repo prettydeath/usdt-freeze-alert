@@ -180,7 +180,8 @@ def _add_insights(idx, rec, extras):
         key = canon_for(r["chain"], r["address"])
         if key:   # kind, spender, amount, note: who can still move the funds of a pending target
             rec(key).setdefault("ex", []).append([r["kind"], r["spender"], r["amount"], r["note"]])
-    for r in extras.get("watched", []):
+    from .constants import FLIGHT_PUBLIC
+    for r in (extras.get("watched", []) if FLIGHT_PUBLIC else []):
         key = canon_for(r["chain"], r["address"])
         if key:   # hop, source frozen address, USD received, USD moved on
             rec(key)["w"] = [r["hop"], r["source"], round(r["received_usd"] or 0, 2), round(r["moved"] or 0, 2)]

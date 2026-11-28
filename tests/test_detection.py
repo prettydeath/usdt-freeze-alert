@@ -266,7 +266,13 @@ def test_flight_recent_statuses_and_payload(tmp_path):
     st = flight.stats(conn)
     assert st["moves"] == 2 and st["alerts_24h"] == 0 and "recent" not in st
     from freezewatch import status
-    assert "flight watch: 4 watched (2 hop 1 / 2 hop 2)" in status.pseudo_sources(conn)["flight"][0]
+    assert "flight" not in status.pseudo_sources(conn)          # hidden by default (FLIGHT_PUBLIC unset)
+    import freezewatch.constants as C
+    old = C.FLIGHT_PUBLIC; C.FLIGHT_PUBLIC = True
+    try:
+        assert "flight watch: 4 watched (2 hop 1 / 2 hop 2)" in status.pseudo_sources(conn)["flight"][0]
+    finally:
+        C.FLIGHT_PUBLIC = old
 
 
 def lab_(entity, cat):

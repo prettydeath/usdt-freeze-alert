@@ -138,6 +138,9 @@ def pseudo_sources(conn):
         pass
     try:
         from . import flight
+        from .constants import FLIGHT_PUBLIC
+        if not FLIGHT_PUBLIC:
+            raise RuntimeError('flight watch hidden')
         f = flight.stats(conn)
         out["flight"] = (f"flight watch: {f['watched']} watched ({f['hop1']} hop 1 / {f['hop2']} hop 2), {f['moves_24h']} moves 24h, "
                          f"{f['alerts_24h']} alerts sent", False)

@@ -336,7 +336,8 @@ def collect_events(conn, before, max_freeze_rowid, before_pairs, auth_changes=()
                               (max_inflow_rowid, min_inflow)).fetchall():
             if now - (parse_iso(r["ts"]) or 0) <= FRESH_SEC:
                 ev.append({"kind": "inflow", "chain": r["chain"], "id": r["rid"], "key_kind": "inflow", "text": fmt_inflow(r)})
-    if balances is None:
+    from .constants import FLIGHT_PUBLIC
+    if balances is None and FLIGHT_PUBLIC:
         from . import flight
         ev += flight.events(conn, now)
     if balances is not None:  # legacy path (tests inject balances); production uses the signals table

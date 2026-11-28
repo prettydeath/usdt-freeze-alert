@@ -22,7 +22,6 @@ const G: [string, string][] = [
   ["Address page", "#addr=<address> opens a shareable full page for one address with a copyable Markdown report (.md / .json download, or Print to PDF)."],
   ["Third-party pull / sweeper candidate", "The transaction that moved the money was sent by someone other than the frozen address (a bot or a contract pulled it). A contract that did this to two or more later-frozen addresses is listed as a sweeper candidate: a lead, not proof."],
   ["Allowance / EIP-7702", "At proposal time, a spender with an ERC-20 / TRC-20 allowance (Permit2 included), or an EIP-7702 delegation of the account, can still move the funds even though the proposal is public. Shown on the address page and in the FREEZE INCOMING alert."],
-  ["Pre-proposal flight", "An address that received funds from a frozen address sends money on before any freeze proposal exists on it. Recipients (hop 1) and their recipients (hop 2) are watched."],
   ["Outcome classes", "clean / racing / partial / weak are this tool's own heuristic over the 72 h before a freeze (see Analytics), not a finding about anyone's intent."],
   ["Labels", 'Entity labels come from the public wallet-attribution dataset (MIT) and its upstream sources (DefiLlama CEX lists, GraphSense, OFAC SDN and others). They are shown as "label from wallet-attribution", never as our own claim.'],
   ["Sinks (excluded)", "Zero address and token-contract addresses are blacklisted to burn mistaken sends; they are excluded from totals and lists."],

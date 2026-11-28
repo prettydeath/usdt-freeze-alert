@@ -2,6 +2,8 @@
 from pathlib import Path
 import os
 
+# Pre-proposal flight watch keeps running, but is hidden from the site and Telegram unless FLIGHT_PUBLIC=1
+FLIGHT_PUBLIC = os.environ.get("FLIGHT_PUBLIC", "0") == "1"
 ROOT = Path(os.environ.get("FREEZEWATCH_HOME") or Path(__file__).resolve().parent.parent)
 DATA_DIR = ROOT / "data"
 SITE_DIR = ROOT / "site"
